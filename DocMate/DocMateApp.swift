@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct DocMateApp: App {
+    @State var viewModel = AppViewModel()
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(viewModel)
         }
     }
 }

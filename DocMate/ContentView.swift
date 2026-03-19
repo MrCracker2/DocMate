@@ -4,21 +4,36 @@
 //
 //  Created by Shashwat kumar on 19/03/26.
 //
-
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView{
+            NavigationStack {
+                HomeView()
+            }
+                .tabItem {
+                    Label("Home", systemImage: "house")
+                }
+            NavigationStack {
+                InfetchView()
+            }
+                .tabItem {
+                    Label("Infetch", systemImage: "envelope")
+                }
+            NavigationStack {
+                BrowseView()
+            }
+                .tabItem {
+                    Label("Browser", systemImage: "folder")
+                }
+            
+                
         }
-        .padding()
     }
 }
 
 #Preview {
     ContentView()
+        .environment(AppViewModel())
 }
