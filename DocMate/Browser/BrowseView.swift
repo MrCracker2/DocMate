@@ -1,9 +1,8 @@
 //
-//  BrowseView.swift
-//  DocMate
-//
-//  Created by Shashwat kumar on 19/03/26.
-//
+// BrowseView.swift
+// DocMate
+
+//  Created by Naman Yadav on 18/03/26.
 
 import SwiftUI
 
@@ -183,8 +182,8 @@ struct BrowseView: View {
 }
 
 #Preview {
-    
+    NavigationStack {
         BrowseView()
             .environment(AppViewModel())
-    
+    }
 }
