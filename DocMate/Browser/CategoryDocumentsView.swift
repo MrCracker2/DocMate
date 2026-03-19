@@ -86,7 +86,7 @@ struct CategoryDocumentsView: View {
                 if isGridView{
                     ScrollView{
                         LazyVGrid(columns: columns, spacing: 16) {
-                            ForEach(/*filteredDocs*/ documents) { doc in
+                            ForEach(filteredDocs) { doc in
                                 NavigationLink(destination: DocumentDetailView(document: doc)) {
                                     DocumentThumbnailView(document: doc)
                                 }
@@ -122,11 +122,11 @@ struct CategoryDocumentsView: View {
                     .scrollContentBackground(.hidden)
                     .background(Color.white)
                     .listStyle(.plain)
-                    .navigationTitle(category.name)
-                    .navigationBarTitleDisplayMode(.inline)
                 }
             }
         }
+        .navigationTitle(category.name)
+        .navigationBarTitleDisplayMode(.inline)
         // MARK: Menu (3 dots)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
