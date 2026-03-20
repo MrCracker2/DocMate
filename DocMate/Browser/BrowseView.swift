@@ -41,7 +41,7 @@ struct BrowseView: View {
                                 NavigationLink(
                                     destination: CategoryDocumentsView(category: category)
                                 ) {
-                                    CategoryCardView(category: category)
+                                    CategoryCardView(category: category , docCount: viewModel.documentCount(for: category))
                                 }
                                 .buttonStyle(.plain)
                             }

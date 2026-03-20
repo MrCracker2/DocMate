@@ -9,22 +9,32 @@ import SwiftUI
 
 struct CategoryCardView: View {
     let category: Category
+    let docCount: Int
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
+
             Image(systemName: category.sfSymbol)
-                .font(.system(size: 36))
-                .foregroundStyle(.blue)
-            
+                .font(.system(size: 26, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(.bottom, 12)
+
+            Spacer()
+
             Text(category.name)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundStyle(.primary)
-                .multilineTextAlignment(.center)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(.white)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+
+            Text("\(docCount) docs")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white.opacity(0.75))
+                .padding(.top, 2)
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 120)
-        .background(Color(.systemGray6))
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 118, alignment: .leading)
+        .background(Color.blue.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
