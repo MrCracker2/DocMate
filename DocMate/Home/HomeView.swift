@@ -42,7 +42,7 @@ struct HomeView: View {
             
             ScrollView {
                 
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 20) {
                     
                     // MARK: Attention Required
                     
@@ -80,14 +80,15 @@ struct HomeView: View {
                             .font(.title3)
                             .fontWeight(.bold)
                         
-                        
+                        Spacer()
                         
                         if viewModel.recentDocuments.count > 4 {
                             NavigationLink(destination: RecentlySavedView()) {
                                 Image(systemName: "chevron.right")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
+                            .padding(.horizontal , 4)
                         }
                     }
                     

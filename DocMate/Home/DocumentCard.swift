@@ -37,3 +37,6 @@ struct DocumentCard: View {
         )
     }
 }
+#Preview {
+    DocumentCard(icon: "doc.fill", title: "Sample Document")
+}
