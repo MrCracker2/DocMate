@@ -173,7 +173,7 @@ struct BrowseView: View {
                     }
 
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "ellipsis")
                         .font(.title3)
                 }
             }

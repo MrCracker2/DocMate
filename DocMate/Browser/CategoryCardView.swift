@@ -15,20 +15,20 @@ struct CategoryCardView: View {
         VStack(alignment: .leading, spacing: 0) {
 
             Image(systemName: category.sfSymbol)
-                .font(.system(size: 26, weight: .semibold))
+                .font(.system(size: 28, weight: .semibold))
                 .foregroundStyle(.white)
                 .padding(.bottom, 12)
 
             Spacer()
 
             Text(category.name)
-                .font(.system(size: 14, weight: .bold))
+                .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(.white)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
 
             Text("\(docCount) docs")
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.white.opacity(0.75))
                 .padding(.top, 2)
         }

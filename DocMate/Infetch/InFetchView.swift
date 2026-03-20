@@ -10,6 +10,7 @@ import SwiftUI
 struct InFetchView: View {
     
     @Environment(AppViewModel.self) var viewModel
+    @AppStorage("hasSeenFetchOnboarding") var hasSeenOnboarding = false
     
     @State private var isFetching = false
     @State private var showDocuments = false
@@ -32,8 +33,9 @@ struct InFetchView: View {
             )
         }
         
-        else {
-            FetchButtonView {
+        else if !hasSeenOnboarding {
+            FetchHomeView {
+                hasSeenOnboarding = true
                 isFetching = true
                 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -41,6 +43,26 @@ struct InFetchView: View {
                     showDocuments = true
                 }
             }
+        }
+        
+        else {
+            // Direct fetch (skip onboarding)
+            FetchHomeView {
+                isFetching = true
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    isFetching = false
+                    showDocuments = true
+                }
+            }
+        }
+    }
+    private func startFetching() {
+        isFetching = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            isFetching = false
+            showDocuments = true
         }
     }
 }

@@ -16,15 +16,15 @@ struct ContentView: View {
                     Label("Home", systemImage: "house")
                 }
             NavigationStack {
-                InFetchView()
+                AddMailAccountView()
             }
-                .tabItem {
-                    Label("Infetch", systemImage: "envelope")
+            .tabItem {
+                Label("Infetch", systemImage: "envelope")
                 }
             NavigationStack {
                 BrowseView()
             }
-                .tabItem {
+            .tabItem {
                     Label("Browser", systemImage: "folder")
                 }
             

@@ -122,11 +122,11 @@ struct CategoryDocumentsView: View {
                     .scrollContentBackground(.hidden)
                     .background(Color.white)
                     .listStyle(.plain)
-                    .navigationTitle(category.name)
-                    .navigationBarTitleDisplayMode(.inline)
                 }
             }
         }
+        .navigationTitle(category.name)
+        .navigationBarTitleDisplayMode(.inline)
         // MARK: Menu (3 dots)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {

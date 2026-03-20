@@ -1,3 +1,10 @@
+//
+//  DocumentMetaDataView.swift
+//  DocMate
+//
+//  Created by Naman Yadav on 20/03/26.
+//
+
 import SwiftUI
 
 struct FetchedDocumentsView: View {
@@ -91,3 +98,4 @@ struct FetchedDocumentsView: View {
         }
     }
 }
+
