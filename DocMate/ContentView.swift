@@ -16,7 +16,7 @@ struct ContentView: View {
                     Label("Home", systemImage: "house")
                 }
             NavigationStack {
-                InfetchView()
+                InFetchView()
             }
                 .tabItem {
                     Label("Infetch", systemImage: "envelope")
