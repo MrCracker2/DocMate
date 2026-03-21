@@ -162,5 +162,8 @@ class AppViewModel {
     }
     
     var isGridView: Bool = true
-}
 
+    // MARK: - Tab Selection
+    // 0 = Home, 1 = InFetch, 2 = Browse
+    var selectedTab: Int = 0
+}

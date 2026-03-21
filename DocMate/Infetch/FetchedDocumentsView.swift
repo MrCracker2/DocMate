@@ -1,5 +1,5 @@
 //
-//  DocumentMetaDataView.swift
+//  FetchedDocumentsView.swift
 //  DocMate
 //
 //  Created by Naman Yadav on 20/03/26.
@@ -8,94 +8,86 @@
 import SwiftUI
 
 struct FetchedDocumentsView: View {
-    
-    var documents: [Document]
-    @Binding var selectedDocs: Set<UUID>
-    
-    @State private var goToMeta: Bool = false
-    
+
+    @Environment(AppViewModel.self) var appViewModel
+    @Bindable var vm: InFetchViewModel
+
     var body: some View {
-        
-        VStack(spacing: 16) {
-            
-            // MARK: Header
-            HStack(spacing: 12) {
-                Image(systemName: "chevron.left")
-                    .font(.headline)
-                
-                Text("InFetch")
-                    .font(.headline)
-                
-                Spacer()
-            }
-            .padding(.horizontal)
-            
-            // MARK: Documents Count
-            HStack {
-                Text("\(documents.count) Documents Found")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                
-                Spacer()
-            }
-            .padding(.horizontal)
-            
-            // MARK: List
-            ScrollView {
+        ZStack(alignment: .bottom) {
+
+            // MARK: Full screen scroll
+            ScrollView (showsIndicators:false){
                 VStack(spacing: 12) {
-                    
-                    ForEach(documents) { doc in
-                        
+                    ForEach(vm.mappedDocs) { doc in
+                        let fetched = vm.fetchedDocs.first { $0.name == doc.name }
+
                         DocumentRowView(
                             doc: doc,
-                            isSelected: selectedDocs.contains(doc.id)
+                            assetName: fetched?.assetName,
+                            previewText: fetched?.previewText,
+                            isSelected: vm.isSelected(doc.id)
                         )
                         .onTapGesture {
-                            toggleSelection(doc)
+                            vm.toggleSelection(doc.id)
                         }
                     }
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
+                .padding(.bottom, 90) // floating button ke liye space
             }
-            
-            Spacer()
-            
-            // MARK: Continue Button
-            Button(action: {
-                goToMeta = true
-            }) {
-                Text("Continue")
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(
-                        selectedDocs.isEmpty
-                        ? Color.gray.opacity(0.5)
-                        : Color.blue
-                    )
-                    .foregroundColor(.white)
-                    .cornerRadius(20)
+
+            // MARK: Floating Continue Button
+            Button {
+                vm.proceedToMeta(userId: appViewModel.user.id)
+            } label: {
+                HStack {
+                    Text("Continue")
+                        .fontWeight(.semibold)
+                    if !vm.selectedIds.isEmpty {
+                        Text("(\(vm.selectedIds.count))")
+                            .fontWeight(.regular)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(vm.selectedIds.isEmpty ? Color.gray.opacity(0.5) : Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(20)
+                .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
             }
-            .disabled(selectedDocs.isEmpty)
+            .disabled(vm.selectedIds.isEmpty)
             .padding(.horizontal)
-            .padding(.bottom)
+            .padding(.bottom, 24)
         }
-        .background(Color(.systemGray5))
-        .navigationDestination(isPresented: $goToMeta) {
-            DocumentMetaDataView(
-                selectedDocs: documents.filter { selectedDocs.contains($0.id) }
-            )
+        .background(Color(.systemGray5).ignoresSafeArea())
+        .navigationTitle("InFetch")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    if vm.selectedIds.count == vm.mappedDocs.count {
+                        vm.selectedIds.removeAll()
+                    } else {
+                        vm.selectedIds = Set(vm.mappedDocs.map { $0.id })
+                    }
+                } label: {
+                    Text(vm.selectedIds.count == vm.mappedDocs.count ? "Deselect All" : "Select All")
+                        .font(.subheadline)
+                }
+            }
         }
-    }
-    
-    // MARK: - Selection Logic
-    private func toggleSelection(_ doc: Document) {
-        if selectedDocs.contains(doc.id) {
-            selectedDocs.remove(doc.id)
-        } else {
-            selectedDocs.insert(doc.id)
+        .safeAreaInset(edge: .top) {
+            // Documents count — navigation bar ke neeche
+            HStack {
+                Text("\(vm.mappedDocs.count) Documents Found")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(Color(.systemGray5))
         }
     }
 }
-

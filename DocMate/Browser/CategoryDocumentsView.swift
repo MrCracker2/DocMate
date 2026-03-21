@@ -84,7 +84,7 @@ struct CategoryDocumentsView: View {
                 Spacer()
             } else {
                 if isGridView{
-                    ScrollView{
+                    ScrollView(showsIndicators:false){
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(/*filteredDocs*/ documents) { doc in
                                 NavigationLink(destination: DocumentDetailView(document: doc)) {

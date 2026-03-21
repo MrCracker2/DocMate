@@ -8,65 +8,28 @@
 import SwiftUI
 
 struct InFetchView: View {
-    
-    @Environment(AppViewModel.self) var viewModel
-    @AppStorage("hasSeenFetchOnboarding") var hasSeenOnboarding = false
-    
-    @State private var isFetching = false
-    @State private var showDocuments = false
-    @State private var selectedDocs: Set<UUID> = []
-    
-    var fetchedDocs: [Document] {
-        Array(viewModel.documents.prefix(3))
-    }
-    
+
+    @Environment(AppViewModel.self) var appViewModel
+    @State private var vm = InFetchViewModel()
+
     var body: some View {
-        
-        if isFetching {
+        switch vm.fetchState {
+
+        case .onboarding:
+            FetchHomeView {
+                vm.startFetching()
+            }
+
+        case .loading:
             FetchingView()
-        }
-        
-        else if showDocuments {
-            FetchedDocumentsView(
-                documents: fetchedDocs,
-                selectedDocs: $selectedDocs
-            )
-        }
-        
-        else if !hasSeenOnboarding {
-            FetchHomeView {
-                hasSeenOnboarding = true
-                isFetching = true
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    isFetching = false
-                    showDocuments = true
-                }
-            }
-        }
-        
-        else {
-            // Direct fetch (skip onboarding)
-            FetchHomeView {
-                isFetching = true
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    isFetching = false
-                    showDocuments = true
-                }
-            }
+
+        case .results:
+            // NavigationStack already ContentView mein hai
+            // isliye directly view daal do — apna NavigationStack mat banao
+            FetchedDocumentsView(vm: vm)
+
+        case .meta:
+            DocumentMetaDataView(vm: vm)
         }
     }
-    private func startFetching() {
-        isFetching = true
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            isFetching = false
-            showDocuments = true
-        }
-    }
-}
-#Preview {
-    InFetchView()
-        .environment(AppViewModel())
 }

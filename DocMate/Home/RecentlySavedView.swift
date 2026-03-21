@@ -17,7 +17,7 @@ struct RecentlySavedView: View {
     ]
     
     var body: some View {
-        ScrollView {
+        ScrollView (showsIndicators: false){
             LazyVGrid(columns: columns, spacing: 16) {
                 
                 ForEach(viewModel.recentDocuments) { doc in

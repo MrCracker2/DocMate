@@ -8,158 +8,231 @@
 import SwiftUI
 
 struct DocumentMetaDataView: View {
-    
-    @Environment(AppViewModel.self) var viewModel
-    
-    var selectedDocs: [Document]
-    
-    // MARK: - Per Document State
-    struct DocMeta {
-        var document: Document
-        var category: Category?
-        var expiryDate: Date = Date()
+
+    @Environment(AppViewModel.self) var appViewModel
+    @Bindable var vm: InFetchViewModel
+
+    @State private var fullscreenAsset: String? = nil
+
+    var allCategorized: Bool {
+        vm.docMetaList.allSatisfy { $0.category != nil }
     }
-    
-    @State private var docMetaList: [DocMeta] = []
-    
-    // MARK: - Init
-    init(selectedDocs: [Document]) {
-        self.selectedDocs = selectedDocs
-        _docMetaList = State(initialValue: selectedDocs.map {
-            DocMeta(document: $0)
-        })
-    }
-    
+
     var body: some View {
-        
-        VStack(spacing: 20) {
-            
-            // MARK: Header
-            Text("Add Details")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .padding(.top)
-            
-            // MARK: List
-            ScrollView {
+        ZStack(alignment: .bottom) {
+
+            ScrollView(showsIndicators:false){
                 VStack(spacing: 16) {
-                    
-                    ForEach(docMetaList.indices, id: \.self) { index in
-                        
-                        let doc = docMetaList[index].document
-                        
-                        VStack(spacing: 12) {
-                            
-                            // MARK: Document Name
-                            HStack {
-                                Text(doc.name)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                
-                                Spacer()
+                    ForEach($vm.docMetaList) { $meta in
+                        DocMetaCard(
+                            meta: $meta,
+                            categories: appViewModel.categories,
+                            onPreviewTap: {
+                                fullscreenAsset = meta.assetName
                             }
-                            
-                            // MARK: Category Picker
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Category")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                    
-                                    Text(docMetaList[index].category?.name ?? "Select Category")
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                }
-                                
-                                Spacer()
-                                
-                                Menu {
-                                    ForEach(viewModel.categories) { cat in
-                                        Button(cat.name) {
-                                            docMetaList[index].category = cat
-                                        }
-                                    }
-                                } label: {
-                                    Image(systemName: "chevron.down")
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(14)
-                            
-                            // MARK: Date Picker
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Expiry Date")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                    
-                                    Text(
-                                        docMetaList[index].expiryDate.formatted(date: .abbreviated, time: .omitted)
-                                    )
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                }
-                                
-                                Spacer()
-                                
-                                DatePicker(
-                                    "",
-                                    selection: $docMetaList[index].expiryDate,
-                                    displayedComponents: .date
-                                )
-                                .labelsHidden()
-                            }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(14)
-                        }
+                        )
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
+                    Spacer().frame(height: 90)
                 }
-                
-                // MARK: Save Button
-                Button(action: {
-                    saveDocuments()
-                }) {
-                    Text("Save Documents")
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(20)
-                }
-                .padding()
+                .padding(.top, 8)
             }
-            .background(Color(.systemGray5))
+            .background(Color(.systemGray5).ignoresSafeArea())
+
+            // Floating Save Button
+            Button {
+                vm.saveToMainModel(appViewModel: appViewModel)
+                vm.reset()
+                // Home tab pe switch karo
+                appViewModel.selectedTab = 0
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                    Text("Save \(vm.docMetaList.count) Document\(vm.docMetaList.count == 1 ? "" : "s")")
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(allCategorized ? Color.blue : Color.gray.opacity(0.4))
+                .foregroundColor(.white)
+                .cornerRadius(20)
+                .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+            }
+            .disabled(!allCategorized)
+            .padding(.horizontal)
+            .padding(.bottom, 24)
         }
-        
-        
-    }
-    
-    
-    
-    
-    
-    // MARK: - Save Logic
-    private func saveDocuments() {
-        for item in docMetaList {
-            
-            guard let category = item.category else { continue }
-            
-            let newDoc = Document(
-                name: item.document.name,
-                dueDate: item.expiryDate,
-                isPinned: false,
-                userId: viewModel.user.id,
-                categoryId: category.id,
-                createdAt: Date(),
-                fileType: item.document.fileType
-            )
-            
-            viewModel.documents.append(newDoc)
+        .navigationTitle("Add Details")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    vm.fetchState = .results
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left").fontWeight(.semibold)
+                        Text("Back")
+                    }
+                    .foregroundColor(.blue)
+                }
+            }
+        }
+        .fullScreenCover(item: Binding(
+            get: { fullscreenAsset.map { NamedAsset(name: $0) } },
+            set: { fullscreenAsset = $0?.name }
+        )) { asset in
+            LightboxView(assetName: asset.name)
         }
     }
 }
+
+// MARK: - Lightbox
+private struct NamedAsset: Identifiable {
+    var id: String { name }
+    let name: String
+}
+
+private struct LightboxView: View {
+    let assetName: String
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            if let uiImage = UIImage(named: assetName) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .padding(16)
+            }
+            VStack {
+                HStack {
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title)
+                            .foregroundColor(.white.opacity(0.85))
+                            .padding()
+                    }
+                }
+                Spacer()
+            }
+        }
+    }
+}
+
+// MARK: - Card
+private struct DocMetaCard: View {
+
+    @Binding var meta: InFetchViewModel.DocMeta
+    var categories: [Category]
+    var onPreviewTap: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+
+            // IMAGE — only this has tap gesture
+            ZStack(alignment: .bottomTrailing) {
+                if let name = meta.assetName, let img = UIImage(named: name) {
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 160)
+                        .clipped()
+                        .contentShape(Rectangle())
+                        .onTapGesture { onPreviewTap() }
+                } else {
+                    ZStack {
+                        Color(.systemGray4).frame(maxWidth: .infinity).frame(height: 160)
+                        VStack(spacing: 8) {
+                            Image(systemName: "doc.text").font(.largeTitle).foregroundColor(.secondary)
+                            Text("No Preview").font(.caption).foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                if meta.assetName != nil {
+                    Label("Tap to expand", systemImage: "arrow.up.left.and.arrow.down.right")
+                        .font(.caption2)
+                        .foregroundColor(.white)
+                        .padding(6)
+                        .background(.black.opacity(0.45))
+                        .clipShape(Capsule())
+                        .padding(8)
+                        .allowsHitTesting(false)
+                }
+            }
+            .clipShape(UnevenRoundedRectangle(
+                topLeadingRadius: 16, bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0, topTrailingRadius: 16
+            ))
+
+            // DETAILS — no tap gestures
+            VStack(spacing: 12) {
+
+                HStack {
+                    Image(systemName: "doc.fill").foregroundColor(.blue).frame(width: 20)
+                    Text(meta.document.name)
+                        .font(.subheadline).fontWeight(.semibold).lineLimit(1)
+                    Spacer()
+                }
+
+                Divider()
+
+                HStack {
+                    Image(systemName: "folder.fill").foregroundColor(.orange).frame(width: 20)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Category").font(.caption).foregroundColor(.gray)
+                        Text(meta.category?.name ?? "Select Category")
+                            .font(.subheadline).fontWeight(.medium)
+                            .foregroundColor(meta.category == nil ? .gray : .primary)
+                    }
+                    Spacer()
+                    Menu {
+                        ForEach(categories) { cat in
+                            Button {
+                                meta.category = cat
+                            } label: {
+                                Label(cat.name, systemImage: cat.sfSymbol)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(meta.category == nil ? "Select" : "Change").font(.caption)
+                            Image(systemName: "chevron.up.chevron.down").font(.caption)
+                        }
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .background(Color.blue.opacity(0.1))
+                        .clipShape(Capsule())
+                    }
+                }
+
+                Divider()
+
+                HStack {
+                    Image(systemName: "calendar.badge.clock").foregroundColor(.red).frame(width: 20)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Expiry Date").font(.caption).foregroundColor(.gray)
+                        Text(meta.expiryDate.formatted(date: .abbreviated, time: .omitted))
+                            .font(.subheadline).fontWeight(.medium)
+                    }
+                    Spacer()
+                    DatePicker("", selection: $meta.expiryDate, displayedComponents: .date)
+                        .labelsHidden()
+                }
+            }
+            .padding(16)
+            .background(Color(.systemGray6))
+            .clipShape(UnevenRoundedRectangle(
+                topLeadingRadius: 0, bottomLeadingRadius: 16,
+                bottomTrailingRadius: 16, topTrailingRadius: 0
+            ))
+        }
+        .shadow(color: .black.opacity(0.07), radius: 6, x: 0, y: 3)
+    }
+}
+
+

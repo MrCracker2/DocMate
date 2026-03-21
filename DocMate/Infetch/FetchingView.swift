@@ -11,7 +11,6 @@ struct FetchingView: View {
     var body: some View {
         VStack(spacing: 16) {
             ProgressView()
-            
             Text("Fetching Document from Inbox")
                 .font(.subheadline)
                 .foregroundColor(.gray)

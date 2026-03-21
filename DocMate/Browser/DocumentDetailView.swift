@@ -21,7 +21,7 @@ struct DocumentDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators:false) {
             VStack(alignment: .leading, spacing: 16) {
 
                 // MARK: Preview

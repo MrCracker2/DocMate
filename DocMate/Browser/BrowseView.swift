@@ -24,7 +24,7 @@ struct BrowseView: View {
     let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators:false) {
             VStack(alignment: .leading, spacing: 24) {
 
                 // MARK: Categories Section

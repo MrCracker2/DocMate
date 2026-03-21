@@ -7,28 +7,30 @@
 import SwiftUI
 
 struct ContentView: View {
+
+    @Environment(AppViewModel.self) var viewModel
+
     var body: some View {
-        TabView{
+        @Bindable var vm = viewModel
+
+        TabView(selection: $vm.selectedTab) {
             NavigationStack {
                 HomeView()
             }
-                .tabItem {
-                    Label("Home", systemImage: "house")
-                }
+            .tabItem { Label("Home", systemImage: "house") }
+            .tag(0)
+
             NavigationStack {
                 AddMailAccountView()
             }
-            .tabItem {
-                Label("Infetch", systemImage: "envelope")
-                }
+            .tabItem { Label("Infetch", systemImage: "envelope") }
+            .tag(1)
+
             NavigationStack {
                 BrowseView()
             }
-            .tabItem {
-                    Label("Browser", systemImage: "folder")
-                }
-            
-                
+            .tabItem { Label("Browser", systemImage: "folder") }
+            .tag(2)
         }
     }
 }
