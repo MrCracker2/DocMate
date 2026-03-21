@@ -20,7 +20,7 @@ struct HomeView: View {
     ]
     
     let rows = [
-        GridItem(.fixed(160))
+        GridItem(.flexible())
     ]
     
     // MARK: Date Formatter
