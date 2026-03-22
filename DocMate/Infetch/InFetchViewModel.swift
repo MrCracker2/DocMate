@@ -20,13 +20,13 @@ class InFetchViewModel {
 
     var fetchState: FetchState = .onboarding
 
-    // MARK: - Fetched Documents (InFetch ka apna model)
+    // MARK: - Fetched Documents
     var fetchedDocs: [FetchedDocument] = []
 
-    // MARK: - Selection (results screen pe)
+    // MARK: - Selection
     var selectedIds: Set<UUID> = []
 
-    // MARK: - Mapped Documents (stable UUIDs — ek baar bante hain)
+    // MARK: - Mapped Documents
     private(set) var mappedDocs: [Document] = []
 
     // MARK: - Selected Documents for MetaData screen
@@ -34,7 +34,7 @@ class InFetchViewModel {
         mappedDocs.filter { selectedIds.contains($0.id) }
     }
 
-    // MARK: - Per-Document Meta (MetaData screen ke liye)
+    // MARK: - Per-Document Meta
     struct DocMeta: Identifiable {
         let id: UUID
         var document: Document
@@ -45,18 +45,13 @@ class InFetchViewModel {
 
     var docMetaList: [DocMeta] = []
 
-    // MARK: - Mail Credentials (AddMailAccountView se)
+    // MARK: - Mail Credentials
     var email: String = ""
     var password: String = ""
-
-    // MARK: - AppStorage key
-    @ObservationIgnored
-    @AppStorage("hasSeenFetchOnboarding") var hasSeenOnboarding = false
 
     // MARK: - Actions
 
     func startFetching() {
-        hasSeenOnboarding = true
         fetchState = .loading
         fetchDocuments()
     }
@@ -73,13 +68,10 @@ class InFetchViewModel {
         selectedIds.contains(docId)
     }
 
- 
     func proceedToMeta(userId: UUID) {
-    
         docMetaList = mappedDocs
             .filter { selectedIds.contains($0.id) }
             .compactMap { doc in
-                // fetchedDoc dhoondo assetName ke liye
                 let fetched = fetchedDocs.first { $0.name == doc.name }
                 return DocMeta(
                     id: doc.id,
@@ -92,7 +84,6 @@ class InFetchViewModel {
         fetchState = .meta
     }
 
-    /// - Parameter appViewModel: Main data model — sirf yahaan touch hoga
     func saveToMainModel(appViewModel: AppViewModel) {
         for meta in docMetaList {
             guard let category = meta.category else { continue }
@@ -113,6 +104,7 @@ class InFetchViewModel {
     }
 
     func reset() {
+        // .onboarding pe wapas — InFetchView khud decide karega dikhana kya hai
         fetchState = .onboarding
         fetchedDocs = []
         selectedIds = []
@@ -120,7 +112,7 @@ class InFetchViewModel {
         docMetaList = []
     }
 
-    // MARK: - Mock Fetch (real implementation mein email API call hoga)
+    // MARK: - Mock Fetch
     private func fetchDocuments() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
             guard let self else { return }

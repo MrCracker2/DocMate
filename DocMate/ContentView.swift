@@ -9,6 +9,7 @@ import SwiftUI
 struct ContentView: View {
 
     @Environment(AppViewModel.self) var viewModel
+    @AppStorage("hasAddedMail") var hasAddedMail = false
 
     var body: some View {
         @Bindable var vm = viewModel
@@ -21,7 +22,11 @@ struct ContentView: View {
             .tag(0)
 
             NavigationStack {
-                AddMailAccountView()
+                if hasAddedMail {
+                    InFetchView()
+                } else {
+                    AddMailAccountView()
+                }
             }
             .tabItem { Label("Infetch", systemImage: "envelope") }
             .tag(1)

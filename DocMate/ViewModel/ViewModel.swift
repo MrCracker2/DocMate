@@ -94,20 +94,6 @@ class AppViewModel {
         Tag(name: "Work",      color: "blue"),
         Tag(name: "Personal",  color: "green")
     ]
-    
-    var documentTags:[DocumentTag] = []
-
-    init() {
-        
-        documentTags = [
-            DocumentTag(documentId: documents[0].id, tagId: tags[0].id),
-            DocumentTag(documentId: documents[1].id, tagId: tags[1].id),
-            DocumentTag(documentId: documents[2].id, tagId: tags[2].id),
-            DocumentTag(documentId: documents[3].id, tagId: tags[5].id),
-            DocumentTag(documentId: documents[4].id, tagId: tags[6].id),
-            DocumentTag(documentId: documents[5].id, tagId: tags[7].id)
-        ]
-    }
 
     var user: User = User(
         name: "Sanskaar Yadav",
@@ -152,17 +138,6 @@ class AppViewModel {
     func deleteDocument(_ document: Document) {
         documents.removeAll { $0.id == document.id }
     }
-    func documents(for tag: Tag) -> [Document] {
-        
-        let docIds = documentTags
-            .filter { $0.tagId == tag.id }
-            .map { $0.documentId }
-        
-        return documents.filter { docIds.contains($0.id) }
-    }
-    
-    var isGridView: Bool = true
-
     // MARK: - Tab Selection
     // 0 = Home, 1 = InFetch, 2 = Browse
     var selectedTab: Int = 0

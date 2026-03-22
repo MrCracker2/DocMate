@@ -11,21 +11,28 @@ struct InFetchView: View {
 
     @Environment(AppViewModel.self) var appViewModel
     @State private var vm = InFetchViewModel()
+    @AppStorage("hasSeenOnboarding") var hasSeenOnboarding = false
 
     var body: some View {
         switch vm.fetchState {
 
         case .onboarding:
-            FetchHomeView {
-                vm.startFetching()
+            if hasSeenOnboarding {
+                // Pehle dekh chuka hai — seedha fetch
+                FetchingView()
+                    .onAppear { vm.startFetching() }
+            } else {
+                // Pehli baar — FetchHomeView dikhao
+                FetchHomeView {
+                    hasSeenOnboarding = true
+                    vm.startFetching()
+                }
             }
 
         case .loading:
             FetchingView()
 
         case .results:
-            // NavigationStack already ContentView mein hai
-            // isliye directly view daal do — apna NavigationStack mat banao
             FetchedDocumentsView(vm: vm)
 
         case .meta:
