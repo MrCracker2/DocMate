@@ -269,10 +269,10 @@ private extension DocMetaCard {
                 if let cat = meta.category {
                     Text(cat.name)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(.blue)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 2)
-                        .background(Color.green.opacity(0.1))
+                        .background(Color.blue.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 5))
                 } else {
                     Text("Not selected")

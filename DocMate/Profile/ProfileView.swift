@@ -100,7 +100,9 @@ struct ProfileView: View {
                         dismiss()
                     }label: {
                         Image(systemName: "chevron.left")
+                            .fontWeight(.semibold)
                     }
+                    .buttonStyle(.plain)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Edit") {

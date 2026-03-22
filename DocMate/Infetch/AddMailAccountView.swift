@@ -19,76 +19,95 @@ struct AddMailAccountView: View {
     }
 
     var body: some View {
-        VStack(spacing: 24) {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 24) {
 
-            HStack {
-                Spacer()
+                Text("Infetch")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+
+                Spacer().frame(height: 8)
+
+                VStack(spacing: 16) {
+                    Image(systemName: "envelope.fill")
+                        .font(.system(size: 50))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.blue, .cyan],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    Text("Add Mail Account")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity)
+
+                Spacer().frame(height: 8)
+
+                VStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Email Address")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        TextField("user@example.com", text: $email)
+                            .padding()
+                            .background(Color(.secondarySystemGroupedBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Password")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        SecureField("Enter password", text: $password)
+                            .padding()
+                            .background(Color(.secondarySystemGroupedBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                }
+
+                Text("Sign in to your mail account provider")
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .padding()
+            .padding(.top, 8)
+        }
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     hasAddedMail = true
                     goNext = true
                 } label: {
-                    Text("Next")
-                        .padding()
-                        .fontWeight(.semibold)
-                        .background(isValid ? Color.blue : Color.gray.opacity(0.5))
-                        .foregroundStyle(.white)
-                        .cornerRadius(40)
-                }
-            }
-
-            Text("Infetch")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            Spacer().frame(height: 20)
-
-            VStack(spacing: 16) {
-                Image(systemName: "envelope.fill")
-                    .font(.system(size: 50))
-                    .foregroundStyle(
-                        LinearGradient(colors: [.blue, .cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
-                    )
-                Text("Add Mail Account")
-                    .font(.title3)
+                    HStack(spacing: 4) {
+                        Text("Next")
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .padding()
                     .fontWeight(.semibold)
-            }
-
-            VStack(spacing: 16) {
-                VStack(alignment: .leading) {
-                    Text("Email Address").font(.subheadline)
-                    TextField("user@example.com", text: $email)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(16)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
+                    .foregroundStyle(isValid ? .blue : Color(.tertiaryLabel))
                 }
-                VStack(alignment: .leading) {
-                    Text("Password").font(.subheadline)
-                    SecureField("Enter password", text: $password)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(16)
-                }
+                .buttonStyle(.plain)
+                .disabled(!isValid)
+                .animation(.easeInOut(duration: 0.15), value: isValid)
             }
-
-            Text("Sign in to your mail account provider")
-                .font(.footnote)
-                .foregroundColor(.gray)
-
-            Spacer()
         }
-        .padding()
-        .background(Color(.systemGray5))
-        .ignoresSafeArea(.keyboard , edges: .bottom)
         .navigationDestination(isPresented: $goNext) {
             InFetchView()
         }
     }
 }
-
 #Preview {
-    NavigationStack { AddMailAccountView() }
+    NavigationStack{
+        AddMailAccountView()
+    }
 }
