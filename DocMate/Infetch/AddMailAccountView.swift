@@ -82,6 +82,7 @@ struct AddMailAccountView: View {
         }
         .padding()
         .background(Color(.systemGray5))
+        .ignoresSafeArea(.keyboard , edges: .bottom)
         .navigationDestination(isPresented: $goNext) {
             InFetchView()
         }
