@@ -14,12 +14,12 @@ struct ContentView: View {
     var body: some View {
         @Bindable var vm = viewModel
 
-        TabView(selection: $vm.selectedTab) {
+        TabView() {
             NavigationStack {
                 HomeView()
             }
             .tabItem { Label("Home", systemImage: "house") }
-            .tag(0)
+            
 
             NavigationStack {
                 if hasAddedMail {
@@ -29,13 +29,13 @@ struct ContentView: View {
                 }
             }
             .tabItem { Label("Infetch", systemImage: "envelope") }
-            .tag(1)
+            
 
             NavigationStack {
                 BrowseView()
             }
             .tabItem { Label("Browser", systemImage: "folder") }
-            .tag(2)
+            
         }
     }
 }
