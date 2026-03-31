@@ -1,8 +1,8 @@
 //
 //  DataModel.swift
-//  DocMate
+//  DocMateDummy
 //
-//  Created by Shashwat kumar on 19/03/26.
+//  Created by Naman Yadav on 23/03/26.
 //
 
 import Foundation
@@ -25,7 +25,8 @@ struct User: Identifiable {
     }
 }
 
-struct Document: Identifiable, Hashable {
+// MARK: - Document
+struct Document: Identifiable {
     let id         : UUID
     var name       : String
     var dueDate    : Date?
@@ -34,30 +35,45 @@ struct Document: Identifiable, Hashable {
     var categoryId : UUID
     var createdAt  : Date
     var fileType   : DocumentFileType
-    var fileName   : String?
-    var assetName: String?
+    var fileURL: URL?           // actual store PDf/Image
+    var thumbnailData: Data?    // preview Image
+    var fileName      : String?
+    var assetName     : String?
+    var subCategoryId : UUID?
 
-    init(name: String,
-         dueDate: Date? = nil,
-         isPinned: Bool = false,
-         userId: UUID,
-         categoryId: UUID,
-         createdAt: Date = Date(),
-         fileType: DocumentFileType = .pdf,
-         fileName: String? = nil,
-         assetName: String? = nil
+    init(
+        name          : String,
+        dueDate       : Date?            = nil,
+        isPinned      : Bool             = false,
+        userId        : UUID,
+        categoryId    : UUID,
+        createdAt     : Date             = Date(),
+        fileType      : DocumentFileType = .pdf,
+        fileURL       : URL?             = nil,
+        thumbnailData : Data?            = nil,
+        fileName      : String?          = nil,
+        assetName     : String?          = nil,
+        subCategoryId : UUID?            = nil
     ) {
-        self.id         = UUID()
-        self.name       = name
-        self.dueDate    = dueDate
-        self.isPinned   = isPinned
-        self.userId     = userId
-        self.categoryId = categoryId
-        self.createdAt  = createdAt
-        self.fileType   = fileType
-        self.fileName   = fileName
-        self.assetName  = assetName
+        self.id            = UUID()
+        self.name          = name
+        self.dueDate       = dueDate
+        self.isPinned      = isPinned
+        self.userId        = userId
+        self.categoryId    = categoryId
+        self.createdAt     = createdAt
+        self.fileType      = fileType
+        self.fileURL       = fileURL
+        self.thumbnailData = thumbnailData
+        self.fileName      = fileName
+        self.assetName     = assetName
+        self.subCategoryId = subCategoryId
     }
+}
+
+extension Document: Hashable {
+    static func == (lhs: Document, rhs: Document) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
 // MARK: - Document File Type
@@ -73,22 +89,38 @@ enum DocumentFileType: String, Codable, Hashable {
     }
 }
 
-// MARK: - Category  (Hashable for Picker)
-struct Category: Identifiable, Hashable {
+// MARK: - SubCategory
+struct SubCategory: Identifiable, Hashable {
     let id      : UUID
     var name    : String
     var sfSymbol: String
-    
+
     init(name: String, sfSymbol: String) {
         self.id       = UUID()
         self.name     = name
         self.sfSymbol = sfSymbol
     }
-    
-    init(name: String, sfSymbol: String, fixedId: UUID) {
-        self.id       = fixedId
-        self.name     = name
-        self.sfSymbol = sfSymbol
+}
+
+// MARK: - Category
+struct Category: Identifiable, Hashable {
+    let id            : UUID
+    var name          : String
+    var sfSymbol      : String
+    var subCategories : [SubCategory]
+
+    init(name: String, sfSymbol: String, subCategories: [SubCategory] = []) {
+        self.id            = UUID()
+        self.name          = name
+        self.sfSymbol      = sfSymbol
+        self.subCategories = subCategories
+    }
+
+    init(name: String, sfSymbol: String, fixedId: UUID, subCategories: [SubCategory] = []) {
+        self.id            = fixedId
+        self.name          = name
+        self.sfSymbol      = sfSymbol
+        self.subCategories = subCategories
     }
 }
 
