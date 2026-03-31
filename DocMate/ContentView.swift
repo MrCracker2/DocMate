@@ -15,6 +15,24 @@ struct ContentView: View {
     @State private var showPhotoPicker = false
 
     var body: some View {
+        @Bindable var vm = viewModel
+
+        TabView() {
+            NavigationStack {
+                HomeView()
+            }
+            .tabItem { Label("Home", systemImage: "house") }
+            
+
+            NavigationStack {
+                if hasAddedMail {
+                    InFetchView()
+                } else {
+                    AddMailAccountView()
+                }
+            }
+            .tabItem { Label("Infetch", systemImage: "envelope") }
+            
 
         TabView() {
             
