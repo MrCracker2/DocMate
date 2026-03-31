@@ -1,9 +1,10 @@
 //
 //  ContentView.swift
-//  DocMate
+//  DocMateDummy
 //
-//  Created by Shashwat kumar on 19/03/26.
+//  Created by Naman Yadav on 23/03/26.
 //
+
 import SwiftUI
 
 struct ContentView: View {
@@ -15,24 +16,6 @@ struct ContentView: View {
     @State private var showPhotoPicker = false
 
     var body: some View {
-        @Bindable var vm = viewModel
-
-        TabView() {
-            NavigationStack {
-                HomeView()
-            }
-            .tabItem { Label("Home", systemImage: "house") }
-            
-
-            NavigationStack {
-                if hasAddedMail {
-                    InFetchView()
-                } else {
-                    AddMailAccountView()
-                }
-            }
-            .tabItem { Label("Infetch", systemImage: "envelope") }
-            
 
         TabView() {
             
