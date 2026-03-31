@@ -105,6 +105,44 @@ class AppViewModel {
     )
 
     var genderOptions: [String] = ["Male", "Female", "Other"]
+    
+    var inFetch: [infetch] = [infetch(
+        name: "Electricity Bill",
+        dueDate:  Date().addingTimeInterval(86400 * 3),
+        SubjectName: "BSES",
+        amount: 1200,
+        inFetchCatgogry: .bill),
+                              
+        infetch(
+            name: "Insurance Policy",
+            dueDate: Date().addingTimeInterval(86400 * 10),
+            SubjectName: "LIC",
+            amount: nil,
+            inFetchCatgogry: .insurance
+        ),
+         infetch(
+            name: "Credit Card Bill",
+            dueDate:  Date().addingTimeInterval(86400 * 7),
+            SubjectName: "LOAN",
+            amount: 4700,
+            inFetchCatgogry: .bill),
+                              
+                              
+            infetch(
+                name: "Home Loan",
+                dueDate:  Date().addingTimeInterval(86400 * 7),
+                SubjectName: "LOAN",
+                amount: 12550,
+                inFetchCatgogry: .bill),
+                              
+            infetch(
+                name: "Netflix Bill",
+                dueDate:  Date().addingTimeInterval(86400 * 7),
+                SubjectName: "Bill",
+                amount: 2500,
+                inFetchCatgogry: .bill),
+    ]
+
 
     // MARK: - Computed
     var expiringDocuments: [Document] {
@@ -141,4 +179,37 @@ class AppViewModel {
     // MARK: - Tab Selection
     // 0 = Home, 1 = InFetch, 2 = Browse
     var selectedTab: Int = 0
+    
+    func importInfetchToDocuments() {
+        
+        for doc in inFetch {
+            
+            let newDoc = Document(
+                name: doc.name,
+                dueDate: doc.dueDate,
+                isPinned: false,
+                userId: user.id,
+                categoryId: mapCategory(doc.inFetchCatgogry),
+                fileType: .pdf
+            )
+            
+            documents.append(newDoc)
+        }
+        
+        // clear after import
+        inFetch.removeAll()
+    }
+    func mapCategory(_ cat: InfetchCategory) -> UUID {
+        
+        switch cat {
+        case .bill:
+            return AppViewModel.billsId
+        case .insurance, .policy:
+            return AppViewModel.policiesId
+        case .finance:
+            return AppViewModel.financeId
+        default:
+            return AppViewModel.otherId
+        }
+    }
 }

@@ -1,9 +1,10 @@
 //
 //  HomeView.swift
-//  DocMate
+//  DocMateDummy
 //
-//  Created by Shashwat kumar on 19/03/26.
+//  Created by Naman Yadav on 23/03/26.
 //
+
 
 import SwiftUI
 
@@ -71,7 +72,14 @@ struct HomeView: View {
                             }
                         }
                     }
-                    
+                    // MARK: Your Bills
+
+                    if !viewModel.inFetch.isEmpty {
+                        
+                        YourBillsSection(
+                            bills: viewModel.inFetch.filter { $0.inFetchCatgogry == .bill }
+                        )
+                    }
                     
                     // MARK: Recently Saved
                     
@@ -85,7 +93,6 @@ struct HomeView: View {
                         if viewModel.recentDocuments.count > 4 {
                             NavigationLink(destination: RecentlySavedView()) {
                                 Image(systemName: "chevron.right")
-                                    .font(.subheadline)
                                     .foregroundColor(.gray)
                             }
                         }
@@ -151,27 +158,15 @@ struct HomeView: View {
             .navigationTitle("Home")
             
             .toolbar {
-                
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    
                     Button {
-                        print("Add tapped")
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    Button{
                         showProfileView = true
                     } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(width: 40, height: 37)
-                            
-                            Text(viewModel.user.initials)
-                                .font(.caption)
-                                .fontWeight(.bold)
-                        }
+                        Text(viewModel.user.initials)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.blue)
                     }
+                    .buttonStyle(.automatic)
                 }
             }
         
@@ -184,6 +179,8 @@ struct HomeView: View {
 // MARK: Preview
 
 #Preview {
-    HomeView()
-        .environment(AppViewModel())
+    NavigationStack{
+        HomeView()
+            .environment(AppViewModel())
+    }
 }

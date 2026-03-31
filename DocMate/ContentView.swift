@@ -9,33 +9,30 @@ import SwiftUI
 struct ContentView: View {
 
     @Environment(AppViewModel.self) var viewModel
-    @AppStorage("hasAddedMail") var hasAddedMail = false
+
+    @State private var selectedTab     = 0
+    @State private var showScanner     = false
+    @State private var showPhotoPicker = false
 
     var body: some View {
-        @Bindable var vm = viewModel
 
-        TabView(selection: $vm.selectedTab) {
+        TabView() {
+            
             NavigationStack {
                 HomeView()
             }
-            .tabItem { Label("Home", systemImage: "house") }
-            .tag(0)
+                .tabItem { Label("Home", systemImage: "house") }
+                
 
-            NavigationStack {
-                if hasAddedMail {
-                    InFetchView()
-                } else {
-                    AddMailAccountView()
-                }
+            NavigationStack{ EmptyView()}
+            .tabItem{
+                Label("Add" , systemImage: "document.badge.plus")
+                
             }
-            .tabItem { Label("Infetch", systemImage: "envelope") }
-            .tag(1)
 
-            NavigationStack {
-                BrowseView()
-            }
-            .tabItem { Label("Browser", systemImage: "folder") }
-            .tag(2)
+            NavigationStack { BrowseView() }
+                .tabItem { Label("Browse", systemImage: "folder") }
+                
         }
     }
 }
