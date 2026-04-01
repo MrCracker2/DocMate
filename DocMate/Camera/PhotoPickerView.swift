@@ -26,14 +26,14 @@ struct PhotoPickerView: View {
                     .font(.headline)
             }
         }
-        .onChange(of: selectedItem) { _, newItem in
-            guard let newItem else { return }
+        .onChange(of: selectedItem) { _, newItem in //Runs when user selects an image
+            guard let newItem else { return }       // If nothing selected → stop
             
-            Task {
-                if let data = try? await newItem.loadTransferable(type: Data.self),
-                   let image = UIImage(data: data) {
+            Task {                                                                  // Runs async code (important because loading image takes time)
+                if let data = try? await newItem.loadTransferable(type: Data.self),  // Fetches image data from photo library
+                   let image = UIImage(data: data) {        // convert raw data -> usable image
                     
-                    onImagePicked(image)
+                    onImagePicked(image)    // claing the fun
                     dismiss()
                 }
             }

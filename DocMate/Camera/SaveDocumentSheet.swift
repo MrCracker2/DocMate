@@ -1,3 +1,4 @@
+//2
 import SwiftUI
 
 // MARK: - Save Document Sheet (Root — folder picker)
@@ -10,11 +11,11 @@ struct SaveDocumentSheet: View {
 
     @State private var documentName    : String
     @State private var path            : [Category] = []
-    @State private var searchText      : String = ""
-    @State private var viewMode        : ViewMode = .icons
-    @State private var showNewCategory : Bool = false
+    @State private var searchText      : String = ""  // Searcable
+    @State private var viewMode        : ViewMode = .icons  // grid view or list view
+    @State private var showNewCategory : Bool = false       // new folder sheet
 
-    init(images: [UIImage], isScanned: Bool) {
+    init(images: [UIImage], isScanned: Bool) {          // set default name and date
         self.images    = images
         self.isScanned = isScanned
 

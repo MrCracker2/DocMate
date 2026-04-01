@@ -34,7 +34,7 @@ struct Document: Identifiable {
     var userId     : UUID
     var categoryId : UUID
     var createdAt  : Date
-    var fileType   : DocumentFileType
+    var fileType   : DocumentFileType  // image or PDF
     var fileName   : String?
     var assetName  : String?
 
@@ -72,7 +72,7 @@ enum DocumentFileType: String, Codable, Hashable {
     case image
     case pdf
 
-    var sfSymbol: String {
+    var sfSymbol: String {              // computed property it depended on file type ,no need to store it
         switch self {
         case .image: return "photo.fill"
         case .pdf:   return "doc.fill"

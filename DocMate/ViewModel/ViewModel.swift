@@ -96,7 +96,7 @@ class AppViewModel {
                 SubjectName: "Bill", amount: 2500, inFetchCatgogry: .bill),
     ]
 
-    var selectedTab: Int = 0
+//    var selectedTab: Int = 0
 
     // MARK: - Computed
     var expiringDocuments: [Document] {
