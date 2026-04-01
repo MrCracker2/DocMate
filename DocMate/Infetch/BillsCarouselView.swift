@@ -1,10 +1,3 @@
-//
-//  BillsCarouselView.swift
-//  DocMate
-//
-//  Created by Naman Yadav on 31/03/26.
-//
-
 
 //
 //  BillsCarouselView.swift

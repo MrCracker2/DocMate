@@ -160,7 +160,7 @@ struct DocumentDetailView: View {
     @ViewBuilder
     private var inlinePreview: some View {
         if let fileURL = document.fileURL {
-            // ✅ Scanned / Photo documents — load from saved PDF (memory safe, multi-page)
+            //  Scanned / Photo documents — load from saved PDF (memory safe, multi-page)
             PDFKitView(url: fileURL)
                 .frame(height: 460)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -168,7 +168,7 @@ struct DocumentDetailView: View {
 
         } else if let assetName = document.assetName,
                   let image = UIImage(named: assetName) {
-            // ✅ Seeded demo documents — load from asset catalog
+            //  Seeded demo documents — load from asset catalog
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
@@ -176,7 +176,7 @@ struct DocumentDetailView: View {
                 .padding(.horizontal)
 
         } else {
-            // ✅ Fallback placeholder
+            //  Fallback placeholder
             previewPlaceholder
                 .padding(.horizontal)
         }

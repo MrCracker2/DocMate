@@ -1,10 +1,3 @@
-//
-//  AllBillsCard.swift
-//  DocMate
-//
-//  Created by Naman Yadav on 31/03/26.
-//
-
 
 //
 //  AllBillsCard.swift
