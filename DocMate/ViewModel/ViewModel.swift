@@ -32,29 +32,54 @@ class AppViewModel {
     ]
 
     var documents: [Document] = [
-        Document(name: "Passport", dueDate: Date().addingTimeInterval(86400 * 1),
-                 isPinned: true, userId: UUID(), categoryId: AppViewModel.identityId,
-                 createdAt: Date(), assetName: "passport"),
+        Document(
+            name: "Passport",
+            dueDate: Date().addingTimeInterval(86400 * 1),
+            isPinned: true,
+            userId: UUID(),
+            categoryId: AppViewModel.identityId,
+            createdAt: Date(),
+            assetName: "passport"),
 
-        Document(name: "Electric Bill", dueDate: Date().addingTimeInterval(86400 * 2),
-                 isPinned: true, userId: UUID(), categoryId: AppViewModel.billsId,
-                 createdAt: Date(), assetName: "electric"),
+        Document(
+            name: "Electric Bill",
+            dueDate: Date().addingTimeInterval(86400 * 2),
+            isPinned: true,
+            userId: UUID(),
+            categoryId: AppViewModel.billsId,
+            createdAt: Date(), assetName: "electric"),
 
-        Document(name: "Water Bill", dueDate: Date().addingTimeInterval(86400 * 3),
-                 isPinned: true, userId: UUID(), categoryId: AppViewModel.billsId,
-                 createdAt: Date(), assetName: "waterBill"),
+        Document(
+            name: "Water Bill",
+            dueDate: Date().addingTimeInterval(86400 * 3),
+            isPinned: true,
+            userId: UUID(),
+            categoryId: AppViewModel.billsId,
+            createdAt: Date(), assetName: "waterBill"),
 
-        Document(name: "Car Insurance", dueDate: Date().addingTimeInterval(86400 * 30),
-                 isPinned: true, userId: UUID(), categoryId: AppViewModel.vehicleId,
-                 createdAt: Date(), assetName: "Insurance"),
+        Document(
+            name: "Car Insurance",
+            dueDate: Date().addingTimeInterval(86400 * 30),
+            isPinned: true,
+            userId: UUID(),
+            categoryId: AppViewModel.vehicleId,
+            createdAt: Date(), assetName: "Insurance"),
 
-        Document(name: "Invoice", dueDate: Date().addingTimeInterval(86400 * 2),
-                 isPinned: false, userId: UUID(), categoryId: AppViewModel.financeId,
-                 createdAt: Date(), assetName: "invoice"),
+        Document(
+            name: "Invoice",
+            dueDate: Date().addingTimeInterval(86400 * 2),
+            isPinned: false,
+            userId: UUID(),
+            categoryId: AppViewModel.financeId,
+            createdAt: Date(), assetName: "invoice"),
 
-        Document(name: "Marksheet Class 12", dueDate: nil,
-                 isPinned: false, userId: UUID(), categoryId: AppViewModel.educationId,
-                 createdAt: Date(), assetName: "marksheet"),
+        Document(
+            name: "Marksheet Class 12",
+            dueDate: nil,
+            isPinned: false,
+            userId: UUID(),
+            categoryId: AppViewModel.educationId,
+            createdAt: Date(), assetName: "marksheet"),
     ]
 
     var tags: [Tag] = [
@@ -80,20 +105,40 @@ class AppViewModel {
     var genderOptions: [String] = ["Male", "Female", "Other"]
 
     var inFetch: [Infetch] = [
-        Infetch(name: "Electricity Bill", dueDate: Date().addingTimeInterval(86400 * 3),
-                SubjectName: "BSES", amount: 1200, inFetchCatgogry: .bill),
+        Infetch(
+            name: "Electricity Bill",
+            dueDate: Date().addingTimeInterval(86400 * 3),
+            SubjectName: "BSES",
+            amount: 1200,
+            inFetchCatgogry: .bill),
 
-        Infetch(name: "Insurance Policy", dueDate: Date().addingTimeInterval(86400 * 10),
-                SubjectName: "LIC", amount: nil, inFetchCatgogry: .insurance),
+        Infetch(
+            name: "Insurance Policy",
+            dueDate: Date().addingTimeInterval(86400 * 10),
+            SubjectName: "LIC",
+            amount: nil,
+            inFetchCatgogry: .insurance),
 
-        Infetch(name: "Credit Card Bill", dueDate: Date().addingTimeInterval(86400 * 7),
-                SubjectName: "LOAN", amount: 4700, inFetchCatgogry: .bill),
+        Infetch(
+            name: "Credit Card Bill",
+            dueDate: Date().addingTimeInterval(86400 * 7),
+            SubjectName: "LOAN",
+            amount: 4700,
+            inFetchCatgogry: .bill),
 
-        Infetch(name: "Home Loan", dueDate: Date().addingTimeInterval(86400 * 7),
-                SubjectName: "LOAN", amount: 12550, inFetchCatgogry: .bill),
+        Infetch(
+            name: "Home Loan",
+            dueDate: Date().addingTimeInterval(86400 * 7),
+            SubjectName: "LOAN",
+            amount: 12550,
+            inFetchCatgogry: .bill),
 
-        Infetch(name: "Netflix Bill", dueDate: Date().addingTimeInterval(86400 * 7),
-                SubjectName: "Bill", amount: 2500, inFetchCatgogry: .bill),
+        Infetch(
+            name: "Netflix Bill",
+            dueDate: Date().addingTimeInterval(86400 * 7),
+            SubjectName: "Bill",
+            amount: 2500,
+            inFetchCatgogry: .bill),
     ]
 
     var selectedTab: Int = 0

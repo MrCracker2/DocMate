@@ -35,7 +35,6 @@ struct Document: Identifiable {
     var categoryId : UUID
     var createdAt  : Date
     var fileType   : DocumentFileType
-    var fileName   : String?
     var assetName  : String?
 
     init(
@@ -46,7 +45,6 @@ struct Document: Identifiable {
         categoryId : UUID,
         createdAt  : Date             = Date(),
         fileType   : DocumentFileType = .pdf,
-        fileName   : String?          = nil,
         assetName  : String?          = nil
     ) {
         self.id         = UUID()
@@ -57,7 +55,6 @@ struct Document: Identifiable {
         self.categoryId = categoryId
         self.createdAt  = createdAt
         self.fileType   = fileType
-        self.fileName   = fileName
         self.assetName  = assetName
     }
 }
@@ -128,8 +125,6 @@ enum InfetchCategory: String, CaseIterable, Identifiable {
     case insurance = "Insurance"
     case policy = "Policy"
     case other = "Other"
-    
-    
-    
+
     var id: String { self.rawValue }
 }
