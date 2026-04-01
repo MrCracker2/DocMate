@@ -1,3 +1,10 @@
+//
+//  DataModel.swift
+//  DocMateDummy
+//
+//  Created by Naman Yadav on 23/03/26.
+//
+
 import Foundation
 import UIKit
 
