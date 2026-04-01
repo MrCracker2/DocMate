@@ -14,7 +14,7 @@ struct CategorySaveView: View {
 
     @State private var searchText       = ""
     @State private var viewMode         : ViewMode = .icons
-    @State private var showNewCategory  = false
+    @State private var showNewCategory  = false         // Create new folder
 
     private let columns = [
         GridItem(.flexible()),
@@ -34,6 +34,7 @@ struct CategorySaveView: View {
     }
 
     var body: some View {
+        // Group is used to wrap multiple possible views into one return type without affecting UI
         Group {
             if viewMode == .icons {
                 iconGrid

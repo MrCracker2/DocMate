@@ -141,7 +141,7 @@ class AppViewModel {
             inFetchCatgogry: .bill),
     ]
 
-//    var selectedTab: Int = 0
+//
 
     // MARK: - Computed
     var expiringDocuments: [Document] {
@@ -151,13 +151,13 @@ class AppViewModel {
         }
     }
 
-    //Start newiest first
+    //show  newiest first
     var recentDocuments: [Document] {
         documents.sorted { $0.createdAt > $1.createdAt }
     }
 
     
-    //only pinned Documents
+    // show only pinned Documents
     var pinnedDocuments: [Document] {
         documents.filter { $0.isPinned }
     }
@@ -174,14 +174,7 @@ class AppViewModel {
     }
 
     // MARK: - Document Actions
-    //Add Documents
-    func addDocument(_ document: Document, images: [UIImage] = []) {
-        documents.append(document)
-        if !images.isEmpty {
-            imageStore[document.id] = images //save image if present
-        }
-    }
-
+   
     //return images for a document
     func images(for document: Document) -> [UIImage] {
         imageStore[document.id] ?? []
@@ -227,4 +220,13 @@ class AppViewModel {
         
         addDocument(doc, images: [image])
     }
+    
+    //Add Documents
+    func addDocument(_ document: Document, images: [UIImage] = []) {
+        documents.append(document)
+        if !images.isEmpty {
+            imageStore[document.id] = images //save image if present
+        }
+    }
+
 }
