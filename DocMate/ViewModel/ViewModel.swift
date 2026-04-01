@@ -96,7 +96,7 @@ class AppViewModel {
     }
 
     // MARK: - Category Actions
-    func addCategory(name: String, sfSymbol: String) {      // ✅ now correctly outside deleteDocument
+    func addCategory(name: String, sfSymbol: String) {      //  now correctly outside deleteDocument
         categories.append(Category(name: name, sfSymbol: sfSymbol))
     }
 

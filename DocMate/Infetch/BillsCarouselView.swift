@@ -10,7 +10,7 @@ import SwiftUI
 
 struct BillsCarouselView: View {
     
-    var bills: [infetch]
+    var bills: [Infetch]
     @State private var currentIndex = 0
     
     var body: some View {
