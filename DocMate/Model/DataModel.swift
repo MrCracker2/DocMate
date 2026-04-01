@@ -137,13 +137,13 @@ struct DocumentTag: Identifiable {
     var documentId : UUID
     var tagId      : UUID
 }
-struct infetch:Identifiable{
-    let id=UUID()
-    var name:String
-    var dueDate:Date
-    var SubjectName:String
-    var amount:Double?
-    var inFetchCatgogry:InfetchCategory
+struct Infetch: Identifiable {
+    let id = UUID()
+    var name: String
+    var dueDate: Date
+    var subjectName: String
+    var amount: Double?
+    var inFetchCategory: InfetchCategory
 }
 enum InfetchCategory: String, CaseIterable, Identifiable {
     

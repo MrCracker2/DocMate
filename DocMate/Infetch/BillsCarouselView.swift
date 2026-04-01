@@ -1,23 +1,8 @@
-//
-//  BillsCarouselView.swift
-//  DocMate
-//
-//  Created by Naman Yadav on 31/03/26.
-//
-
-
-//
-//  BillsCarouselView.swift
-//  DocMateDummy
-//
-//  Created by Naman Yadav on 25/03/26.
-//
-
 import SwiftUI
 
 struct BillsCarouselView: View {
     
-    var bills: [infetch]
+    var bills: [Infetch]
     @State private var currentIndex = 0
     
     var body: some View {

@@ -1,6 +1,6 @@
 //
-//  InfetchBillCard.swift
-//  DocMateDummy
+//  YourBillsSection.swift
+//  DocMate
 //
 //  Created by Naman Yadav on 24/03/26.
 //
@@ -9,7 +9,7 @@ import SwiftUI
 
 struct YourBillsSection: View {
     
-    var bills: [infetch]
+    var bills: [Infetch]
     
     @State private var currentIndex = 0
     

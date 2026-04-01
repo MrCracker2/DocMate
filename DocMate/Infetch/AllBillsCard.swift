@@ -1,24 +1,8 @@
-//
-//  AllBillsCard.swift
-//  DocMate
-//
-//  Created by Naman Yadav on 31/03/26.
-//
-
-
-//
-//  AllBillsCard.swift
-//  DocMateDummy
-//
-//  Created by Naman Yadav on 25/03/26.
-//
-
-
 import SwiftUI
 
 struct AllBillsCard: View {
     
-    let doc: infetch
+    let doc: Infetch
     var onRefresh: () -> Void
     
     var body: some View {
@@ -27,7 +11,7 @@ struct AllBillsCard: View {
             
             VStack(alignment: .leading, spacing: 6) {
                 
-                Text(doc.SubjectName)
+                Text(doc.subjectName)
                     .font(.subheadline)
                     .foregroundColor(.gray)
                 

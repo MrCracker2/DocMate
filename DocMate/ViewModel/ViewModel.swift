@@ -52,12 +52,12 @@ class AppViewModel {
 
     var genderOptions: [String] = ["Male", "Female", "Other"]
 
-    var inFetch: [infetch] = [
-        infetch(name: "Electricity Bill",  dueDate: Date().addingTimeInterval(86400 * 3),  SubjectName: "BSES", amount: 1200,  inFetchCatgogry: .bill),
-        infetch(name: "Insurance Policy",  dueDate: Date().addingTimeInterval(86400 * 10), SubjectName: "LIC",  amount: nil,   inFetchCatgogry: .insurance),
-        infetch(name: "Credit Card Bill",  dueDate: Date().addingTimeInterval(86400 * 7),  SubjectName: "LOAN", amount: 4700,  inFetchCatgogry: .bill),
-        infetch(name: "Home Loan",         dueDate: Date().addingTimeInterval(86400 * 7),  SubjectName: "LOAN", amount: 12550, inFetchCatgogry: .bill),
-        infetch(name: "Netflix Bill",      dueDate: Date().addingTimeInterval(86400 * 7),  SubjectName: "Bill", amount: 2500,  inFetchCatgogry: .bill),
+    var inFetch: [Infetch] = [
+        Infetch(name: "Electricity Bill",  dueDate: Date().addingTimeInterval(86400 * 3),  subjectName: "BSES", amount: 1200,  inFetchCategory: .bill),
+        Infetch(name: "Insurance Policy",  dueDate: Date().addingTimeInterval(86400 * 10), subjectName: "LIC",  amount: nil,   inFetchCategory: .insurance),
+        Infetch(name: "Credit Card Bill",  dueDate: Date().addingTimeInterval(86400 * 7),  subjectName: "LOAN", amount: 4700,  inFetchCategory: .bill),
+        Infetch(name: "Home Loan",         dueDate: Date().addingTimeInterval(86400 * 7),  subjectName: "LOAN", amount: 12550, inFetchCategory: .bill),
+        Infetch(name: "Netflix Bill",      dueDate: Date().addingTimeInterval(86400 * 7),  subjectName: "Bill", amount: 2500,  inFetchCategory: .bill),
     ]
 
     var selectedTab: Int = 0
@@ -104,7 +104,7 @@ class AppViewModel {
     func importInfetchToDocuments() {
         for doc in inFetch {
             let newDoc = Document(name: doc.name, dueDate: doc.dueDate, isPinned: false,
-                                  userId: user.id, categoryId: mapCategory(doc.inFetchCatgogry), fileType: .pdf)
+                                  userId: user.id, categoryId: mapCategory(doc.inFetchCategory), fileType: .pdf)
             documents.append(newDoc)
         }
         inFetch.removeAll()
