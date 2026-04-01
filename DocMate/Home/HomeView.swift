@@ -11,7 +11,7 @@ import SwiftUI
 struct HomeView: View {
     
     @Environment(AppViewModel.self ) var viewModel
-    @State private var showProfileView:Bool = false
+    @State private var showProfileView: Bool = false
     
     // MARK: Grid Layouts
     
@@ -77,7 +77,7 @@ struct HomeView: View {
                     if !viewModel.inFetch.isEmpty {
                         
                         YourBillsSection(
-                            bills: viewModel.inFetch.filter { $0.inFetchCatgogry == .bill }
+                            bills: viewModel.inFetch.filter { $0.inFetchCategory == .bill }
                         )
                     }
                     

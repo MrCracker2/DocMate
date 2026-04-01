@@ -52,7 +52,7 @@ struct AllBillsView: View {
     }
     
     // Refresh Logic
-    func refreshBill(_ doc: infetch) {
+    func refreshBill(_ doc: Infetch) {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             
@@ -65,12 +65,12 @@ struct AllBillsView: View {
             }
         }
     }
-    // Fillterd documents
-    var filteredBills: [infetch] {
+    // Filtered documents
+    var filteredBills: [Infetch] {
         
         if let selectedCategory {
             return viewModel.inFetch.filter {
-                $0.inFetchCatgogry == selectedCategory
+                $0.inFetchCategory == selectedCategory
             }
         } else {
             return viewModel.inFetch
@@ -78,7 +78,7 @@ struct AllBillsView: View {
     }
 }
 
-// MARK:- category list ko scrollable banane ke liye
+    // MARK: - Scrollable Category Filter Chips
 
 struct CategoryChip: View {
     

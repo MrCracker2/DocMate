@@ -11,7 +11,7 @@ import SwiftUI
 
 struct AllBillsCard: View {
     
-    let doc: infetch
+    let doc: Infetch
     var onRefresh: () -> Void
     
     var body: some View {
@@ -20,7 +20,7 @@ struct AllBillsCard: View {
             
             VStack(alignment: .leading, spacing: 6) {
                 
-                Text(doc.SubjectName)
+                Text(doc.subjectName)
                     .font(.subheadline)
                     .foregroundColor(.gray)
                 

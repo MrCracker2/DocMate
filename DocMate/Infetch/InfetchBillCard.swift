@@ -10,7 +10,7 @@ import SwiftUI
 
 struct InfetchBillCard: View {
     
-    let doc: infetch
+    let doc: Infetch
     
     var body: some View {
         
@@ -22,7 +22,7 @@ struct InfetchBillCard: View {
                 
                 Spacer()
                 
-                Text(doc.inFetchCatgogry.rawValue)
+                Text(doc.inFetchCategory.rawValue)
                     .font(.caption)
                     .padding(6)
                     .background(Color.blue.opacity(0.15))
@@ -35,7 +35,7 @@ struct InfetchBillCard: View {
                     .fontWeight(.bold)
             }
             
-            Text(doc.SubjectName)
+            Text(doc.subjectName)
                 .font(.subheadline)
                 .foregroundColor(.gray)
             
