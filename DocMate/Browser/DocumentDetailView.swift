@@ -1,34 +1,6 @@
-//
-//  DocumentDetailView.swift
-//  DocMateDummy
-//
-//  Created by Naman Yadav on 23/03/26.
-//
 import SwiftUI
 import PDFKit
 
-// MARK: - PDFKit Wrapper
-struct PDFKitView: UIViewRepresentable {
-    let url: URL
-
-    func makeUIView(context: Context) -> PDFView {
-        let pdfView = PDFView()
-        pdfView.autoScales       = true
-        pdfView.displayMode      = .singlePageContinuous
-        pdfView.displayDirection = .vertical
-        pdfView.backgroundColor  = UIColor.systemGray6
-        pdfView.document         = PDFDocument(url: url)
-        return pdfView
-    }
-
-    func updateUIView(_ uiView: PDFView, context: Context) {
-        if uiView.document?.documentURL != url {
-            uiView.document = PDFDocument(url: url)
-        }
-    }
-}
-
-// MARK: - Document Detail View
 struct DocumentDetailView: View {
 
     @Environment(AppViewModel.self) var viewModel
@@ -53,7 +25,7 @@ struct DocumentDetailView: View {
                 // MARK: Info Section
                 VStack(alignment: .leading, spacing: 12) {
                     infoRow("Category", categoryName)
-                    infoRow("Added",    formatted(document.createdAt))
+                    infoRow("Added", formatted(document.createdAt))
 
                     if let due = document.dueDate {
                         infoRow("Expires", formatted(due))
@@ -109,36 +81,55 @@ struct DocumentDetailView: View {
         .safeAreaInset(edge: .bottom) {
             HStack {
                 Spacer()
+
                 Button { showShareSheet = true } label: {
-                    Image(systemName: "square.and.arrow.up").font(.title2).foregroundStyle(.blue)
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
                 }
+
                 Spacer()
+
                 Button { viewModel.togglePin(document) } label: {
                     Image(systemName: document.isPinned ? "pin.slash.fill" : "pin.fill")
-                        .font(.title2).foregroundStyle(.blue)
+                        .font(.title2)
+                        .foregroundStyle(.blue)
                 }
+
                 Spacer()
+
                 Button { } label: {
-                    Image(systemName: "slider.horizontal.3").font(.title2).foregroundStyle(.blue)
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
                 }
+
                 Spacer()
+
                 Button { } label: {
-                    Image(systemName: "info.circle").font(.title2).foregroundStyle(.blue)
+                    Image(systemName: "info.circle")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
                 }
+
                 Spacer()
+
                 Button { showDeleteConfirm = true } label: {
-                    Image(systemName: "trash").font(.title2).foregroundStyle(.red)
+                    Image(systemName: "trash")
+                        .font(.title2)
+                        .foregroundStyle(.red)
                 }
+
                 Spacer()
             }
             .padding()
             .background(.regularMaterial)
         }
 
-        // MARK: Share Sheet
+        // MARK: Share Sheet (FIXED)
         .sheet(isPresented: $showShareSheet) {
-            if let url = document.fileURL {
-                ShareSheet(items: [url])
+            if let firstImage = viewModel.images(for: document).first {
+                ShareSheet(items: [firstImage])
             } else {
                 ShareSheet(items: [document.name])
             }
@@ -155,28 +146,29 @@ struct DocumentDetailView: View {
         }
     }
 
-    // MARK: - Inline Preview
-    // Priority: 1) saved PDF on disk  2) asset image  3) placeholder
+    // MARK: IMAGE BASED PREVIEW (FIXED)
     @ViewBuilder
     private var inlinePreview: some View {
-        if let fileURL = document.fileURL {
-            //  Scanned / Photo documents — load from saved PDF (memory safe, multi-page)
-            PDFKitView(url: fileURL)
+        
+        if let firstImage = viewModel.images(for: document).first {
+            
+            Image(uiImage: firstImage)
+                .resizable()
+                .scaledToFit()
                 .frame(height: 460)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal)
-
+            
         } else if let assetName = document.assetName,
                   let image = UIImage(named: assetName) {
-            //  Seeded demo documents — load from asset catalog
+            
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal)
-
+            
         } else {
-            //  Fallback placeholder
             previewPlaceholder
                 .padding(.horizontal)
         }
@@ -217,19 +209,4 @@ struct DocumentDetailView: View {
         f.dateStyle = .medium
         return f.string(from: date)
     }
-}
-
-#Preview {
-    DocumentDetailView(
-        document: Document(
-            name: "PUC Certificate",
-            dueDate: Date().addingTimeInterval(86400 * 5),
-            isPinned: true,
-            userId: UUID(),
-            categoryId: UUID(),
-            createdAt: Date(),
-            assetName: "sample_puc"
-        )
-    )
-    .environment(AppViewModel())
 }

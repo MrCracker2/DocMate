@@ -77,7 +77,7 @@ struct HomeView: View {
                     if !viewModel.inFetch.isEmpty {
                         
                         YourBillsSection(
-                            bills: viewModel.inFetch.filter { $0.inFetchCategory == .bill }
+                            bills: viewModel.inFetch.filter { $0.inFetchCatgogry == .bill }
                         )
                     }
                     

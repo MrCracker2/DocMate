@@ -22,7 +22,7 @@ struct InfetchBillCard: View {
                 
                 Spacer()
                 
-                Text(doc.inFetchCategory.rawValue)
+                Text(doc.inFetchCatgogry.rawValue)
                     .font(.caption)
                     .padding(6)
                     .background(Color.blue.opacity(0.15))
@@ -35,7 +35,7 @@ struct InfetchBillCard: View {
                     .fontWeight(.bold)
             }
             
-            Text(doc.subjectName)
+            Text(doc.SubjectName)
                 .font(.subheadline)
                 .foregroundColor(.gray)
             

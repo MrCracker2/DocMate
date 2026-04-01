@@ -35,39 +35,30 @@ struct Document: Identifiable {
     var categoryId : UUID
     var createdAt  : Date
     var fileType   : DocumentFileType
-    var fileURL: URL?           // actual store PDf/Image
-    var thumbnailData: Data?    // preview Image
-    var fileName      : String?
-    var assetName     : String?
-    var subCategoryId : UUID?
+    var fileName   : String?
+    var assetName  : String?
 
     init(
-        name          : String,
-        dueDate       : Date?            = nil,
-        isPinned      : Bool             = false,
-        userId        : UUID,
-        categoryId    : UUID,
-        createdAt     : Date             = Date(),
-        fileType      : DocumentFileType = .pdf,
-        fileURL       : URL?             = nil,
-        thumbnailData : Data?            = nil,
-        fileName      : String?          = nil,
-        assetName     : String?          = nil,
-        subCategoryId : UUID?            = nil
+        name       : String,
+        dueDate    : Date?            = nil,
+        isPinned   : Bool             = false,
+        userId     : UUID,
+        categoryId : UUID,
+        createdAt  : Date             = Date(),
+        fileType   : DocumentFileType = .pdf,
+        fileName   : String?          = nil,
+        assetName  : String?          = nil
     ) {
-        self.id            = UUID()
-        self.name          = name
-        self.dueDate       = dueDate
-        self.isPinned      = isPinned
-        self.userId        = userId
-        self.categoryId    = categoryId
-        self.createdAt     = createdAt
-        self.fileType      = fileType
-        self.fileURL       = fileURL
-        self.thumbnailData = thumbnailData
-        self.fileName      = fileName
-        self.assetName     = assetName
-        self.subCategoryId = subCategoryId
+        self.id         = UUID()
+        self.name       = name
+        self.dueDate    = dueDate
+        self.isPinned   = isPinned
+        self.userId     = userId
+        self.categoryId = categoryId
+        self.createdAt  = createdAt
+        self.fileType   = fileType
+        self.fileName   = fileName
+        self.assetName  = assetName
     }
 }
 
@@ -89,8 +80,8 @@ enum DocumentFileType: String, Codable, Hashable {
     }
 }
 
-// MARK: - SubCategory
-struct SubCategory: Identifiable, Hashable {
+// MARK: - Category
+struct Category: Identifiable, Hashable {
     let id      : UUID
     var name    : String
     var sfSymbol: String
@@ -100,27 +91,11 @@ struct SubCategory: Identifiable, Hashable {
         self.name     = name
         self.sfSymbol = sfSymbol
     }
-}
 
-// MARK: - Category
-struct Category: Identifiable, Hashable {
-    let id            : UUID
-    var name          : String
-    var sfSymbol      : String
-    var subCategories : [SubCategory]
-
-    init(name: String, sfSymbol: String, subCategories: [SubCategory] = []) {
-        self.id            = UUID()
-        self.name          = name
-        self.sfSymbol      = sfSymbol
-        self.subCategories = subCategories
-    }
-
-    init(name: String, sfSymbol: String, fixedId: UUID, subCategories: [SubCategory] = []) {
-        self.id            = fixedId
-        self.name          = name
-        self.sfSymbol      = sfSymbol
-        self.subCategories = subCategories
+    init(name: String, sfSymbol: String, fixedId: UUID) {
+        self.id       = fixedId
+        self.name     = name
+        self.sfSymbol = sfSymbol
     }
 }
 
@@ -137,13 +112,13 @@ struct DocumentTag: Identifiable {
     var documentId : UUID
     var tagId      : UUID
 }
-struct Infetch: Identifiable {
-    let id = UUID()
-    var name: String
-    var dueDate: Date
-    var subjectName: String
-    var amount: Double?
-    var inFetchCategory: InfetchCategory
+struct Infetch:Identifiable{
+    let id=UUID()
+    var name:String
+    var dueDate:Date
+    var SubjectName:String
+    var amount:Double?
+    var inFetchCatgogry:InfetchCategory
 }
 enum InfetchCategory: String, CaseIterable, Identifiable {
     

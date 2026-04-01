@@ -70,7 +70,7 @@ struct AllBillsView: View {
         
         if let selectedCategory {
             return viewModel.inFetch.filter {
-                $0.inFetchCategory == selectedCategory
+                $0.inFetchCatgogry == selectedCategory
             }
         } else {
             return viewModel.inFetch
