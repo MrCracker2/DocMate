@@ -51,7 +51,7 @@ struct ContentView: View {
             .tabItem { Label("Browse", systemImage: "folder") }
             .tag(2)
         }
-        // Intercept ➕ tap: snap back, show bottom menu
+        // Intercept tap: snap back, show bottom menu
         .onChange(of: selectedTab) { _, newValue in
             if newValue == 1 {
                 selectedTab = previousTab

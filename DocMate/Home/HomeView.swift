@@ -47,7 +47,7 @@ struct HomeView: View {
                     
                     // MARK: Attention Required
                     
-                    Text("Attention Required")
+                    Text("Due Soon")
                         .font(.title3)
                         .fontWeight(.bold)
                     

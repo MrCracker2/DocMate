@@ -44,7 +44,7 @@ struct Document: Identifiable {
         userId     : UUID,
         categoryId : UUID,
         createdAt  : Date             = Date(),
-        fileType   : DocumentFileType = .pdf,
+        fileType   : DocumentFileType = .image,
         assetName  : String?          = nil
     ) {
         self.id         = UUID()
@@ -118,7 +118,6 @@ struct Infetch:Identifiable{
     var inFetchCatgogry:InfetchCategory
 }
 enum InfetchCategory: String, CaseIterable, Identifiable {
-    
     
     case bill = "Bill"
     case finance = "Finance"
