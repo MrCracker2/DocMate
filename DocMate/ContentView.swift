@@ -22,7 +22,7 @@ struct ContentView: View {
 
     @State private var pendingImages: [UIImage] = []
     @State private var pendingIsScanned = true
-    @State private var pendingAction: AddAction? = nil
+    @State private var pendingAction: AddAction? = nil //Stores what user selected in menu
 
     var body: some View {
 
