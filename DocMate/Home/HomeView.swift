@@ -207,7 +207,9 @@ struct HomeView: View {
                 pendingIsScanned = true
                 
                 showScanner = false     // close scanner
-                showSaveSheet = true    // OPEN SAVE SHEET
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            showSaveSheet = true   // 
+                        }    // OPEN SAVE SHEET
             }
             .ignoresSafeArea()
         }
@@ -223,7 +225,13 @@ struct HomeView: View {
                  
             }
         }
-        
+        .sheet(isPresented: $showSaveSheet) {
+            SaveDocumentSheet(
+                images: pendingImages,
+                isScanned: pendingIsScanned
+            )
+            
+        }
         
     }
 }

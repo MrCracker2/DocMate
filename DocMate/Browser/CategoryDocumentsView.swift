@@ -10,6 +10,7 @@ struct CategoryDocumentsView: View {
 
     @Environment(AppViewModel.self) var viewModel
     let category: Category
+    @Binding var selectedCategoryId: UUID
 
     @State private var searchText = ""
     @State private var isGridView = true
@@ -140,5 +141,23 @@ struct CategoryDocumentsView: View {
                 }
             }
         }
+        .onAppear {
+            if selectedCategoryId != category.id {
+                selectedCategoryId = category.id
+            }
+        }
+    }
+}
+
+#Preview {
+    NavigationStack {
+        CategoryDocumentsView(
+            category: Category(
+                name: "Demo",
+                sfSymbol: "folder"
+            ),
+            selectedCategoryId: .constant(UUID())
+        )
+        .environment(AppViewModel())
     }
 }

@@ -1,10 +1,3 @@
-//
-//  SaveDocumentSheet.swift
-//  DocMate
-//
-//  Created by Shashwat kumar on 03/04/26.
-//
-
 import SwiftUI
 
 struct SaveDocumentSheet: View {
@@ -21,53 +14,89 @@ struct SaveDocumentSheet: View {
     var body: some View {
         
         NavigationStack {
-            VStack(spacing: 16) {
+            
+            ZStack(alignment: .bottom) {
                 
-                // 📸 Preview
-                if let img = images.first {
-                    Image(uiImage: img)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 150)
-                        .cornerRadius(12)
-                }
+                // ✅ BrowseView with selection mode
+                BrowseView(
+                    isSelecting: true,
+                    selectedCategoryId: $selectedCategoryId
+                )
+                .padding(.bottom, 90) // space for floating bar
                 
-                // ✏️ Rename
-                TextField("Document Name", text: $name)
-                    .textFieldStyle(.roundedBorder)
-                
-                // 📁 Category Picker
-                Picker("Category", selection: $selectedCategoryId) {
-                    ForEach(viewModel.categories) { cat in
-                        Text(cat.name).tag(cat.id)
-                    }
-                }
-                .pickerStyle(.menu)
-                
-                Spacer()
+                // ✅ Only ONE bottom bar
+                bottomSaveBar
             }
-            .padding()
-            .navigationTitle("Save Document")
+            .navigationTitle("Browse")
+            .animation(.easeInOut, value: selectedCategoryId)
+            
             .toolbar {
                 
-                // ❌ Cancel
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
+                    Button {
                         dismiss()
+                    } label: {
+                        Image(systemName: "chevron.left")
                     }
                 }
                 
-                // ✅ Save
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
                         save()
                     }
                     .fontWeight(.semibold)
+                    .disabled(selectedCategoryId == AppViewModel.otherId)
                 }
             }
         }
     }
     
+    // MARK: - Bottom Floating Bar
+    var bottomSaveBar: some View {
+        
+        HStack {
+            
+            if let img = images.first {
+                Image(uiImage: img)
+                    .resizable()
+                    .frame(width: 40, height: 40)
+                    .cornerRadius(6)
+            }
+            
+            VStack(alignment: .leading) {
+                Text("Save as")
+                    .font(.caption)
+                    .foregroundStyle(.gray)
+                
+                Text(name)
+                    .fontWeight(.medium)
+                
+                Text(
+                    viewModel.categories
+                        .first(where: { $0.id == selectedCategoryId })?.name ?? "Select folder"
+                )
+                .font(.caption2)
+                .foregroundStyle(.blue)
+            }
+            
+            Spacer()
+            
+            Button {
+                // future rename
+            } label: {
+                Image(systemName: "pencil.circle")
+                    .font(.title3)
+            }
+        }
+        .padding()
+        .background(.ultraThinMaterial)
+        .cornerRadius(16)
+        .shadow(radius: 10)
+        .padding(.horizontal)
+        .padding(.bottom, 8)
+    }
+    
+    // MARK: - Save
     func save() {
         let doc = Document(
             name: name,
@@ -78,11 +107,4 @@ struct SaveDocumentSheet: View {
         viewModel.addDocument(doc, images: images)
         dismiss()
     }
-    
 }
-
-
-
-//#Preview {
-//    SaveDocumentSheet()
-//}
