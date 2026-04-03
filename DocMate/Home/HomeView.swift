@@ -12,6 +12,16 @@ struct HomeView: View {
     
     @Environment(AppViewModel.self ) var viewModel
     @State private var showProfileView: Bool = false
+    @State private var showScanner = false
+    @State private var scannedImages: [UIImage] = []
+    @State private var showPhotoPicker: Bool = false
+    @State private var importImages: [UIImage] = []
+    
+    @State private var pendingImages: [UIImage] = []
+    @State private var pendingIsScanned = true
+    
+    @State private var showSaveSheet = false
+    
     
     // MARK: Grid Layouts
     
@@ -61,7 +71,7 @@ struct HomeView: View {
                                     
                                     NavigationLink(destination: DocumentDetailView(document: doc)) {
                                         DocumentCard(
-                                            icon: "doc.text",
+                                            icon: viewModel.icon(for: doc),
                                             title: doc.name,
                                             dueDate: formatDate(due)
                                         )
@@ -104,7 +114,7 @@ struct HomeView: View {
                             
                             NavigationLink(destination: DocumentDetailView(document: doc)) {
                                 DocumentCard(
-                                    icon: "doc.text",
+                                    icon: viewModel.icon(for: doc),
                                     title: doc.name,
                                 )
                             }
@@ -141,7 +151,7 @@ struct HomeView: View {
                                 
                                 NavigationLink(destination: DocumentDetailView(document: doc)) {
                                     DocumentCard(
-                                        icon: "doc.text",
+                                        icon: viewModel.icon(for: doc),
                                         title: doc.name,
                                     )
                                     .frame(width: 160)
@@ -159,6 +169,22 @@ struct HomeView: View {
             
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
+                    
+                    Menu {
+                        Button {
+                            showScanner = true
+                        } label: {
+                            Label("Scan Document", systemImage: "doc.viewfinder")
+                        }
+
+                        Button {
+                            showPhotoPicker = true
+                        } label: {
+                            Label("Import Document", systemImage: "square.and.arrow.down")
+                        }
+                    } label: {
+                        Image(systemName: "plus")
+                    }
                     Button {
                         showProfileView = true
                     } label: {
@@ -173,6 +199,32 @@ struct HomeView: View {
         .sheet(isPresented: $showProfileView) {
             ProfileView()
         }
+        
+        // for Scanned document
+        .fullScreenCover(isPresented: $showScanner) {
+            DocumentScannerView { images in
+                pendingImages    = images
+                pendingIsScanned = true
+                
+                showScanner = false     // close scanner
+                showSaveSheet = true    // OPEN SAVE SHEET
+            }
+            .ignoresSafeArea()
+        }
+        
+        // for phtot picker
+        .sheet(isPresented: $showPhotoPicker) {
+            PhotoPickerView { image in
+                pendingImages    = [image]
+                pendingIsScanned = false
+                
+                showPhotoPicker = false   // close picker
+                showSaveSheet = true    // OPEN SAVE SHEET
+                 
+            }
+        }
+        
+        
     }
 }
 
@@ -184,3 +236,5 @@ struct HomeView: View {
             .environment(AppViewModel())
     }
 }
+
+

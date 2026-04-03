@@ -30,6 +30,9 @@ class AppViewModel {
         Category(name: "Policies",      sfSymbol: "doc",                 fixedId: AppViewModel.policiesId),
         Category(name: "Other",         sfSymbol: "questionmark.circle", fixedId: AppViewModel.otherId),
     ]
+    func icon(for document: Document) -> String {
+        categories.first(where: { $0.id == document.categoryId })?.sfSymbol ?? "doc.text"
+    }
 
     var documents: [Document] = [
         Document(
