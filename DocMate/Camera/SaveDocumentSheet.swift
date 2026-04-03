@@ -23,7 +23,7 @@ struct SaveDocumentSheet: View {
         NavigationStack {
             VStack(spacing: 16) {
                 
-                // 📸 Preview
+                //  Preview
                 if let img = images.first {
                     Image(uiImage: img)
                         .resizable()
@@ -32,11 +32,11 @@ struct SaveDocumentSheet: View {
                         .cornerRadius(12)
                 }
                 
-                // ✏️ Rename
+                //  Rename
                 TextField("Document Name", text: $name)
                     .textFieldStyle(.roundedBorder)
                 
-                // 📁 Category Picker
+                //  Category Picker
                 Picker("Category", selection: $selectedCategoryId) {
                     ForEach(viewModel.categories) { cat in
                         Text(cat.name).tag(cat.id)
@@ -50,14 +50,14 @@ struct SaveDocumentSheet: View {
             .navigationTitle("Save Document")
             .toolbar {
                 
-                // ❌ Cancel
+                //  Cancel
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }
                 }
                 
-                // ✅ Save
+                // Save
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
                         save()
