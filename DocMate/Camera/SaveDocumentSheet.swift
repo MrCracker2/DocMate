@@ -32,6 +32,7 @@ struct SaveDocumentSheet: View {
             
             .toolbar {
                 
+                //  Cancel
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
                         dismiss()
@@ -40,6 +41,7 @@ struct SaveDocumentSheet: View {
                     }
                 }
                 
+                // Save
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
                         save()
