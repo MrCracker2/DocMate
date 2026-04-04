@@ -98,8 +98,12 @@ struct EditProfileView: View {
                         dismiss()
                     } label: {
                         Text("Save")
+                            .fontWeight(.regular)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .padding()
+                    .foregroundStyle(.blue)
+                    .buttonStyle(.plain)
+                    
                 }
             }
             

@@ -1,16 +1,27 @@
 //
 //  HomeView.swift
-//  DocMate
+//  DocMateDummy
 //
-//  Created by Shashwat kumar on 19/03/26.
+//  Created by Naman Yadav on 23/03/26.
 //
+
 
 import SwiftUI
 
 struct HomeView: View {
     
     @Environment(AppViewModel.self ) var viewModel
-    @State private var showProfileView:Bool = false
+    @State private var showProfileView: Bool = false
+    @State private var showScanner = false
+    @State private var scannedImages: [UIImage] = []
+    @State private var showPhotoPicker: Bool = false
+    @State private var importImages: [UIImage] = []
+    
+    @State private var pendingImages: [UIImage] = []
+    @State private var pendingIsScanned = true
+    
+    @State private var showSaveSheet = false
+    
     
     // MARK: Grid Layouts
     
@@ -20,7 +31,7 @@ struct HomeView: View {
     ]
     
     let rows = [
-        GridItem(.fixed(160))
+        GridItem(.flexible())
     ]
     
     // MARK: Date Formatter
@@ -40,13 +51,13 @@ struct HomeView: View {
     
     var body: some View {
             
-            ScrollView {
+            ScrollView (showsIndicators: false){
                 
                 VStack(alignment: .leading, spacing: 20) {
                     
                     // MARK: Attention Required
                     
-                    Text("Attention Required")
+                    Text("Due Soon")
                         .font(.title3)
                         .fontWeight(.bold)
                     
@@ -60,7 +71,7 @@ struct HomeView: View {
                                     
                                     NavigationLink(destination: DocumentDetailView(document: doc)) {
                                         DocumentCard(
-                                            icon: "doc.text",
+                                            icon: viewModel.icon(for: doc),
                                             title: doc.name,
                                             dueDate: formatDate(due)
                                         )
@@ -71,7 +82,14 @@ struct HomeView: View {
                             }
                         }
                     }
-                    
+                    // MARK: Your Bills
+
+                    if !viewModel.inFetch.isEmpty {
+                        
+                        YourBillsSection(
+                            bills: viewModel.inFetch.filter { $0.inFetchCatgogry == .bill }
+                        )
+                    }
                     
                     // MARK: Recently Saved
                     
@@ -85,8 +103,12 @@ struct HomeView: View {
                         if viewModel.recentDocuments.count > 4 {
                             NavigationLink(destination: RecentlySavedView()) {
                                 Image(systemName: "chevron.right")
+<<<<<<< HEAD
                                     .font(.caption)
                                     .foregroundColor(.secondary)
+=======
+                                    .foregroundColor(.gray)
+>>>>>>> Developer
                             }
                             .padding(.horizontal , 4)
                         }
@@ -98,7 +120,7 @@ struct HomeView: View {
                             
                             NavigationLink(destination: DocumentDetailView(document: doc)) {
                                 DocumentCard(
-                                    icon: "doc.text",
+                                    icon: viewModel.icon(for: doc),
                                     title: doc.name,
                                 )
                             }
@@ -135,7 +157,7 @@ struct HomeView: View {
                                 
                                 NavigationLink(destination: DocumentDetailView(document: doc)) {
                                     DocumentCard(
-                                        icon: "doc.text",
+                                        icon: viewModel.icon(for: doc),
                                         title: doc.name,
                                     )
                                     .frame(width: 160)
@@ -152,39 +174,81 @@ struct HomeView: View {
             .navigationTitle("Home")
             
             .toolbar {
-                
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     
-                    Button {
-                        print("Add tapped")
+                    Menu {
+                        Button {
+                            showScanner = true
+                        } label: {
+                            Label("Scan Document", systemImage: "doc.viewfinder")
+                        }
+
+                        Button {
+                            showPhotoPicker = true
+                        } label: {
+                            Label("Import Document", systemImage: "square.and.arrow.down")
+                        }
                     } label: {
                         Image(systemName: "plus")
                     }
-                    Button{
+                    Button {
                         showProfileView = true
                     } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(width: 40, height: 37)
-                            
-                            Text(viewModel.user.initials)
-                                .font(.caption)
-                                .fontWeight(.bold)
-                        }
+                        Text(viewModel.user.initials)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.blue)
                     }
+                    .buttonStyle(.automatic)
                 }
             }
         
         .sheet(isPresented: $showProfileView) {
             ProfileView()
         }
+        
+        // for Scanned document
+        .fullScreenCover(isPresented: $showScanner) {
+            DocumentScannerView { images in
+                pendingImages    = images
+                pendingIsScanned = true
+                
+                showScanner = false     // close scanner
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            showSaveSheet = true   // 
+                        }    // OPEN SAVE SHEET
+            }
+            .ignoresSafeArea()
+        }
+        
+        // for phtot picker
+        .sheet(isPresented: $showPhotoPicker) {
+            PhotoPickerView { image in
+                pendingImages    = [image]
+                pendingIsScanned = false
+                
+                showPhotoPicker = false   // close picker
+                showSaveSheet = true    // OPEN SAVE SHEET
+                 
+            }
+        }
+        .sheet(isPresented: $showSaveSheet) {
+            SaveDocumentSheet(
+                images: pendingImages,
+                isScanned: pendingIsScanned
+            )
+            
+        }
+        
     }
 }
 
 // MARK: Preview
 
 #Preview {
-    HomeView()
-        .environment(AppViewModel())
+    NavigationStack{
+        HomeView()
+            .environment(AppViewModel())
+    }
 }
+
+

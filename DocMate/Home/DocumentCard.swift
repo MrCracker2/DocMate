@@ -32,9 +32,13 @@ struct DocumentCard: View {
         .padding()
         .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color(.systemGray6))
+            LinearGradient(
+                colors: [Color.gray.opacity(0.1), Color.cyan.opacity(0.1)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         )
+        .cornerRadius(20)
     }
 }
 #Preview {

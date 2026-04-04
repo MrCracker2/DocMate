@@ -1,18 +1,12 @@
-//
-//  DocumentDetailView.swift
-//  DocMate
-//
-//  Created by Naman Yadav on 18/03/26.
-//
-
 import SwiftUI
+import PDFKit
 
 struct DocumentDetailView: View {
 
     @Environment(AppViewModel.self) var viewModel
     let document: Document
 
-    @State private var showShareSheet = false
+    @State private var showShareSheet    = false
     @State private var showDeleteConfirm = false
 
     // MARK: Category Name
@@ -21,7 +15,7 @@ struct DocumentDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
 
                 // MARK: Preview
@@ -55,7 +49,6 @@ struct DocumentDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
-
                     Button {
                         showShareSheet = true
                     } label: {
@@ -74,11 +67,10 @@ struct DocumentDetailView: View {
                     Divider()
 
                     Button(role: .destructive) {
-                        showDeleteConfirm =  true
+                        showDeleteConfirm = true
                     } label: {
                         Label("Delete", systemImage: "trash")
                     }
-
                 } label: {
                     Image(systemName: "ellipsis")
                 }
@@ -90,37 +82,42 @@ struct DocumentDetailView: View {
             HStack {
                 Spacer()
 
-                Button {
-                    showShareSheet = true
-                } label: {
+                Button { showShareSheet = true } label: {
                     Image(systemName: "square.and.arrow.up")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
                 }
 
                 Spacer()
-                Button {
-                    viewModel.togglePin(document)
-                } label: {
+
+                Button { viewModel.togglePin(document) } label: {
                     Image(systemName: document.isPinned ? "pin.slash.fill" : "pin.fill")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
                 }
-                Spacer()
-                Button {
-                    
-                } label: {
-                    Image(systemName:
-                            "slider.horizontal.3").font(.title2).foregroundStyle(.blue)
-                            }
-                Spacer()
-                Button{
-                    
-                }label: {
-                    Image(systemName: "info.circle").font(.title2).foregroundStyle(.blue)
-                }
+
                 Spacer()
 
-                Button {
-                    showDeleteConfirm = true
-                } label: {
+                Button { } label: {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
+                }
+
+                Spacer()
+
+                Button { } label: {
+                    Image(systemName: "info.circle")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
+                }
+
+                Spacer()
+
+                Button { showDeleteConfirm = true } label: {
                     Image(systemName: "trash")
+                        .font(.title2)
+                        .foregroundStyle(.red)
                 }
 
                 Spacer()
@@ -129,9 +126,13 @@ struct DocumentDetailView: View {
             .background(.regularMaterial)
         }
 
-        // MARK: Share Sheet
+        // MARK: Share Sheet (FIXED)
         .sheet(isPresented: $showShareSheet) {
-            ShareSheet(items: [document.name])
+            if let firstImage = viewModel.images(for: document).first {
+                ShareSheet(items: [firstImage])
+            } else {
+                ShareSheet(items: [document.name])
+            }
         }
 
         // MARK: Delete Confirmation
@@ -145,16 +146,28 @@ struct DocumentDetailView: View {
         }
     }
 
-    // MARK: Preview (NO FileManager)
+    // MARK: IMAGE BASED PREVIEW (FIXED)
     @ViewBuilder
     private var inlinePreview: some View {
-        if let assetName = document.assetName,
-           let image = UIImage(named: assetName) {
+        
+        if let firstImage = viewModel.images(for: document).first {
+            
+            Image(uiImage: firstImage)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 460)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal)
+            
+        } else if let assetName = document.assetName,
+                  let image = UIImage(named: assetName) {
+            
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal)
+            
         } else {
             previewPlaceholder
                 .padding(.horizontal)
@@ -173,7 +186,7 @@ struct DocumentDetailView: View {
                     .font(.largeTitle)
                     .foregroundStyle(.secondary)
 
-                Text("No Document Available")
+                Text("No preview available")
                     .foregroundStyle(.secondary)
             }
         }
@@ -185,7 +198,6 @@ struct DocumentDetailView: View {
             Text(title)
                 .foregroundStyle(.secondary)
                 .frame(width: 90, alignment: .leading)
-
             Text(value)
             Spacer()
         }
@@ -197,20 +209,4 @@ struct DocumentDetailView: View {
         f.dateStyle = .medium
         return f.string(from: date)
     }
-}
-#Preview {
-   
-        DocumentDetailView(
-            document: Document(
-                name: "PUC Certificate",
-                dueDate: Date().addingTimeInterval(86400 * 5),
-                isPinned: true,
-                userId: UUID(),
-                categoryId: UUID(),
-                createdAt: Date(),
-                assetName: "sample_puc" 
-            )
-        )
-        .environment(AppViewModel())
-    
 }

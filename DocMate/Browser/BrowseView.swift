@@ -1,9 +1,3 @@
-//
-// BrowseView.swift
-// DocMate
-
-//  Created by Naman Yadav on 18/03/26.
-
 import SwiftUI
 
 struct BrowseView: View {
@@ -11,6 +5,17 @@ struct BrowseView: View {
     @Environment(AppViewModel.self) var viewModel
     @State private var searchText: String = ""
     @State private var isGridView: Bool = true
+    
+    let isSelecting: Bool
+    @Binding var selectedCategoryId: UUID
+    
+    init(
+        isSelecting: Bool = false,
+        selectedCategoryId: Binding<UUID> = .constant(UUID())
+    ) {
+        self.isSelecting = isSelecting
+        self._selectedCategoryId = selectedCategoryId
+    }
 
     var filteredCategories: [Category] {
         if searchText.isEmpty {
@@ -21,10 +26,13 @@ struct BrowseView: View {
         }
     }
 
-    let columns = [GridItem(.flexible()), GridItem(.flexible())]
+    let columns = [
+        GridItem(.flexible()),
+        GridItem(.flexible())
+    ]
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 24) {
 
                 // MARK: Categories Section
@@ -35,54 +43,91 @@ struct BrowseView: View {
                         .padding(.horizontal)
 
                     if isGridView {
-                        // MARK: Grid Layout
+
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(filteredCategories) { category in
-                                NavigationLink(
-                                    destination: CategoryDocumentsView(category: category)
-                                ) {
-                                    CategoryCardView(category: category , docCount: viewModel.documentCount(for: category))
+                                
+                                let isSelected = selectedCategoryId == category.id
+                                
+                                NavigationLink {
+                                    CategoryDocumentsView(
+                                        category: category,
+                                        selectedCategoryId: $selectedCategoryId
+                                    )
+                                } label: {
+                                    
+                                    CategoryCardView(
+                                        category: category,
+                                        docCount: viewModel.documentCount(for: category)
+                                    )
+                                    .background(
+                                        isSelecting && isSelected
+                                        ? Color.blue.opacity(0.15)
+                                        : Color.clear
+                                    )
+                                    .cornerRadius(12)
                                 }
                                 .buttonStyle(.plain)
+                                .simultaneousGesture(TapGesture().onEnded {
+                                    if isSelecting {
+                                        selectedCategoryId = category.id
+                                    }
+                                })
                             }
                         }
                         .padding(.horizontal)
 
                     } else {
-                        // MARK: List Layout
+
                         VStack(spacing: 0) {
                             ForEach(filteredCategories) { category in
-                                NavigationLink(
-                                    destination: CategoryDocumentsView(category: category)
-                                ) {
+                                
+                                let isSelected = selectedCategoryId == category.id
+                                
+                                NavigationLink {
+                                    CategoryDocumentsView(
+                                        category: category,
+                                        selectedCategoryId: $selectedCategoryId
+                                    )
+                                } label: {
+                                    
                                     HStack(spacing: 14) {
+                                        
                                         ZStack {
                                             RoundedRectangle(cornerRadius: 8)
                                                 .fill(Color.blue.opacity(0.12))
                                                 .frame(width: 40, height: 40)
+                                            
                                             Image(systemName: category.sfSymbol)
                                                 .font(.system(size: 18))
                                                 .foregroundStyle(.blue)
                                         }
 
                                         Text(category.name)
-                                            .font(.body)
                                             .foregroundStyle(.primary)
 
                                         Spacer()
 
                                         Text("\(viewModel.documentCount(for: category))")
-                                            .font(.subheadline)
                                             .foregroundStyle(.secondary)
 
                                         Image(systemName: "chevron.right")
-                                            .font(.caption)
                                             .foregroundStyle(.tertiary)
                                     }
                                     .padding(.vertical, 10)
                                     .padding(.horizontal)
+                                    .background(
+                                        isSelecting && isSelected
+                                        ? Color.blue.opacity(0.15)
+                                        : Color.clear
+                                    )
                                 }
                                 .buttonStyle(.plain)
+                                .simultaneousGesture(TapGesture().onEnded {
+                                    if isSelecting {
+                                        selectedCategoryId = category.id
+                                    }
+                                })
 
                                 if category.id != filteredCategories.last?.id {
                                     Divider()
@@ -122,8 +167,9 @@ struct BrowseView: View {
             .padding(.bottom, 30)
         }
         .navigationTitle("Browse")
-        .navigationBarTitleDisplayMode(.large)
-        // MARK: Native Apple HIG Search Bar
+        .navigationBarTitleDisplayMode(
+            isSelecting ? .inline : .large
+        )
         .searchable(
             text: $searchText,
             placement: .navigationBarDrawer(displayMode: .always),
@@ -132,22 +178,18 @@ struct BrowseView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Button {
-
-                    } label: {
+                    Button { } label: {
                         Label("New Folder", systemImage: "folder.badge.plus")
                     }
 
                     Divider()
 
-                    // MARK: View Toggle — Grid
                     Button {
                         isGridView = true
                     } label: {
                         Label("Icons", systemImage: "square.grid.2x2")
                     }
 
-                    // MARK: View Toggle — List
                     Button {
                         isGridView = false
                     } label: {
@@ -156,21 +198,10 @@ struct BrowseView: View {
 
                     Divider()
 
-                    Button {} label: {
-                        Label("Name", systemImage: "textformat")
-                    }
-
-                    Button {} label: {
-                        Label("Kind", systemImage: "doc")
-                    }
-
-                    Button {} label: {
-                        Label("Date", systemImage: "calendar")
-                    }
-
-                    Button {} label: {
-                        Label("Size", systemImage: "arrow.up.and.down")
-                    }
+                    Button {} label: { Label("Name", systemImage: "textformat") }
+                    Button {} label: { Label("Kind", systemImage: "doc") }
+                    Button {} label: { Label("Date", systemImage: "calendar") }
+                    Button {} label: { Label("Size", systemImage: "arrow.up.and.down") }
 
                 } label: {
                     Image(systemName: "ellipsis")
@@ -183,7 +214,10 @@ struct BrowseView: View {
 
 #Preview {
     NavigationStack {
-        BrowseView()
-            .environment(AppViewModel())
+        BrowseView(
+            isSelecting: false,
+            selectedCategoryId: .constant(UUID())
+        )
+        .environment(AppViewModel())
     }
 }

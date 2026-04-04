@@ -1,35 +1,45 @@
 //
 //  ContentView.swift
-//  DocMate
+//  DocMateDummy
 //
-//  Created by Shashwat kumar on 19/03/26.
+//  Created by Naman Yadav on 23/03/26.
 //
+
 import SwiftUI
 
+private enum AddAction { case scan, photo }
+
 struct ContentView: View {
+
+    @Environment(AppViewModel.self) var viewModel
+    
     var body: some View {
-        TabView{
+
+        TabView() {
+
+            // MARK: - Home
             NavigationStack {
                 HomeView()
             }
-                .tabItem {
-                    Label("Home", systemImage: "house")
-                }
-            NavigationStack {
-                InFetchView()
-            }
-                .tabItem {
-                    Label("Infetch", systemImage: "envelope")
-                }
+            .tabItem { Label("Home", systemImage: "house") }
+           
+            // MARK: - Browse
             NavigationStack {
                 BrowseView()
             }
-                .tabItem {
-                    Label("Browser", systemImage: "folder")
-                }
+            .tabItem { Label("Browse", systemImage: "folder") }
             
-                
         }
+        
+        
+
+        
+        
+
+        
+        
+
+ 
     }
 }
 

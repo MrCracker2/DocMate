@@ -1,8 +1,8 @@
 //
 //  DataModel.swift
-//  DocMate
+//  DocMateDummy
 //
-//  Created by Shashwat kumar on 19/03/26.
+//  Created by Naman Yadav on 23/03/26.
 //
 
 import Foundation
@@ -25,7 +25,8 @@ struct User: Identifiable {
     }
 }
 
-struct Document: Identifiable, Hashable {
+// MARK: - Document
+struct Document: Identifiable {
     let id         : UUID
     var name       : String
     var dueDate    : Date?
@@ -34,18 +35,17 @@ struct Document: Identifiable, Hashable {
     var categoryId : UUID
     var createdAt  : Date
     var fileType   : DocumentFileType
-    var fileName   : String?
-    var assetName: String?
+    var assetName  : String?
 
-    init(name: String,
-         dueDate: Date? = nil,
-         isPinned: Bool = false,
-         userId: UUID,
-         categoryId: UUID,
-         createdAt: Date = Date(),
-         fileType: DocumentFileType = .pdf,
-         fileName: String? = nil,
-         assetName: String? = nil
+    init(
+        name       : String,
+        dueDate    : Date?            = nil,
+        isPinned   : Bool             = false,
+        userId     : UUID,
+        categoryId : UUID,
+        createdAt  : Date             = Date(),
+        fileType   : DocumentFileType = .image,
+        assetName  : String?          = nil
     ) {
         self.id         = UUID()
         self.name       = name
@@ -55,9 +55,13 @@ struct Document: Identifiable, Hashable {
         self.categoryId = categoryId
         self.createdAt  = createdAt
         self.fileType   = fileType
-        self.fileName   = fileName
         self.assetName  = assetName
     }
+}
+
+extension Document: Hashable {
+    static func == (lhs: Document, rhs: Document) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
 // MARK: - Document File Type
@@ -65,7 +69,7 @@ enum DocumentFileType: String, Codable, Hashable {
     case image
     case pdf
 
-    var sfSymbol: String {
+    var sfSymbol: String {              // computed property it depended on file type ,no need to store it
         switch self {
         case .image: return "photo.fill"
         case .pdf:   return "doc.fill"
@@ -73,18 +77,18 @@ enum DocumentFileType: String, Codable, Hashable {
     }
 }
 
-// MARK: - Category  (Hashable for Picker)
+// MARK: - Category
 struct Category: Identifiable, Hashable {
     let id      : UUID
     var name    : String
     var sfSymbol: String
-    
+
     init(name: String, sfSymbol: String) {
         self.id       = UUID()
         self.name     = name
         self.sfSymbol = sfSymbol
     }
-    
+
     init(name: String, sfSymbol: String, fixedId: UUID) {
         self.id       = fixedId
         self.name     = name
@@ -104,4 +108,22 @@ struct DocumentTag: Identifiable {
     let id         = UUID()
     var documentId : UUID
     var tagId      : UUID
+}
+struct Infetch:Identifiable{
+    let id=UUID()
+    var name:String
+    var dueDate:Date
+    var SubjectName:String
+    var amount:Double?
+    var inFetchCatgogry:InfetchCategory
+}
+enum InfetchCategory: String, CaseIterable, Identifiable {
+    
+    case bill = "Bill"
+    case finance = "Finance"
+    case insurance = "Insurance"
+    case policy = "Policy"
+    case other = "Other"
+
+    var id: String { self.rawValue }
 }
