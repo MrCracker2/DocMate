@@ -187,51 +187,60 @@ class AppViewModel {
             inFetchCatgogry: .policy
         )
     ]
-//
 
     // MARK: - Computed
     var expiringDocuments: [Document] {
         documents.filter {
-            guard let due = $0.dueDate else { return false } //Skip if no due is present
-            return due < Date().addingTimeInterval(86400 * 10) //Show Documnets Expiring within 10 days
+            guard let due = $0.dueDate else { return false }
+            return due < Date().addingTimeInterval(86400 * 10)
         }
     }
 
-    //show  newiest first
     var recentDocuments: [Document] {
         documents.sorted { $0.createdAt > $1.createdAt }
     }
 
-    
-    // show only pinned Documents
     var pinnedDocuments: [Document] {
         documents.filter { $0.isPinned }
     }
 
+    // MARK: - Pin Limit
+    static let maxPinnedDocuments = 5
+
+    // unpin hamesha allow, pin sirf tab jab limit na bhari ho
+    // Return value: false matlab limit full hai, caller alert dikhaye
+    @discardableResult
+    func togglePin(_ document: Document) -> Bool {
+        guard let i = documents.firstIndex(where: { $0.id == document.id }) else { return false }
+
+        if documents[i].isPinned {
+            // Unpin — hamesha allow
+            documents[i].isPinned = false
+            return true
+        } else {
+            // Pin — pehle check karo limit
+            guard pinnedDocuments.count < AppViewModel.maxPinnedDocuments else {
+                return false  // limit full, caller ko bata do
+            }
+            documents[i].isPinned = true
+            return true
+        }
+    }
+
     // MARK: - Browse Helpers
-    //Return only documents in that category
     func documents(for category: Category) -> [Document] {
         documents.filter { $0.categoryId == category.id }
     }
 
-    //Return no of docs
     func documentCount(for category: Category) -> Int {
         documents(for: category).count
     }
 
     // MARK: - Document Actions
-   
-    //return images for a document
     func images(for document: Document) -> [UIImage] {
         imageStore[document.id] ?? []
     }
-    func togglePin(_ document: Document) { //Switch true and false
-        if let i = documents.firstIndex(where: { $0.id == document.id }) {
-            documents[i].isPinned.toggle()
-        }
-    }
 
-    //remove document
     func deleteDocument(_ document: Document) {
         documents.removeAll { $0.id == document.id }
     }
@@ -242,37 +251,31 @@ class AppViewModel {
     }
 
     func addScannedDocument(images: [UIImage], name: String, categoryId: UUID) {
-        
         let doc = Document(
             name: name,
             isPinned: false,
             userId: user.id,
             categoryId: categoryId,
-            fileType: .image   
+            fileType: .image
         )
-        
         addDocument(doc, images: images)
     }
 
     func addPhotoDocument(image: UIImage, name: String, categoryId: UUID) {
-        
         let doc = Document(
             name: name,
             isPinned: false,
             userId: user.id,
             categoryId: categoryId,
-            fileType: .image   
+            fileType: .image
         )
-        
         addDocument(doc, images: [image])
     }
-    
-    //Add Documents
+
     func addDocument(_ document: Document, images: [UIImage] = []) {
         documents.append(document)
         if !images.isEmpty {
-            imageStore[document.id] = images //save image if present
+            imageStore[document.id] = images
         }
     }
-
 }

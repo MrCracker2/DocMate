@@ -6,23 +6,34 @@ struct DocumentDetailView: View {
     @Environment(AppViewModel.self) var viewModel
     let document: Document
 
-    @State private var showShareSheet    = false
-    @State private var showDeleteConfirm = false
+    @State private var showShareSheet     = false
+    @State private var showDeleteConfirm  = false
+    @State private var showPinLimitAlert  = false   //  limit alert
 
-    // MARK: Category Name
+    // Live document — array se seedha read karo
+    var liveDocument: Document {
+        viewModel.documents.first { $0.id == document.id } ?? document
+    }
+
     var categoryName: String {
         viewModel.categories.first { $0.id == document.categoryId }?.name ?? "Unknown"
+    }
+
+    // Pin toggle — return value check karke alert dikhao
+    func handleTogglePin() {
+        let success = viewModel.togglePin(document)
+        if !success {
+            showPinLimitAlert = true
+        }
     }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
 
-                // MARK: Preview
                 inlinePreview
                     .padding(.top)
 
-                // MARK: Info Section
                 VStack(alignment: .leading, spacing: 12) {
                     infoRow("Category", categoryName)
                     infoRow("Added", formatted(document.createdAt))
@@ -31,7 +42,7 @@ struct DocumentDetailView: View {
                         infoRow("Expires", formatted(due))
                     }
 
-                    infoRow("Pinned", document.isPinned ? "Yes" : "No")
+                    infoRow("Pinned", liveDocument.isPinned ? "Yes" : "No")
                 }
                 .padding()
                 .background(Color(.systemGray6))
@@ -56,11 +67,11 @@ struct DocumentDetailView: View {
                     }
 
                     Button {
-                        viewModel.togglePin(document)
+                        handleTogglePin()
                     } label: {
                         Label(
-                            document.isPinned ? "Unpin" : "Pin",
-                            systemImage: document.isPinned ? "pin.slash" : "pin"
+                            liveDocument.isPinned ? "Unpin" : "Pin",
+                            systemImage: liveDocument.isPinned ? "pin.slash" : "pin"
                         )
                     }
 
@@ -90,8 +101,8 @@ struct DocumentDetailView: View {
 
                 Spacer()
 
-                Button { viewModel.togglePin(document) } label: {
-                    Image(systemName: document.isPinned ? "pin.slash.fill" : "pin.fill")
+                Button { handleTogglePin() } label: {
+                    Image(systemName: liveDocument.isPinned ? "pin.slash.fill" : "pin.fill")
                         .font(.title2)
                         .foregroundStyle(.blue)
                 }
@@ -126,7 +137,7 @@ struct DocumentDetailView: View {
             .background(.regularMaterial)
         }
 
-        // MARK: Share Sheet (FIXED)
+        // MARK: Share Sheet
         .sheet(isPresented: $showShareSheet) {
             if let firstImage = viewModel.images(for: document).first {
                 ShareSheet(items: [firstImage])
@@ -144,37 +155,40 @@ struct DocumentDetailView: View {
                 viewModel.deleteDocument(document)
             }
         }
+
+        //  Pin Limit Alert
+        .alert("Pin Limit Reached", isPresented: $showPinLimitAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("You can pin a maximum of \(AppViewModel.maxPinnedDocuments) documents. Unpin one to add another.")
+        }
     }
 
-    // MARK: IMAGE BASED PREVIEW (FIXED)
+    // MARK: IMAGE BASED PREVIEW
     @ViewBuilder
     private var inlinePreview: some View {
-        
         if let firstImage = viewModel.images(for: document).first {
-            
             Image(uiImage: firstImage)
                 .resizable()
                 .scaledToFit()
                 .frame(height: 460)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal)
-            
+
         } else if let assetName = document.assetName,
                   let image = UIImage(named: assetName) {
-            
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal)
-            
+
         } else {
             previewPlaceholder
                 .padding(.horizontal)
         }
     }
 
-    // MARK: Placeholder
     private var previewPlaceholder: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
@@ -192,7 +206,6 @@ struct DocumentDetailView: View {
         }
     }
 
-    // MARK: Info Row
     private func infoRow(_ title: String, _ value: String) -> some View {
         HStack {
             Text(title)
@@ -203,7 +216,6 @@ struct DocumentDetailView: View {
         }
     }
 
-    // MARK: Date Format
     private func formatted(_ date: Date) -> String {
         let f = DateFormatter()
         f.dateStyle = .medium
