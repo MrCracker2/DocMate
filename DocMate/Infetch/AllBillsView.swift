@@ -12,6 +12,7 @@ struct AllBillsView: View {
     
     @Environment(AppViewModel.self) var viewModel
     @State private var selectedCategory: InfetchCategory? = nil
+    @State private var selectedBill: Infetch? = nil
     
     var body: some View {
         
@@ -43,12 +44,19 @@ struct AllBillsView: View {
                     AllBillsCard(doc: doc) {
                         refreshBill(doc)
                     }
+                    .onTapGesture {
+                        selectedBill = doc
+                    }
                 }
             }
             .padding()
         }
         .navigationTitle("All Bills")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $selectedBill) { bill in
+            BillSheetView(doc: bill)
+                .presentationDetents([.medium, .large])
+        }
     }
     
     // Refresh Logic
@@ -103,3 +111,15 @@ struct CategoryChip: View {
             }
     }
 }
+/*
+ ForEach(filteredBills) { doc in
+     
+     NavigationLink(destination: PayBillView(doc: doc)) {
+         AllBillsCard(doc: doc) {
+             refreshBill(doc)
+         }
+     }
+     .buttonStyle(.plain)
+ }
+
+ */

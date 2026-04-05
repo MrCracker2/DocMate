@@ -40,14 +40,8 @@ struct AllBillsCard: View {
                 onRefresh()
             }) {
                 Text("Refresh")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color.black)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
             }
+            .buttonStyle(.borderless)
         }
         .padding()
         .background(Color.white)

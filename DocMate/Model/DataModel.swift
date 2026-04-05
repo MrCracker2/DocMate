@@ -109,13 +109,23 @@ struct DocumentTag: Identifiable {
     var documentId : UUID
     var tagId      : UUID
 }
-struct Infetch:Identifiable{
-    let id=UUID()
-    var name:String
-    var dueDate:Date
-    var SubjectName:String
-    var amount:Double?
-    var inFetchCatgogry:InfetchCategory
+struct Infetch: Identifiable {
+    
+    let id = UUID()
+    
+    var name: String                // e.g. Airtel Postpaid
+    var dueDate: Date
+    var billDate: Date              // NEW
+    var SubjectName: String         // e.g. Electricity, LIC
+    var amount: Double?
+    
+    var customerName: String        // NEW
+    var accountNumber: String       // NEW (mobile no / bill no)
+    var billNumber: String        // NEW
+    
+    var isPaid: Bool                // NEW
+    
+    var inFetchCatgogry: InfetchCategory
 }
 enum InfetchCategory: String, CaseIterable, Identifiable {
     

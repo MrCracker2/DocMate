@@ -68,7 +68,12 @@ struct HomeView: View {
                 // MARK: Your Bills
                 if !viewModel.inFetch.isEmpty {
                     YourBillsSection(
-                        bills: viewModel.inFetch.filter { $0.inFetchCatgogry == .bill }
+                        bills: Array(
+                            viewModel.inFetch
+                                .filter { $0.dueDate > Date() }        // sirf future due dates
+                                .sorted { $0.dueDate < $1.dueDate }     // sabse jaldi due pehle
+                                .prefix(4)                               // sirf top 4 cards
+                        )
                     )
                 }
 

@@ -30,16 +30,6 @@ struct ContentView: View {
             .tabItem { Label("Browse", systemImage: "folder") }
             
         }
-        
-        
-
-        
-        
-
-        
-        
-
- 
     }
 }
 

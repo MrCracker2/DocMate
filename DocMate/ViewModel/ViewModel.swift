@@ -108,42 +108,85 @@ class AppViewModel {
     var genderOptions: [String] = ["Male", "Female", "Other"]
 
     var inFetch: [Infetch] = [
+        
         Infetch(
             name: "Electricity Bill",
             dueDate: Date().addingTimeInterval(86400 * 3),
+            billDate: Date().addingTimeInterval(-86400 * 27),
             SubjectName: "BSES",
             amount: 1200,
-            inFetchCatgogry: .bill),
-
+            customerName: "Rahul Sharma",
+            accountNumber: "ELEC123456",
+            billNumber: "BSES20260301",
+            isPaid: false,
+            inFetchCatgogry: .bill
+        ),
+        
         Infetch(
-            name: "Insurance Policy",
+            name: "LIC Policy Premium",
             dueDate: Date().addingTimeInterval(86400 * 10),
+            billDate: Date().addingTimeInterval(-86400 * 20),
             SubjectName: "LIC",
-            amount: nil,
-            inFetchCatgogry: .insurance),
-
+            amount: 8000,
+            customerName: "Neelam Gupta",
+            accountNumber: "LIC998877",
+            billNumber: "LIC20260315",
+            isPaid: false,
+            inFetchCatgogry: .insurance
+        ),
+        
         Infetch(
             name: "Credit Card Bill",
-            dueDate: Date().addingTimeInterval(86400 * 7),
-            SubjectName: "LOAN",
+            dueDate: Date().addingTimeInterval(86400 * 2),
+            billDate: Date().addingTimeInterval(-86400 * 28),
+            SubjectName: "HDFC",
             amount: 4700,
-            inFetchCatgogry: .bill),
-
+            customerName: "Amit Verma",
+            accountNumber: "XXXX-1234",
+            billNumber: "CC20260310",
+            isPaid: false,
+            inFetchCatgogry: .finance
+        ),
+        
         Infetch(
-            name: "Home Loan",
+            name: "Home Loan EMI",
             dueDate: Date().addingTimeInterval(86400 * 7),
-            SubjectName: "LOAN",
+            billDate: Date().addingTimeInterval(-86400 * 25),
+            SubjectName: "SBI",
             amount: 12550,
-            inFetchCatgogry: .bill),
-
+            customerName: "Vikas Singh",
+            accountNumber: "HL009988",
+            billNumber: "SBIHL202603",
+            isPaid: false,
+            inFetchCatgogry: .finance
+        ),
+        
         Infetch(
-            name: "Netflix Bill",
-            dueDate: Date().addingTimeInterval(86400 * 7),
-            SubjectName: "Bill",
-            amount: 2500,
-            inFetchCatgogry: .bill),
+            name: "Netflix Subscription",
+            dueDate: Date().addingTimeInterval(86400 * 5),
+            billDate: Date().addingTimeInterval(-86400 * 25),
+            SubjectName: "Netflix",
+            amount: 649,
+            customerName: "Priya Mehta",
+            accountNumber: "NETFLIX-IND",
+            billNumber: "NFLX202603",
+            isPaid: false,
+            inFetchCatgogry: .other
+        ),
+        
+        Infetch(
+            name: "Car Insurance",
+            dueDate: Date().addingTimeInterval(86400 * 12),
+            billDate: Date().addingTimeInterval(-86400 * 18),
+            SubjectName: "ICICI Lombard",
+            amount: 15000,
+            customerName: "Karan Patel",
+            accountNumber: "CAR998877",
+            billNumber: "CARINS2026",
+            isPaid: false,
+            inFetchCatgogry: .policy
+        )
     ]
-
 //
 
     // MARK: - Computed
