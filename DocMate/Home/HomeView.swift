@@ -15,7 +15,7 @@ struct HomeView: View {
     @State private var showPhotoPicker: Bool = false
     @State private var pendingImages: [UIImage] = []
     @State private var showPhotoSaveSheet: Bool = false
-
+    @State private var photoFlowViewModel = ScannerFlowViewModel()
     // MARK: Grid Layouts
     let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -191,11 +191,17 @@ struct HomeView: View {
 
         // MARK: - Save Sheet for photo import
         .sheet(isPresented: $showPhotoSaveSheet) {
-            SaveDocumentSheet(
-                images: pendingImages,
-                isScanned: false,
-                detectedDate: nil
-            )
+            NavigationStack {
+                SaveDocumentSheet(
+                    viewModel: photoFlowViewModel,   // ✅ REQUIRED
+                    images: pendingImages,
+                    isScanned: false,
+                    detectedDate: nil,
+                    onSaveComplete: {
+                        showPhotoSaveSheet = false   // ✅ close sheet
+                    }
+                )
+            }
         }
     }
 }

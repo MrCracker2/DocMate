@@ -7,44 +7,43 @@ import SwiftUI
 
 struct ReviewDocumentView: View {
 
-    @Environment(\.dismiss) private var dismiss
     var viewModel: ScannerFlowViewModel
-
-    @State private var manualDate: Date = Date()
+    @State private var manualDate: Date? = nil
 
     // MARK: - Body
     var body: some View {
-        NavigationStack {
+
+        ScrollView {   // ✅ Smooth scrolling (important for iOS feel)
             VStack(spacing: 24) {
 
-                // MARK: - Document Thumbnail
+                // MARK: - Top Preview Card
                 thumbnailSection
 
-                Spacer()
-
-                // MARK: - Bottom Section changes based on phase
+                // MARK: - Bottom Actions
                 bottomSection
-
-                Spacer()
             }
             .padding()
-            .navigationTitle("Review Document")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "chevron.left")
-                    }
-                }
+            .padding(.bottom, 40)
+        }
+        .background(Color(.systemGroupedBackground)) // ✅ iOS style background
+        .navigationTitle("Review Document")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
 
-                // Skip only shows during reviewing and detectingExpiry
-                ToolbarItem(placement: .topBarTrailing) {
-                    if showSkip {
-                        Button("Skip") {
-                            viewModel.skip()
-                        }
+            // MARK: - Back
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.goBack()
+                } label: {
+                    Image(systemName: "chevron.left")
+                }
+            }
+
+            // MARK: - Skip
+            ToolbarItem(placement: .topBarTrailing) {
+                if showSkip {
+                    Button("Skip") {
+                        viewModel.skip()
                     }
                 }
             }
@@ -54,54 +53,73 @@ struct ReviewDocumentView: View {
     // MARK: - Show Skip?
     private var showSkip: Bool {
         switch viewModel.phase {
-        case .reviewing, .detectingExpiry: return true
-        default: return false
+        case .reviewing, .detectingExpiry:
+            return true
+        default:
+            return false
         }
     }
 
-    // MARK: - Thumbnail Section
+    // MARK: - Preview Card (TOP SECTION)
     private var thumbnailSection: some View {
         HStack(spacing: 16) {
 
-            // Document thumbnail
+            // Image
             if let image = viewModel.scannedImages.first {
                 Image(uiImage: image)
                     .resizable()
-                    .scaledToFit()
-                    .frame(width: 100, height: 280)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .scaledToFill()
+                    .frame(width: 110, height: 150)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .shadow(radius: 4)
             }
 
-            // Right side — changes based on phase
+            // Status Info
             VStack(alignment: .leading, spacing: 8) {
+
+                Text("Document Preview")
+                    .font(.headline)
+
                 switch viewModel.phase {
 
                 case .reviewing:
-                    Text("Ready to extract date from document")
+                    Text("Ready to extract expiry date")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
                 case .detectingExpiry:
-                    Text("Scanning document...")
-                        .font(.subheadline)
+                    Label("Scanning document...", systemImage: "clock")
                         .foregroundStyle(.secondary)
 
                 case .expiryResult(let date):
                     Label("Date detected", systemImage: "checkmark.circle.fill")
-                        .font(.subheadline)
                         .foregroundStyle(.green)
 
                     Text(date.formatted(date: .abbreviated, time: .omitted))
                         .font(.title3)
-                        .fontWeight(.bold)
+                        .fontWeight(.semibold)
 
                 case .noDateFound:
-                    Label("No date found", systemImage: "xmark.circle.fill")
-                        .font(.subheadline)
-                        .foregroundStyle(.red)
 
-                case .scanning, .saving:
+                    if let manualDate {
+
+                        //  SHOW SELECTED DATE (LIVE UPDATE)
+                        Label("Selected date", systemImage: "calendar")
+                            .foregroundStyle(.blue)
+
+                        Text(manualDate.formatted(date: .abbreviated, time: .omitted))
+                            .font(.title3)
+                            .fontWeight(.semibold)
+
+                    } else {
+
+                        //  BEFORE SELECTION
+                        Label("No date detected", systemImage: "xmark.circle.fill")
+                            .foregroundStyle(.red)
+                    }
+
+                case .scanning:
                     EmptyView()
                 }
             }
@@ -109,100 +127,144 @@ struct ReviewDocumentView: View {
             Spacer()
         }
         .padding()
-        .background(Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
-    // MARK: - Bottom Section
+    // MARK: - Bottom Section (ACTIONS)
     @ViewBuilder
     private var bottomSection: some View {
+
         switch viewModel.phase {
 
-        // MARK: State 1 — Detect button
+        // MARK: Detect Button
         case .reviewing:
-            Button {
+            primaryButton(
+                title: "Detect Expiry Date",
+                icon: "calendar.badge.clock"
+            ) {
                 viewModel.detectExpiryDate()
-            } label: {
-                Label("Detect Expiry Date", systemImage: "calendar.badge.clock")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
 
-        // MARK: State 2 — OCR Loading
+        // MARK: Loading
         case .detectingExpiry:
             VStack(spacing: 12) {
                 ProgressView()
                     .scaleEffect(1.5)
 
                 Text("Running OCR...")
-                    .font(.subheadline)
                     .foregroundStyle(.secondary)
 
                 Text("Searching for dates...")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
 
-        // MARK: State 3 — Date Found → Confirm
+        // MARK: Date Found
         case .expiryResult(let date):
             VStack(spacing: 16) {
 
-                // Editable date picker
                 DatePicker(
                     "Expiry Date",
                     selection: Binding(
                         get: { date },
-                        set: { viewModel.confirmDate($0) }   // updates if user edits
+                        set: { viewModel.confirmDate($0) }
                     ),
                     displayedComponents: .date
                 )
                 .datePickerStyle(.graphical)
 
-                Button {
+                primaryButton(title: "Confirm") {
                     viewModel.confirmDate(date)
-                } label: {
-                    Text("Confirm")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
 
-        // MARK: State 4 — No Date Found → Manual Picker
+        // MARK: No Date Found (BEST UX VERSION)
         case .noDateFound:
             VStack(spacing: 16) {
 
-                Text("No expiry date found. Pick manually:")
+                Text("Couldn't detect expiry date")
+                    .font(.headline)
+
+                Text("Please select it manually to continue")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                DatePicker(
-                    "Select Date",
-                    selection: $manualDate,
-                    in: Date()...,              // future dates only
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.graphical)
+                // STEP 1: Button first
+                if manualDate == nil {
 
+                    Button {
+                        withAnimation {
+                            manualDate = Date()
+                        }
+                    } label: {
+                        Label("Select Date", systemImage: "calendar")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(.secondarySystemGroupedBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                } else {
+
+                    // STEP 2: Show picker
+                    DatePicker(
+                        "Select Date",
+                        selection: Binding(
+                            get: { manualDate ?? Date() },
+                            set: { manualDate = $0 }
+                        ),
+                        in: Date()...,
+                        displayedComponents: .date
+                    )
+                    .datePickerStyle(.graphical)
+                }
+
+                // STEP 3: Confirm
                 Button {
-                    viewModel.confirmDate(manualDate)
+                    if let date = manualDate {
+                        viewModel.confirmDate(date)
+                    }
                 } label: {
                     Text("Confirm")
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.blue)
+                        .background(manualDate == nil ? Color.gray : Color.blue)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+                .disabled(manualDate == nil)
             }
 
-        case .scanning, .saving:
+        case .scanning:
             EmptyView()
+        }
+    }
+
+    // MARK: - Reusable Button
+    private func primaryButton(
+        title: String,
+        icon: String? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+
+        Button(action: action) {
+            HStack {
+                if let icon = icon {
+                    Image(systemName: icon)
+                }
+                Text(title)
+                    .fontWeight(.semibold)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.accentColor)
+            .foregroundStyle(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
     }
 }

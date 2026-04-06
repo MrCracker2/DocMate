@@ -6,21 +6,29 @@
 import SwiftUI
 import Vision
 
+// ✅ Navigation Route (TOP LEVEL)
+enum ScannerRoute: Hashable {
+    case save(Date?)
+}
+
 @Observable
 class ScannerFlowViewModel {
 
-    // MARK: - Phase
+    // MARK: - Phase (ONLY for UI states, not navigation)
     enum Phase {
         case scanning
         case reviewing
         case detectingExpiry
         case expiryResult(Date)
         case noDateFound
-        case saving(Date?)
     }
 
     // MARK: - State
     var phase: Phase = .scanning
+
+    // ✅ Navigation Path (NEW)
+    var path: [ScannerRoute] = []
+
     var scannedImages: [UIImage] = []
     var extractedText: String = ""
 
@@ -33,9 +41,23 @@ class ScannerFlowViewModel {
         phase = .reviewing
     }
 
-    // MARK: - Skip → go to save with no date
+    // MARK: - Skip → navigate to Save (no date)
     func skip() {
-        phase = .saving(nil)
+        path.append(.save(nil))   //  PUSH instead of phase switch
+    }
+
+    // MARK: - Confirm date → navigate to Save
+    func confirmDate(_ date: Date) {
+        path.append(.save(date))  //  PUSH
+    }
+
+    // MARK: - Back Navigation
+    func goBack() {
+        if !path.isEmpty {
+            path.removeLast()     //  POP
+        } else {
+            phase = .reviewing   // fallback (rare case)
+        }
     }
 
     // MARK: - Detect Expiry Date
@@ -43,7 +65,6 @@ class ScannerFlowViewModel {
         phase = .detectingExpiry
 
         Task {
-
             var combinedText = ""
 
             // ✅ Multi-page OCR
@@ -54,10 +75,10 @@ class ScannerFlowViewModel {
                 }
             }
 
-            // ✅ Parse dates using advanced parser
+            // ✅ Parse dates
             let result = self.parser.parse(from: combinedText)
 
-            // ✅ Update UI safely
+            // ✅ Update UI
             self.extractedText = combinedText
 
             if let expiry = result.expiryDate {
@@ -68,37 +89,29 @@ class ScannerFlowViewModel {
         }
     }
 
-    // MARK: - Confirm date → go to save
-    func confirmDate(_ date: Date) {
-        phase = .saving(date)
-    }
-
-    // MARK: - Vision OCR (FIXED + SORTED)
+    // MARK: - Vision OCR (SORTED + SAFE)
     nonisolated private func extractText(from cgImage: CGImage) async -> String {
         return await withCheckedContinuation { continuation in
 
             let request = VNRecognizeTextRequest { request, _ in
 
-                // ✅ Get observations safely
                 guard let observations = request.results as? [VNRecognizedTextObservation] else {
                     continuation.resume(returning: "")
                     return
                 }
 
-                // ✅ Sort text in correct reading order (CRITICAL)
+                // ✅ Sort for correct reading order
                 let sorted = observations.sorted {
                     if $0.boundingBox.minY != $1.boundingBox.minY {
-                        return $0.boundingBox.minY > $1.boundingBox.minY   // top → bottom
+                        return $0.boundingBox.minY > $1.boundingBox.minY
                     }
-                    return $0.boundingBox.minX < $1.boundingBox.minX       // left → right
+                    return $0.boundingBox.minX < $1.boundingBox.minX
                 }
 
-                // ✅ Extract text
                 let text = sorted
                     .compactMap { $0.topCandidates(1).first?.string }
                     .joined(separator: "\n")
 
-                // ✅ Return result
                 continuation.resume(returning: text)
             }
 

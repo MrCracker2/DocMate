@@ -1,12 +1,5 @@
 //
 //  SaveDocumentSheet.swift
-//  DocMate
-//
-//  Created by Shashwat kumar on 04/04/26.
-//
-
-//
-//  SaveDocumentSheet.swift
 //  DocMateDummy
 //
 
@@ -14,8 +7,12 @@ import SwiftUI
 
 struct SaveDocumentSheet: View {
 
-    @Environment(AppViewModel.self) var viewModel
-    @Environment(\.dismiss) var dismiss
+    // ✅ App data
+    @Environment(AppViewModel.self) var appViewModel
+
+    
+    //  ADD scanner view model (for navigation)
+    var viewModel: ScannerFlowViewModel
 
     let images: [UIImage]
     let isScanned: Bool
@@ -25,62 +22,58 @@ struct SaveDocumentSheet: View {
     @State private var selectedCategoryId: UUID = AppViewModel.otherId
     @State private var documentName: String = "Scanned Document"
     @State private var showRenameAlert: Bool = false
+    
+    
+    @State private var isExpanded: Bool = false
+    @State private var dragOffset: CGFloat = 0
+    @FocusState private var isEditingName: Bool
 
     // MARK: - Body
     var body: some View {
-        NavigationStack {
-            ZStack(alignment: .bottom) {
+        ZStack(alignment: .bottom) {
 
-                // MARK: - BrowseView
-                BrowseView(
-                    isSelecting: true,
-                    selectedCategoryId: $selectedCategoryId
-                )
-                .padding(.bottom, 80)       // space for floating bar
+            // MARK: - BrowseView
+            BrowseView(
+                isSelecting: true,
+                selectedCategoryId: $selectedCategoryId
+            )
+            .padding(.bottom, 80)
 
-                // MARK: - Floating Bottom Bar
-                floatingBar
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationTitle("Save Document")
-            .toolbar {
+            // MARK: - Floating Bar
+            floatingBar
+        }
+        .navigationTitle("Save Document")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
 
-                // MARK: Back chevron
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .fontWeight(.semibold)
-                    }
+
+
+            // MARK: - Save Button
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    save()
+                } label: {
+                    Text("Save")
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            selectedCategoryId == AppViewModel.otherId
+                            ? Color.gray
+                            : Color.blue
+                        )
+                        .clipShape(Capsule())
                 }
-                // MARK: Save Button (blue pill)
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        save()
-                    } label: {
-                        Text("Save")
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                selectedCategoryId == AppViewModel.otherId
-                                ? Color.gray
-                                : Color.blue
-                            )
-                            .clipShape(Capsule())
-                    }
-                    .disabled(selectedCategoryId == AppViewModel.otherId)
-                }
+                .disabled(selectedCategoryId == AppViewModel.otherId)
             }
+        }
 
-            // MARK: - Rename Alert
-            .alert("Rename Document", isPresented: $showRenameAlert) {
-                TextField("Document name", text: $documentName)
-                Button("Done", action: {})
-                Button("Cancel", role: .cancel, action: {})
-            }
+        // MARK: - Rename Alert
+        .alert("Rename Document", isPresented: $showRenameAlert) {
+            TextField("Document name", text: $documentName)
+            Button("Done", action: {})
+            Button("Cancel", role: .cancel, action: {})
         }
     }
 
@@ -93,11 +86,11 @@ struct SaveDocumentSheet: View {
                 Image(uiImage: img)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 44, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .frame(width: 40, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
             }
 
-            // Name + Category
+            // Text
             VStack(alignment: .leading, spacing: 2) {
                 Text("Save as")
                     .font(.caption)
@@ -106,20 +99,10 @@ struct SaveDocumentSheet: View {
                 Text(documentName)
                     .font(.headline)
                     .lineLimit(1)
-
-                if selectedCategoryId != AppViewModel.otherId {
-                    Text(
-                        viewModel.categories
-                            .first(where: { $0.id == selectedCategoryId })?.name ?? ""
-                    )
-                    .font(.caption2)
-                    .foregroundStyle(.blue)
-                }
             }
 
             Spacer()
 
-            // Rename button
             Button {
                 showRenameAlert = true
             } label: {
@@ -130,24 +113,40 @@ struct SaveDocumentSheet: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+
+        // ✅ Glass effect
         .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
+
+        // ✅ Rounded card
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+
+        // ✅ Subtle border (important!)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.white.opacity(0.2))
+        )
+
+        // ✅ Shadow (floating feel)
+        .shadow(color: .black.opacity(0.1), radius: 12, y: 6)
+
+        // ✅ spacing from edges
         .padding(.horizontal, 16)
-        .padding(.bottom, 12)
+        .padding(.top, 8)
     }
 
     // MARK: - Save
     private func save() {
         let doc = Document(
             name: documentName,
-            dueDate: detectedDate,          // nil if skipped, Date if confirmed
-            userId: viewModel.user.id,
+            dueDate: detectedDate,
+            userId: appViewModel.user.id,
             categoryId: selectedCategoryId,
-            fileType: isScanned ? .image : .image
+            fileType: .image
         )
-        viewModel.addDocument(doc, images: images)
-        dismiss()
+
+        appViewModel.addDocument(doc, images: images)
+
+        // ✅ Close entire flow AFTER saving
         onSaveComplete?()
     }
 }
