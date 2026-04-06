@@ -43,7 +43,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 24) {
 
                 // MARK: Due Soon
-                Text("Due Soon")
+                Text("Expiring Shortly")
                     .font(.title3)
                     .fontWeight(.bold)
 
@@ -140,14 +140,14 @@ struct HomeView: View {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Menu {
 
-                    // ✅ Opens ScannerFlowView — owns entire scan experience
+                    //  Opens ScannerFlowView — owns entire scan experience
                     Button {
                         showScannerFlow = true
                     } label: {
                         Label("Scan Document", systemImage: "doc.viewfinder")
                     }
 
-                    // ✅ Opens photo picker
+                    //  Opens photo picker
                     Button {
                         showPhotoPicker = true
                     } label: {

@@ -54,21 +54,6 @@ struct SaveDocumentSheet: View {
                             .fontWeight(.semibold)
                     }
                 }
-
-                // MARK: Ellipsis
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button {
-                            showRenameAlert = true
-                        } label: {
-                            Label("Rename", systemImage: "pencil")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .fontWeight(.semibold)
-                    }
-                }
-
                 // MARK: Save Button (blue pill)
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
