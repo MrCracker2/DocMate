@@ -11,7 +11,6 @@ import SwiftUI
 struct BillSheetView: View {
     
     let doc: Infetch
-    @State private var showDetails = false
     
     var body: some View {
         
@@ -67,23 +66,31 @@ struct BillSheetView: View {
                     Text("\(doc.customerName)")
                         .foregroundStyle(.gray)
                 }
-                Button {
-                    showDetails = true
-                } label: {
-                    Text("View more detail")
-                        .bold()
-                        .foregroundColor(.blue)
-                        .padding(.vertical , 8)
-                        .underline()
+                HStack{
+                    Text("Bill Number")
+                        .foregroundStyle(.gray)
+                    Spacer()
+                    Text("\(doc.billNumber)")
+                        .foregroundStyle(.gray)
+                }
+                HStack{
+                    Text("Bill Date")
+                        .foregroundStyle(.gray)
+                    Spacer()
+                    Text("\(doc.billDate.formatted(date: .numeric , time: .omitted))")
+                        .foregroundStyle(.gray)
+                }
+                HStack{
+                    Text("Due Date")
+                        .foregroundStyle(.gray)
+                    Spacer()
+                    Text("\(doc.dueDate.formatted(date: .numeric , time: .omitted))")
+                        .foregroundStyle(.gray)
                 }
             }
             Spacer()
         }
         .padding()
-        .sheet(isPresented: $showDetails) {
-            BillDetailView(doc: doc)
-                .presentationDetents([.medium, .large])
-        }
     }
 }
 #Preview {

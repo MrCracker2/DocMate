@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  DocMateDummy
+//  DocMate
 //
 //  Created by Naman Yadav on 23/03/26.
 //
