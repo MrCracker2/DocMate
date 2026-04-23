@@ -55,9 +55,9 @@ struct HomeView: View {
                                     DocumentCard(
                                         icon: viewModel.icon(for: doc),
                                         title: doc.name,
-                                        dueDate: formatDate(due)
-                                    )
-                                    .frame(width: 160)
+                                        dateText: formatDate(due),
+                                        dateLabel: "Due"
+                                    )                                    .frame(width: 160)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -91,17 +91,24 @@ struct HomeView: View {
                     }
                 }
 
+                
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(Array(viewModel.recentDocuments.prefix(4))) { doc in
                         NavigationLink(destination: DocumentDetailView(document: doc)) {
                             DocumentCard(
                                 icon: viewModel.icon(for: doc),
-                                title: doc.name
+                                title: doc.name,
+                                dateText: doc.createdAt.formatted(
+                                    date: .abbreviated,
+                                    time: .omitted
+                                ),
+                                dateLabel: "Added"
                             )
                         }
                         .buttonStyle(.plain)
                     }
                 }
+                
 
                 // MARK: Pinned Documents
                 HStack {

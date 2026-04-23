@@ -10,7 +10,8 @@ struct DocumentCard: View {
     
     var icon: String
     var title: String
-    var dueDate: String? = nil
+    var dateText: String? = nil
+    var dateLabel: String? = nil
     
     var body: some View {
         
@@ -22,11 +23,15 @@ struct DocumentCard: View {
             
             Text(title)
                 .font(.headline)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
             // Show Date if Exists
-            if let dueDate = dueDate {
-                Text("Due: \(dueDate)")
-                    .foregroundColor(.red)
+            if let dateText = dateText,
+               let dateLabel = dateLabel {
+                
+                Text("\(dateLabel): \(dateText)")
                     .font(.subheadline)
+                    .foregroundColor(.indigo)
             }
         }
         .padding()

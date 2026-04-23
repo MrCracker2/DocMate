@@ -17,7 +17,7 @@ struct RecentlySavedView: View {
     ]
     
     var body: some View {
-        ScrollView (showsIndicators: false){
+        ScrollView(showsIndicators: false) {
             LazyVGrid(columns: columns, spacing: 16) {
                 
                 ForEach(viewModel.recentDocuments) { doc in
@@ -25,7 +25,12 @@ struct RecentlySavedView: View {
                     NavigationLink(destination: DocumentDetailView(document: doc)) {
                         DocumentCard(
                             icon: "doc.text",
-                            title: doc.name
+                            title: doc.name,
+                            dateText: doc.createdAt.formatted(
+                                date: .abbreviated,
+                                time: .omitted
+                            ),
+                            dateLabel: "Added"
                         )
                     }
                     .buttonStyle(.plain)

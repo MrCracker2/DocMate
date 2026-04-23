@@ -69,7 +69,7 @@ class AppViewModel {
             createdAt: Date(), assetName: "Insurance"),
 
         Document(
-            name: "Invoice",
+            name: "Invoice for Induuction",
             dueDate: Date().addingTimeInterval(86400 * 2),
             isPinned: false,
             userId: UUID(),
