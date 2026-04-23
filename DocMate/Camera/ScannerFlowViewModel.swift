@@ -6,11 +6,11 @@
 import SwiftUI
 import Vision
 
-// ✅ Navigation Route (TOP LEVEL)
+//  Navigation Route (TOP LEVEL)
 enum ScannerRoute: Hashable {
     case save(Date?)
 }
-
+@MainActor
 @Observable
 class ScannerFlowViewModel {
 
@@ -23,10 +23,10 @@ class ScannerFlowViewModel {
         case noDateFound
     }
 
-    // MARK: - State
+    // MARK: - State Stored Properties
     var phase: Phase = .scanning
 
-    // ✅ Navigation Path (NEW)
+    //  Navigation Path (NEW)
     var path: [ScannerRoute] = []
 
     var scannedImages: [UIImage] = []
@@ -67,7 +67,6 @@ class ScannerFlowViewModel {
         Task {
             var combinedText = ""
 
-            // ✅ Multi-page OCR
             for image in self.scannedImages {
                 if let cgImage = image.cgImage {
                     let text = await self.extractText(from: cgImage)
@@ -75,10 +74,12 @@ class ScannerFlowViewModel {
                 }
             }
 
-            // ✅ Parse dates
-            let result = self.parser.parse(from: combinedText)
+            // ✅ Offload heavy parsing to background
+            let result = await Task.detached(priority: .userInitiated) { [parser] in
+                parser.parse(from: combinedText)
+            }.value
 
-            // ✅ Update UI
+            // ✅ UI updates stay on main actor
             self.extractedText = combinedText
 
             if let expiry = result.expiryDate {
@@ -91,35 +92,29 @@ class ScannerFlowViewModel {
 
     // MARK: - Vision OCR (SORTED + SAFE)
     nonisolated private func extractText(from cgImage: CGImage) async -> String {
-        return await withCheckedContinuation { continuation in
-
-            let request = VNRecognizeTextRequest { request, _ in
-
-                guard let observations = request.results as? [VNRecognizedTextObservation] else {
-                    continuation.resume(returning: "")
-                    return
-                }
-
-                // ✅ Sort for correct reading order
-                let sorted = observations.sorted {
-                    if $0.boundingBox.minY != $1.boundingBox.minY {
-                        return $0.boundingBox.minY > $1.boundingBox.minY
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let request = VNRecognizeTextRequest { req, _ in
+                    guard let observations = req.results as? [VNRecognizedTextObservation] else {
+                        continuation.resume(returning: "")
+                        return
                     }
-                    return $0.boundingBox.minX < $1.boundingBox.minX
+                    let sorted = observations.sorted {
+                        if $0.boundingBox.minY != $1.boundingBox.minY {
+                            return $0.boundingBox.minY > $1.boundingBox.minY
+                        }
+                        return $0.boundingBox.minX < $1.boundingBox.minX
+                    }
+                    let text = sorted
+                        .compactMap { $0.topCandidates(1).first?.string }
+                        .joined(separator: "\n")
+                    continuation.resume(returning: text)
                 }
-
-                let text = sorted
-                    .compactMap { $0.topCandidates(1).first?.string }
-                    .joined(separator: "\n")
-
-                continuation.resume(returning: text)
+                request.recognitionLevel = .accurate
+                request.usesLanguageCorrection = true
+                let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+                try? handler.perform([request])
             }
-
-            request.recognitionLevel = .accurate
-            request.usesLanguageCorrection = true
-
-            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-            try? handler.perform([request])
         }
     }
 }

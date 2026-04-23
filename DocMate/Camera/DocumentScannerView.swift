@@ -45,18 +45,25 @@ struct DocumentScannerView: UIViewControllerRepresentable {
             for i in 0..<scan.pageCount {
                 images.append(scan.imageOfPage(at: i))
             }
-            parent.onScanComplete(images)
+            DispatchQueue.main.async {
+                self.parent.onScanComplete(images)
+            }
         }
 
         func documentCameraViewControllerDidCancel(_ controller: VNDocumentCameraViewController) {
-            parent.onCancel()
+            DispatchQueue.main.async {
+                self.parent.onCancel()
+            }
         }
 
         func documentCameraViewController(_ controller: VNDocumentCameraViewController,
                                           didFailWithError error: Error) {
             print("Scan error:", error)
-            parent.onCancel()
+            DispatchQueue.main.async {
+                self.parent.onCancel()
+            }
         }
+       
     }
 }
 

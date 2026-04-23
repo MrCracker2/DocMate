@@ -5,7 +5,7 @@ struct ParsedDates {
     let expiryDate: Date?
 }
 
-final class DateParser {
+final class DateParser:Sendable {
 
     // MARK: - Keywords
     private let expiryKeywords = [
@@ -18,7 +18,7 @@ final class DateParser {
     ]
 
     // MARK: - Main Entry
-    func parse(from text: String) -> ParsedDates {
+     nonisolated func parse(from text: String) -> ParsedDates {
         let lines = text.components(separatedBy: .newlines)
         let today = Date()
 
@@ -127,7 +127,7 @@ final class DateParser {
     }
 
     // MARK: - Extract ALL date strings (Regex)
-    private func extractAllDateStrings(from text: String) -> [String] {
+     nonisolated private func extractAllDateStrings(from text: String) -> [String] {
         let patterns = [
             #"(\b\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}\b)"#,
             #"(\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b)"#,
@@ -152,7 +152,7 @@ final class DateParser {
     }
 
     // MARK: - Parse Date
-    private func parseDate(from raw: String) -> Date? {
+    nonisolated private func parseDate(from raw: String) -> Date? {
         let formats = [
             "dd/MM/yyyy", "dd-MM-yyyy", "dd.MM.yyyy",
             "dd/MM/yy", "dd-MM-yy",
