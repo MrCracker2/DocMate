@@ -10,6 +10,7 @@ import SwiftUI
 struct ProfileView: View {
     
     @Environment(AppViewModel.self ) var viewModel
+    @Environment(AuthViewModel.self) var authVM
     @State private var showEditSheet = false
     @Environment(\.dismiss) var dismiss
 
@@ -84,7 +85,9 @@ struct ProfileView: View {
                 // Logout
                 Section {
                     Button("Logout") {
-                        
+                        Task {
+                            await logout()
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .foregroundStyle(.red)
@@ -115,10 +118,20 @@ struct ProfileView: View {
             EditProfileView()
         }
     }
+    func logout() async {
+        do {
+            try await SupabaseManager.shared.signOut()
+            authVM.isLoggedIn = false
+            dismiss()
+        } catch {
+            print(error.localizedDescription)
+        }
+    }
 }
 
 
 #Preview {
     ProfileView()
         .environment(AppViewModel())
+        .environment(AuthViewModel())
 }
