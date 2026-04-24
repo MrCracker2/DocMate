@@ -12,30 +12,65 @@ struct CategoryCardView: View {
     let docCount: Int
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-
-            Image(systemName: category.sfSymbol)
-                .font(.system(size: 28, weight: .semibold))
-                .foregroundStyle(.white)
-                .padding(.bottom, 12)
-
-            Spacer()
-
+        VStack(alignment: .leading, spacing: 12) {
+            
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.blue, Color.blue.opacity(0.75)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 42, height: 42)
+                
+                Image(systemName: category.sfSymbol)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            
+            Spacer(minLength: 0)
+            
             Text(category.name)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.white)
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.primary)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
-
+            
             Text("\(docCount) docs")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.white.opacity(0.75))
-                .padding(.top, 2)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(.blue.opacity(0.85))
         }
         .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 118, alignment: .leading)
-        .background(Color.blue.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .frame(maxWidth: .infinity, minHeight: 126, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(.systemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.blue.opacity(0.08), Color.clear],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
     }
 }
 struct TagRowView: View {

@@ -5,12 +5,6 @@
 //
 //  Created by Naman Yadav on 25/03/26.
 //
-//
-//  BillsCarouselView.swift
-//  DocMateDummy
-//
-//  Created by Naman Yadav on 25/03/26.
-//
 import SwiftUI
 
 struct BillsCarouselView: View {
@@ -57,7 +51,7 @@ struct BillsCarouselView: View {
                     HStack(spacing: 6) {
                         ForEach(0..<bills.count, id: \.self) { index in
                             Circle()
-                                .fill(index == currentIndex ? Color.white : Color.white.opacity(0.4))
+                                .fill(index == currentIndex ? Color.blue : Color.blue.opacity(0.28))
                                 .frame(width: index == currentIndex ? 8 : 6,
                                        height: index == currentIndex ? 8 : 6)
                                 .animation(.easeInOut, value: currentIndex)

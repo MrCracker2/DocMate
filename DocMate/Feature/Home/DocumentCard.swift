@@ -13,36 +13,81 @@ struct DocumentCard: View {
     var dateText: String? = nil
     var dateLabel: String? = nil
     
+    private var tintPair: (Color, Color) {
+        (Color.blue, Color.blue.opacity(0.7))
+    }
+    
     var body: some View {
         
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(.blue)
+            ZStack {
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [tintPair.0, tintPair.1],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 44, height: 44)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+            }
             
             Text(title)
                 .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.primary)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
+            
+            Spacer(minLength: 0)
+            
             // Show Date if Exists
             if let dateText = dateText,
                let dateLabel = dateLabel {
-                
-                Text("\(dateLabel): \(dateText)")
-                    .font(.subheadline)
-                    .foregroundColor(.indigo)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(dateLabel.uppercased())
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(tintPair.0.opacity(0.82))
+                    
+                    Text(dateText)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.primary)
+                }
             }
         }
-        .padding()
-        .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 126, alignment: .topLeading)
         .background(
-            LinearGradient(
-                colors: [Color.gray.opacity(0.1), Color.cyan.opacity(0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color(.systemBackground))
         )
-        .cornerRadius(20)
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [tintPair.0.opacity(0.08), Color.clear],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [tintPair.0.opacity(0.2), tintPair.1.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
     }
 }

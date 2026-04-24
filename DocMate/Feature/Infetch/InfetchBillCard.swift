@@ -10,6 +10,10 @@ struct InfetchBillCard: View {
     
     let doc: Infetch
     
+    private var tintPair: (Color, Color) {
+        (Color.blue, Color.blue.opacity(0.7))
+    }
+    
     var body: some View {
         
         VStack(alignment: .leading, spacing: 12) {
@@ -22,9 +26,13 @@ struct InfetchBillCard: View {
                 
                 Text(doc.inFetchCatgogry.rawValue)
                     .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.blue)
                     .padding(6)
-                    .background(Color.blue.opacity(0.15))
-                    .cornerRadius(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.blue.opacity(0.14))
+                    )
             }
             
             if let amount = doc.amount {
@@ -35,20 +43,39 @@ struct InfetchBillCard: View {
             
             Text(doc.SubjectName)
                 .font(.subheadline)
-                .foregroundColor(.gray)
+                .foregroundStyle(.secondary)
             
-            Text(doc.dueDate, style: .date)
+            Text("Due \(doc.dueDate, style: .date)")
                 .font(.caption)
-                .foregroundColor(.red)
+                .fontWeight(.semibold)
+                .foregroundColor(.blue.opacity(0.85))
         }
-        .padding()
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            LinearGradient(
-                colors: [Color.gray.opacity(0.1), Color.cyan.opacity(0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.systemBackground))
         )
-        .cornerRadius(20)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [tintPair.0.opacity(0.08), Color.clear],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [tintPair.0.opacity(0.2), tintPair.1.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
     }
 }
