@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-
+import PhotosUI
 struct HomeView: View {
 
     @Environment(AppViewModel.self) var viewModel
@@ -16,6 +16,7 @@ struct HomeView: View {
     @State private var pendingImages: [UIImage] = []
     @State private var showPhotoSaveSheet: Bool = false
     @State private var photoFlowViewModel = ScannerFlowViewModel()
+    @State private var selectedItem: PhotosPickerItem?
     // MARK: Grid Layouts
     let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -174,7 +175,19 @@ struct HomeView: View {
                 }
             }
         }
+        .onChange(of: selectedItem) { _, newItem in
+            guard let newItem else { return }
 
+            Task {
+                if let data = try? await newItem.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+
+                    pendingImages = [image]
+                    showPhotoSaveSheet = true
+                    selectedItem = nil
+                }
+            }
+        }
         // MARK: - Profile
         .sheet(isPresented: $showProfileView) {
             ProfileView()
@@ -186,26 +199,31 @@ struct HomeView: View {
         }
 
         // MARK: - Photo Picker
-        .sheet(isPresented: $showPhotoPicker) {
-            PhotoPickerView { image in
-                pendingImages = [image]
-                showPhotoPicker = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    showPhotoSaveSheet = true
-                }
-            }
-        }
+        .photosPicker(
+            isPresented: $showPhotoPicker,
+            selection: $selectedItem,
+            matching: .images
+        )
+//        .sheet(isPresented: $showPhotoPicker) {
+//            PhotoPickerView { image in
+//                pendingImages = [image]
+//                showPhotoPicker = false
+//                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+//                    showPhotoSaveSheet = true
+//                }
+//            }
+//        }
 
         // MARK: - Save Sheet for photo import
         .sheet(isPresented: $showPhotoSaveSheet) {
             NavigationStack {
                 SaveDocumentSheet(
-                    viewModel: photoFlowViewModel,   // ✅ REQUIRED
+                    viewModel: photoFlowViewModel,   //  REQUIRED
                     images: pendingImages,
                     isScanned: false,
                     detectedDate: nil,
                     onSaveComplete: {
-                        showPhotoSaveSheet = false   // ✅ close sheet
+                        showPhotoSaveSheet = false   //  close sheet
                     }
                 )
             }

@@ -16,17 +16,14 @@ struct PhotoPickerView: View {
     var onImagePicked: (UIImage) -> Void
     
     var body: some View {
-        VStack {
-            PhotosPicker(
-                selection: $selectedItem,
-                matching: .images,
-                photoLibrary: .shared()
-            ) {
-                Text("Select Image")
-                    .font(.headline)
-            }
-        }
-        .onChange(of: selectedItem) { _, newItem in //Runs when user selects an image
+        PhotosPicker(
+            selection: $selectedItem,
+            matching: .images,
+            photoLibrary: .shared()
+        ) {
+            Color.clear
+                .frame(width: 1, height: 1)
+        }        .onChange(of: selectedItem) { _, newItem in //Runs when user selects an image
             guard let newItem else { return }       // If nothing selected → stop
             
             Task {                                                                  // Runs async code (important because loading image takes time)
