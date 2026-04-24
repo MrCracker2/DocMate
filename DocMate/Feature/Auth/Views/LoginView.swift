@@ -36,14 +36,12 @@ struct LoginView: View {
                     VStack(spacing: 28) {
                         
                         Spacer()
-                            .frame(height: 40)
+                            .frame(height: 4)
                         
                         // MARK: Logo
                         VStack(spacing: 12) {
                             
-//                            Image(systemName: "doc.text.fill")
-//                                .font(.system(size: 54))
-//                                .foregroundStyle(.blue)
+
                             Image("DocImage")
                                 .resizable()
                                 .scaledToFit()
@@ -54,8 +52,8 @@ struct LoginView: View {
                                 .foregroundStyle(.blue)
                             
                             Text("Securely manage your documents")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary.opacity(0.85))
                         }
                         
                         // MARK: Heading
