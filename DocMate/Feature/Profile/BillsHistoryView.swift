@@ -221,7 +221,7 @@ struct HistoryBillCard: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 6) {
-                Text(bill.SubjectName)
+                Text(bill.subjectName)
                     .font(.subheadline)
                     .foregroundColor(.gray)
 

@@ -7,9 +7,12 @@
 
 import Foundation
 import SwiftUI
+import SwiftData
+
 // MARK: - User
-struct User: Identifiable {
-    let id = UUID()
+@Model
+class User {
+    var id: UUID = UUID()
     var name: String
     var email: String
     var password: String
@@ -23,46 +26,57 @@ struct User: Identifiable {
         let last  = parts.last?.prefix(1)  ?? ""
         return "\(first)\(last)".uppercased()
     }
-}
 
-// MARK: - Document
-struct Document: Identifiable {
-    let id         : UUID
-    var name       : String
-    var dueDate    : Date?
-    var isPinned   : Bool
-    var userId     : UUID
-    var categoryId : UUID
-    var createdAt  : Date
-    var fileType   : DocumentFileType
-    var assetName  : String?
-
-    init(
-        name       : String,
-        dueDate    : Date?            = nil,
-        isPinned   : Bool             = false,
-        userId     : UUID,
-        categoryId : UUID,
-        createdAt  : Date             = Date(),
-        fileType   : DocumentFileType = .image,
-        assetName  : String?          = nil
-    ) {
-        self.id         = UUID()
-        self.name       = name
-        self.dueDate    = dueDate
-        self.isPinned   = isPinned
-        self.userId     = userId
-        self.categoryId = categoryId
-        self.createdAt  = createdAt
-        self.fileType   = fileType
-        self.assetName  = assetName
+    init(name: String, email: String, password: String, phoneNumber: Int, dateOfBirth: Date, gender: String) {
+        self.name = name
+        self.email = email
+        self.password = password
+        self.phoneNumber = phoneNumber
+        self.dateOfBirth = dateOfBirth
+        self.gender = gender
     }
 }
 
-extension Document: Hashable {
-    static func == (lhs: Document, rhs: Document) -> Bool { lhs.id == rhs.id }
-    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+// MARK: - Document
+@Model
+class Document {
+    var id: UUID = UUID()
+    var name: String
+    var dueDate: Date?
+    var isPinned: Bool
+    var userId: UUID
+    var categoryId: UUID
+    var createdAt: Date
+    var fileTypeRaw: String
+    var assetName: String?
+
+    var fileType: DocumentFileType {
+        get { DocumentFileType(rawValue: fileTypeRaw) ?? .image }
+        set { fileTypeRaw = newValue.rawValue }
+    }
+
+    init(
+        name: String,
+        dueDate: Date? = nil,
+        isPinned: Bool = false,
+        userId: UUID,
+        categoryId: UUID,
+        createdAt: Date = Date(),
+        fileType: DocumentFileType = .image,
+        assetName: String? = nil
+    ) {
+        self.name = name
+        self.dueDate = dueDate
+        self.isPinned = isPinned
+        self.userId = userId
+        self.categoryId = categoryId
+        self.createdAt = createdAt
+        self.fileTypeRaw = fileType.rawValue
+        self.assetName = assetName
+    }
 }
+
+// Hashable conformance is provided automatically by @Model
 
 // MARK: - Document File Type
 enum DocumentFileType: String, Codable, Hashable {
@@ -78,55 +92,78 @@ enum DocumentFileType: String, Codable, Hashable {
 }
 
 // MARK: - Category
-struct Category: Identifiable, Hashable {
-    let id      : UUID
-    var name    : String
+@Model
+class Category {
+    var id: UUID = UUID()
+    @Attribute(.unique) var name: String
     var sfSymbol: String
 
     init(name: String, sfSymbol: String) {
-        self.id       = UUID()
-        self.name     = name
-        self.sfSymbol = sfSymbol
-    }
-
-    init(name: String, sfSymbol: String, fixedId: UUID) {
-        self.id       = fixedId
-        self.name     = name
+        self.name = name
         self.sfSymbol = sfSymbol
     }
 }
+
 
 // MARK: - Tag
-struct Tag: Identifiable, Hashable {
-    let id    = UUID()
-    var name  : String
-    var color : String
+@Model
+class Tag {
+    var id: UUID = UUID()
+    @Attribute(.unique) var name: String
+    var color: String
+
+    init(name: String, color: String) {
+        self.name = name
+        self.color = color
+    }
 }
 
+
 // MARK: - DocumentTag
-struct DocumentTag: Identifiable {
-    let id         = UUID()
-    var documentId : UUID
-    var tagId      : UUID
-}
-struct Infetch: Identifiable {
-    
-    let id = UUID()
-    
-    var name: String                // e.g. Airtel Postpaid
+//struct DocumentTag: Identifiable {
+//    let id         = UUID()
+//    var documentId : UUID
+//    var tagId      : UUID
+//}
+@Model
+class Infetch {
+    var id: UUID = UUID()
+    var name: String
     var dueDate: Date
-    var billDate: Date              // NEW
-    var SubjectName: String         // e.g. Electricity, LIC
+    var billDate: Date
+    var subjectName: String
     var amount: Double?
-    
-    var customerName: String        // NEW
-    var phoneNumber: Int?       // NEW (mobile no )
-    var billNumber: String        // NEW
-    
-    var isPaid: Bool                // NEW
-    
-    var inFetchCatgogry: InfetchCategory
+    var customerName: String
+    var phoneNumber: Int?
+    var billNumber: String
+    var isPaid: Bool
+    var infetchCategoryRaw: String
+
+    var inFetchCatgogry: InfetchCategory {
+        get { InfetchCategory(rawValue: infetchCategoryRaw) ?? .other }
+        set { infetchCategoryRaw = newValue.rawValue }
+    }
+
+    init(
+        name: String, dueDate: Date, billDate: Date,
+        SubjectName: String, amount: Double?,
+        customerName: String, phoneNumber: Int?,
+        billNumber: String, isPaid: Bool,
+        inFetchCatgogry: InfetchCategory
+    ) {
+        self.name = name
+        self.dueDate = dueDate
+        self.billDate = billDate
+        self.subjectName = SubjectName
+        self.amount = amount
+        self.customerName = customerName
+        self.phoneNumber = phoneNumber
+        self.billNumber = billNumber
+        self.isPaid = isPaid
+        self.infetchCategoryRaw = inFetchCatgogry.rawValue
+    }
 }
+
 enum InfetchCategory: String, CaseIterable, Identifiable {
     
     case bill = "Bill"

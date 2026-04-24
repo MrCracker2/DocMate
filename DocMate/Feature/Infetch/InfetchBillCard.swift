@@ -41,7 +41,7 @@ struct InfetchBillCard: View {
                     .fontWeight(.bold)
             }
             
-            Text(doc.SubjectName)
+            Text(doc.subjectName)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             

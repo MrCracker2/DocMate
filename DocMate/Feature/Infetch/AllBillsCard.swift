@@ -22,7 +22,7 @@ struct AllBillsCard: View {
             
             VStack(alignment: .leading, spacing: 6) {
                 
-                Text(doc.SubjectName)
+                Text(doc.subjectName)
                     .font(.subheadline)
                     .foregroundColor(.gray)
                 

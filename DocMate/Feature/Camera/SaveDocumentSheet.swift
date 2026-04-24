@@ -19,7 +19,8 @@ struct SaveDocumentSheet: View {
     var detectedDate: Date? = nil
     var onSaveComplete: (() -> Void)? = nil
 
-    @State private var selectedCategoryId: UUID = AppViewModel.otherId
+    @State private var selectedCategoryId: UUID = UUID()
+    @State private var hasSelectedCategory: Bool = false
     @State private var documentName: String = "Scanned Document"
     @State private var showRenameAlert: Bool = false
     
@@ -38,6 +39,9 @@ struct SaveDocumentSheet: View {
                 selectedCategoryId: $selectedCategoryId
             )
             .padding(.bottom, 80)
+            .onChange(of: selectedCategoryId) { _, _ in
+                hasSelectedCategory = true
+            }
 
             // MARK: - Floating Bar
             floatingBar
@@ -59,13 +63,13 @@ struct SaveDocumentSheet: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .background(
-                            selectedCategoryId == AppViewModel.otherId
-                            ? Color.gray
-                            : Color.blue
+                            hasSelectedCategory
+                            ? Color.blue
+                            : Color.gray
                         )
                         .clipShape(Capsule())
                 }
-                .disabled(selectedCategoryId == AppViewModel.otherId)
+                .disabled(!hasSelectedCategory)
             }
         }
 

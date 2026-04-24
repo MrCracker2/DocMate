@@ -7,10 +7,13 @@
 
 import Foundation
 import SwiftUI
+import SwiftData
 
 struct RootView: View {
     
     @Environment(AuthViewModel.self) var authVM
+    @Environment(AppViewModel.self) var viewModel
+    @Environment(\.modelContext) private var modelContext
     
     var body: some View {
         Group {
@@ -23,6 +26,7 @@ struct RootView: View {
             }
         }
         .task {
+            viewModel.configure(context: modelContext)
             await authVM.checkSession()
         }
     }

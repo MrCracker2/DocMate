@@ -57,7 +57,6 @@ struct AllBillsView: View {
                 }
             }
             .padding()
-            .animation(.spring(response: 0.4, dampingFraction: 0.78), value: viewModel.inFetch.map(\.id))
         }
         .navigationTitle("All Bills")
         .navigationBarTitleDisplayMode(.inline)
@@ -77,13 +76,9 @@ struct AllBillsView: View {
     
     // MARK: - Mark as paid
     private func markAsPaid(_ bill: Infetch) {
-        var paidBill = bill
-        paidBill.isPaid = true
-        paidBill.dueDate = Date()
-
         withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
-            viewModel.inFetch.removeAll { $0.id == bill.id }
-            viewModel.billHistory.insert(paidBill, at: 0)
+            bill.isPaid = true
+            bill.dueDate = Date()
         }
 
         toastBillName = bill.name

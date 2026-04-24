@@ -19,7 +19,7 @@ struct BillSheetView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(doc.name)
                     .font(.headline)
-                Text(doc.SubjectName)
+                Text(doc.subjectName)
                     .foregroundColor(.gray)
             }
             .padding()
