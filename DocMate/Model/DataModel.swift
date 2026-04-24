@@ -6,7 +6,7 @@
 //
 
 import Foundation
-
+import SwiftUI
 // MARK: - User
 struct User: Identifiable {
     let id = UUID()

@@ -4,6 +4,7 @@
 //
 //  Created by Naman Yadav on 23/03/26.
 //
+//
 
 import Foundation
 import UIKit
@@ -13,6 +14,7 @@ class AppViewModel {
 
     var imageStore: [UUID: [UIImage]] = [:]
 
+    // MARK: - Category Fixed IDs
     static let financeId   = UUID()
     static let identityId  = UUID()
     static let educationId = UUID()
@@ -30,10 +32,12 @@ class AppViewModel {
         Category(name: "Policies",      sfSymbol: "doc",                 fixedId: AppViewModel.policiesId),
         Category(name: "Other",         sfSymbol: "questionmark.circle", fixedId: AppViewModel.otherId),
     ]
+
     func icon(for document: Document) -> String {
         categories.first(where: { $0.id == document.categoryId })?.sfSymbol ?? "doc.text"
     }
 
+    // MARK: - Documents
     var documents: [Document] = [
         Document(
             name: "Passport",
@@ -43,7 +47,6 @@ class AppViewModel {
             categoryId: AppViewModel.identityId,
             createdAt: Date(),
             assetName: "passport"),
-
         Document(
             name: "Electric Bill",
             dueDate: Date().addingTimeInterval(86400 * 2),
@@ -51,7 +54,6 @@ class AppViewModel {
             userId: UUID(),
             categoryId: AppViewModel.billsId,
             createdAt: Date(), assetName: "electric"),
-
         Document(
             name: "Water Bill",
             dueDate: Date().addingTimeInterval(86400 * 3),
@@ -59,7 +61,6 @@ class AppViewModel {
             userId: UUID(),
             categoryId: AppViewModel.billsId,
             createdAt: Date(), assetName: "waterBill"),
-
         Document(
             name: "Car Insurance",
             dueDate: Date().addingTimeInterval(86400 * 30),
@@ -67,7 +68,6 @@ class AppViewModel {
             userId: UUID(),
             categoryId: AppViewModel.vehicleId,
             createdAt: Date(), assetName: "Insurance"),
-
         Document(
             name: "Invoice for Induuction",
             dueDate: Date().addingTimeInterval(86400 * 2),
@@ -75,7 +75,6 @@ class AppViewModel {
             userId: UUID(),
             categoryId: AppViewModel.financeId,
             createdAt: Date(), assetName: "invoice"),
-
         Document(
             name: "Marksheet Class 12",
             dueDate: nil,
@@ -86,14 +85,14 @@ class AppViewModel {
     ]
 
     var tags: [Tag] = [
-        Tag(name: "Red", color: "red"),
-        Tag(name: "Blue", color: "blue"),
-        Tag(name: "Green", color: "green"),
-        Tag(name: "Yellow", color: "yellow"),
-        Tag(name: "Purple", color: "purple"),
+        Tag(name: "Red",       color: "red"),
+        Tag(name: "Blue",      color: "blue"),
+        Tag(name: "Green",     color: "green"),
+        Tag(name: "Yellow",    color: "yellow"),
+        Tag(name: "Purple",    color: "purple"),
         Tag(name: "Important", color: "red"),
-        Tag(name: "Work", color: "blue"),
-        Tag(name: "Personal", color: "green"),
+        Tag(name: "Work",      color: "blue"),
+        Tag(name: "Personal",  color: "green"),
     ]
 
     var user: User = User(
@@ -107,8 +106,8 @@ class AppViewModel {
 
     var genderOptions: [String] = ["Male", "Female", "Other"]
 
+    // MARK: - Unpaid Bills
     var inFetch: [Infetch] = [
-        
         Infetch(
             name: "Electricity Bill",
             dueDate: Date().addingTimeInterval(86400 * 3),
@@ -121,7 +120,6 @@ class AppViewModel {
             isPaid: false,
             inFetchCatgogry: .bill
         ),
-        
         Infetch(
             name: "LIC Policy Premium",
             dueDate: Date().addingTimeInterval(86400 * 10),
@@ -134,7 +132,6 @@ class AppViewModel {
             isPaid: false,
             inFetchCatgogry: .insurance
         ),
-        
         Infetch(
             name: "Credit Card Bill",
             dueDate: Date().addingTimeInterval(86400 * 2),
@@ -147,7 +144,6 @@ class AppViewModel {
             isPaid: false,
             inFetchCatgogry: .finance
         ),
-        
         Infetch(
             name: "Home Loan EMI",
             dueDate: Date().addingTimeInterval(86400 * 7),
@@ -160,7 +156,6 @@ class AppViewModel {
             isPaid: false,
             inFetchCatgogry: .finance
         ),
-        
         Infetch(
             name: "Netflix Subscription",
             dueDate: Date().addingTimeInterval(86400 * 5),
@@ -173,7 +168,6 @@ class AppViewModel {
             isPaid: false,
             inFetchCatgogry: .other
         ),
-        
         Infetch(
             name: "Car Insurance",
             dueDate: Date().addingTimeInterval(86400 * 12),
@@ -188,7 +182,87 @@ class AppViewModel {
         )
     ]
 
-    // MARK: - Computed
+    // MARK: - ✅ Paid Bills History (NEW)
+    var billHistory: [Infetch] = [
+        // Pre-seeded history so the history screen is populated on first launch
+        Infetch(
+            name: "Water Bill",
+            dueDate: Date().addingTimeInterval(-86400 * 5),
+            billDate: Date().addingTimeInterval(-86400 * 35),
+            SubjectName: "DJB",
+            amount: 430,
+            customerName: "Rahul Sharma",
+            accountNumber: "WTR001122",
+            billNumber: "DJB202602",
+            isPaid: true,
+            inFetchCatgogry: .bill
+        ),
+        Infetch(
+            name: "Internet Bill",
+            dueDate: Date().addingTimeInterval(-86400 * 2),
+            billDate: Date().addingTimeInterval(-86400 * 32),
+            SubjectName: "Airtel",
+            amount: 999,
+            customerName: "Rahul Sharma",
+            accountNumber: "AIRTEL55566",
+            billNumber: "AIR20260218",
+            isPaid: true,
+            inFetchCatgogry: .bill
+        ),
+        Infetch(
+            name: "Health Insurance",
+            dueDate: Date().addingTimeInterval(-86400 * 60),
+            billDate: Date().addingTimeInterval(-86400 * 90),
+            SubjectName: "Star Health",
+            amount: 18000,
+            customerName: "Neelam Gupta",
+            accountNumber: "SH-MED-0099",
+            billNumber: "STARH20260101",
+            isPaid: true,
+            inFetchCatgogry: .insurance
+        ),
+    ]
+
+    // MARK: - ✅ Refresh / Simulate Payment (NEW)
+    /// Simulates an API call. On success (Bool.random()), marks bill as paid
+    /// and moves it from `inFetch` → `billHistory`.
+    /// Animation is intentionally absent here — the call site (View) wraps
+    /// the completion in `withAnimation` so SwiftUI can drive it correctly.
+    func refreshBill(_ bill: Infetch, completion: @escaping (Bool) -> Void) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+            guard let self else { return }
+            let isPaid = Bool.random()
+
+            if isPaid {
+                var paidBill = bill
+                paidBill.isPaid = true
+                paidBill.dueDate = Date()   // anchor to today in history
+
+                self.inFetch.removeAll { $0.id == bill.id }
+                self.billHistory.insert(paidBill, at: 0)
+            }
+            completion(isPaid)
+        }
+    }
+
+    // MARK: - ✅ Total Spend Helper (NEW)
+    /// Returns total amount paid within the given month filter.
+    func totalSpend(for filter: BillMonthFilter) -> Double {
+        billsFiltered(by: filter)
+            .compactMap { $0.amount }
+            .reduce(0, +)
+    }
+
+    // MARK: - ✅ Filter Helper (NEW)
+    func billsFiltered(by filter: BillMonthFilter) -> [Infetch] {
+        let calendar = Calendar.current
+        let reference = filter.referenceDate
+        return billHistory.filter { bill in
+            calendar.isDate(bill.dueDate, equalTo: reference, toGranularity: .month)
+        }
+    }
+
+    // MARK: - Computed (unchanged)
     var expiringDocuments: [Document] {
         documents.filter {
             guard let due = $0.dueDate else { return false }
@@ -204,30 +278,21 @@ class AppViewModel {
         documents.filter { $0.isPinned }
     }
 
-    // MARK: - Pin Limit
     static let maxPinnedDocuments = 5
 
-    // unpin hamesha allow, pin sirf tab jab limit na bhari ho
-    // Return value: false matlab limit full hai, caller alert dikhaye
     @discardableResult
     func togglePin(_ document: Document) -> Bool {
         guard let i = documents.firstIndex(where: { $0.id == document.id }) else { return false }
-
         if documents[i].isPinned {
-            // Unpin — hamesha allow
             documents[i].isPinned = false
             return true
         } else {
-            // Pin — pehle check karo limit
-            guard pinnedDocuments.count < AppViewModel.maxPinnedDocuments else {
-                return false  // limit full, caller ko bata do
-            }
+            guard pinnedDocuments.count < AppViewModel.maxPinnedDocuments else { return false }
             documents[i].isPinned = true
             return true
         }
     }
 
-    // MARK: - Browse Helpers
     func documents(for category: Category) -> [Document] {
         documents.filter { $0.categoryId == category.id }
     }
@@ -236,7 +301,6 @@ class AppViewModel {
         documents(for: category).count
     }
 
-    // MARK: - Document Actions
     func images(for document: Document) -> [UIImage] {
         imageStore[document.id] ?? []
     }
@@ -245,7 +309,6 @@ class AppViewModel {
         documents.removeAll { $0.id == document.id }
     }
 
-    // MARK: - Category Actions
     func addCategory(name: String, sfSymbol: String) {
         categories.append(Category(name: name, sfSymbol: sfSymbol))
     }

@@ -2,217 +2,223 @@
 //  BillsHistoryView.swift
 //  DocMate
 //
-//  Created for the Paid Bills History feature.
-//  Architecture: SwiftUI + @Observable AppViewModel via .environment(...)
+
+//
+//  BillsHistoryView.swift
+//  DocMate
 //
 
 import SwiftUI
 
-// MARK: - BillsHistoryView
-
 struct BillsHistoryView: View {
 
     @Environment(AppViewModel.self) var viewModel
-    @State private var selectedFilter: BillMonthFilter = .thisMonth
+    @State private var showCustomPicker = false
+    @State private var customPickerDate = Date()
+    @State private var activeMonthOffset: Int? = nil
+    @State private var customMonth: Date? = nil
+    @State private var selectedCategory: InfetchCategory? = nil
 
-    // MARK: - Computed (kept outside body per architecture rules)
+    // MARK: - Helpers
 
-    /// Bills filtered by the selected month, sorted latest-first.
-    private var filteredBills: [Infetch] {
-        viewModel.billsFiltered(by: selectedFilter)
-            .sorted { $0.dueDate > $1.dueDate }
+    private var monthsToShow: [Date] {
+        let cal = Calendar.current
+        return (0..<3).compactMap { cal.date(byAdding: .month, value: -$0, to: Date()) }
     }
 
-    /// Bills grouped by start-of-day, preserving sorted order.
-    private var groupedBills: [(key: Date, bills: [Infetch])] {
-        let calendar = Calendar.current
-        let dict = Dictionary(grouping: filteredBills) {
-            calendar.startOfDay(for: $0.dueDate)
+    private var activeMonths: [Date] {
+        if let offset = activeMonthOffset {
+            let cal = Calendar.current
+            if let d = cal.date(byAdding: .month, value: -offset, to: Date()) { return [d] }
         }
-        return dict
-            .map { (key: $0.key, bills: $0.value) }
-            .sorted { $0.key > $1.key }
+        if let custom = customMonth { return [custom] }
+        return monthsToShow
     }
 
-    private var totalSpend: Double {
-        viewModel.totalSpend(for: selectedFilter)
+    private func billsForMonth(_ month: Date) -> [Infetch] {
+        let cal = Calendar.current
+        return viewModel.billHistory.filter {
+            cal.isDate($0.dueDate, equalTo: month, toGranularity: .month)
+        }
     }
+
+    private func billsForMonth(_ month: Date, category: InfetchCategory) -> [Infetch] {
+        billsForMonth(month).filter { $0.inFetchCatgogry == category }.sorted { $0.dueDate > $1.dueDate }
+    }
+
+    private func visibleBillsForMonth(_ month: Date) -> [Infetch] {
+        if let cat = selectedCategory {
+            return billsForMonth(month).filter { $0.inFetchCatgogry == cat }
+        }
+        return billsForMonth(month)
+    }
+
+    private func monthLabel(_ date: Date) -> String {
+        let f = DateFormatter(); f.dateFormat = "MMMM yyyy"; return f.string(from: date)
+    }
+
+    private func shortMonthLabel(_ date: Date) -> String {
+        let f = DateFormatter(); f.dateFormat = "MMM yyyy"; return f.string(from: date)
+    }
+
+    // MARK: - Body
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
 
-                // Month filter chips
-                filterChips
-                    .padding(.horizontal)
-                    .padding(.top, 16)
-                    .padding(.bottom, 12)
+                // Category filter chips
+                categoryChips
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
 
-                // Total spend card
-                totalSpendCard
-                    .padding(.horizontal)
-                    .padding(.bottom, 20)
-
-                // Timeline or empty state
-                if groupedBills.isEmpty {
-                    emptyState
-                        .padding(.top, 60)
-                        .frame(maxWidth: .infinity)
-                } else {
-                    timelineContent
-                        .padding(.horizontal)
+                // Month sections
+                ForEach(activeMonths, id: \.self) { month in
+                    monthSection(for: month)
                 }
+
+                Spacer().frame(height: 40)
             }
         }
         .navigationTitle("Bills History")
         .navigationBarTitleDisplayMode(.large)
         .background(Color(.systemGroupedBackground))
-        .animation(.easeInOut(duration: 0.25), value: selectedFilter)
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: groupedBills.map(\.key))
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { menuButton }
+        }
+        .sheet(isPresented: $showCustomPicker) { customMonthSheet }
+        .animation(.easeInOut(duration: 0.22), value: activeMonthOffset)
+        .animation(.easeInOut(duration: 0.22), value: customMonth)
+        .animation(.easeInOut(duration: 0.22), value: selectedCategory)
     }
 
-    // MARK: - Filter Chips
+    // MARK: - Category Chips
 
-    private var filterChips: some View {
-        HStack(spacing: 10) {
-            ForEach(BillMonthFilter.allCases) { filter in
+    private var categoryChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                CategoryChip(title: "All", isSelected: selectedCategory == nil) {
+                    selectedCategory = nil
+                }
+                ForEach(InfetchCategory.allCases) { cat in
+                    CategoryChip(title: cat.rawValue, isSelected: selectedCategory == cat) {
+                        selectedCategory = cat
+                    }
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+
+    // MARK: - 3-dot Menu
+
+    private var menuButton: some View {
+        Menu {
+            Button {
+                activeMonthOffset = nil
+                customMonth = nil
+            } label: {
+                Label("Last 3 Months", systemImage: "calendar")
+            }
+
+            Divider()
+
+            ForEach(0..<3) { offset in
+                let cal = Calendar.current
+                let date = cal.date(byAdding: .month, value: -offset, to: Date()) ?? Date()
                 Button {
-                    selectedFilter = filter
+                    activeMonthOffset = offset
+                    customMonth = nil
                 } label: {
-                    Text(filter.displayLabel)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 9)
-                        .background(
-                            selectedFilter == filter
-                                ? Color.blue
-                                : Color(.secondarySystemGroupedBackground)
-                        )
-                        .foregroundStyle(selectedFilter == filter ? .white : .primary)
-                        .clipShape(Capsule())
-                        .shadow(
-                            color: selectedFilter == filter ? Color.blue.opacity(0.3) : .clear,
-                            radius: 6, x: 0, y: 3
-                        )
+                    Label(shortMonthLabel(date), systemImage: offset == 0 ? "calendar.circle.fill" : "calendar.circle")
                 }
-                .buttonStyle(.plain)
             }
+
+            Divider()
+
+            Button {
+                showCustomPicker = true
+            } label: {
+                Label("Custom Month…", systemImage: "slider.horizontal.3")
+            }
+        } label: {
+            Image(systemName: "ellipsis").font(.system(size: 17))
         }
     }
 
-    // MARK: - Total Spend Card
+    // MARK: - Month Section
 
-    private var totalSpendCard: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Total Paid")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
-                    .kerning(0.5)
+    @ViewBuilder
+    private func monthSection(for month: Date) -> some View {
+        let bills = visibleBillsForMonth(month)
+        if !bills.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
 
-                Text("₹\(totalSpend, specifier: "%.0f")")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(.primary)
-            }
+                // Month title only — no total amount
+                Text(monthLabel(month))
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    .padding(.bottom, 12)
 
-            Spacer()
-
-            ZStack {
-                Circle()
-                    .fill(Color.green.opacity(0.15))
-                    .frame(width: 50, height: 50)
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 22))
-                    .foregroundStyle(.green)
-            }
-        }
-        .padding(18)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
-    }
-
-    // MARK: - Timeline Content
-
-    private var timelineContent: some View {
-        LazyVStack(alignment: .leading, spacing: 0, pinnedViews: []) {
-            ForEach(groupedBills, id: \.key) { group in
-                // Section date header
-                dateSectionHeader(for: group.key)
-                    .padding(.bottom, 8)
-
-                // Timeline rows
-                ForEach(Array(group.bills.enumerated()), id: \.element.id) { index, bill in
-                    TimelineRow(
-                        bill: bill,
-                        isLast: index == group.bills.count - 1
-                    )
+                // Category subsections — no category label header
+                ForEach(InfetchCategory.allCases) { category in
+                    if selectedCategory == nil || selectedCategory == category {
+                        let catBills = billsForMonth(month, category: category)
+                        if !catBills.isEmpty {
+                            VStack(spacing: 8) {
+                                ForEach(catBills) { bill in
+                                    HistoryBillCard(bill: bill)
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.bottom, 12)
+                        }
+                    }
                 }
-
-                Spacer().frame(height: 20)
             }
         }
-        .padding(.bottom, 40)
     }
 
-    // MARK: - Date Section Header
+    // MARK: - Custom Month Sheet
 
-    private func dateSectionHeader(for date: Date) -> some View {
-        Text(sectionTitle(for: date))
-            .font(.footnote)
-            .fontWeight(.semibold)
-            .foregroundStyle(.secondary)
-            .textCase(.uppercase)
-            .kerning(0.6)
-            .padding(.top, 4)
-    }
-
-    // MARK: - Empty State
-
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(Color.blue.opacity(0.08))
-                    .frame(width: 80, height: 80)
-                Image(systemName: "tray.fill")
-                    .font(.system(size: 34))
-                    .foregroundStyle(Color.blue.opacity(0.5))
+    private var customMonthSheet: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                DatePicker("Select month", selection: $customPickerDate, in: ...Date(), displayedComponents: [.date])
+                    .datePickerStyle(.graphical)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                Spacer()
             }
-
-            Text("No bills found")
-                .font(.headline)
-                .foregroundStyle(.primary)
-
-            Text("Paid bills for \(selectedFilter.displayLabel) will appear here.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+            .navigationTitle("Select Month")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { showCustomPicker = false }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Apply") {
+                        customMonth = customPickerDate
+                        activeMonthOffset = nil
+                        showCustomPicker = false
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
         }
-    }
-
-    // MARK: - Helpers
-
-    private func sectionTitle(for date: Date) -> String {
-        let calendar = Calendar.current
-        if calendar.isDateInToday(date)     { return "Today" }
-        if calendar.isDateInYesterday(date) { return "Yesterday" }
-
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d MMM yyyy"
-        return formatter.string(from: date)
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(24)
     }
 }
 
-// MARK: - TimelineRow
+// MARK: - HistoryBillCard (matches AllBillsCard style)
 
-struct TimelineRow: View {
+struct HistoryBillCard: View {
 
     let bill: Infetch
-    let isLast: Bool
 
     private var formattedDate: String {
         let f = DateFormatter()
@@ -221,91 +227,43 @@ struct TimelineRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-
-            // Timeline column
-            timelineColumn
-
-            // Card
-            billCard
-                .padding(.leading, 12)
-                .padding(.bottom, isLast ? 0 : 12)
-        }
-    }
-
-    // MARK: - Timeline Column
-
-    private var timelineColumn: some View {
-        VStack(spacing: 0) {
-            // Dot
-            ZStack {
-                Circle()
-                    .fill(Color.green)
-                    .frame(width: 12, height: 12)
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 5, height: 5)
-            }
-            .padding(.top, 16)
-
-            // Vertical line (only if not last row)
-            if !isLast {
-                Rectangle()
-                    .fill(Color.green.opacity(0.25))
-                    .frame(width: 2)
-                    .frame(maxHeight: .infinity)
-            }
-        }
-        .frame(width: 20)
-    }
-
-    // MARK: - Bill Card
-
-    private var billCard: some View {
-        HStack(spacing: 12) {
-
-            // Category icon
-            ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(bill.inFetchCatgogry.iconColor.opacity(0.12))
-                    .frame(width: 40, height: 40)
-                Image(systemName: bill.inFetchCatgogry.sfSymbol)
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(bill.inFetchCatgogry.iconColor)
-            }
-
-            // Bill details
-            VStack(alignment: .leading, spacing: 3) {
-                Text(bill.name)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .lineLimit(1)
-
+        HStack {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(bill.SubjectName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+
+                Text(bill.name)
+                    .font(.headline)
+
+                if let amount = bill.amount {
+                    Text("₹\(amount, specifier: "%.0f")")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
             }
 
             Spacer()
 
-            // Amount + date
-            VStack(alignment: .trailing, spacing: 3) {
-                if let amount = bill.amount {
-                    Text("₹\(amount, specifier: "%.0f")")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.primary)
-                }
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("Paid")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.green.opacity(0.15))
+                    .foregroundStyle(Color.green)
+                    .clipShape(Capsule())
 
                 Text(formattedDate)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(14)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+        .padding()
+        .background(Color.white)
+        .cornerRadius(14)
+        .shadow(radius: 2)
     }
 }
 
@@ -316,4 +274,5 @@ struct TimelineRow: View {
         BillsHistoryView()
     }
     .environment(AppViewModel())
+    .environment(AuthViewModel())
 }

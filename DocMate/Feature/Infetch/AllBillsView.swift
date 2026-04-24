@@ -4,7 +4,9 @@
 //
 //  Created by Naman Yadav on 25/03/26.
 //
-
+//  AllBillsView.swift
+//  DocMate
+//
 
 import SwiftUI
 
@@ -13,7 +15,9 @@ struct AllBillsView: View {
     @Environment(AppViewModel.self) var viewModel
     @State private var selectedCategory: InfetchCategory? = nil
     @State private var selectedBill: Infetch? = nil
-    
+    @State private var showPaidToast = false
+    @State private var toastBillName = ""
+
     var body: some View {
         
         ScrollView {
@@ -40,16 +44,20 @@ struct AllBillsView: View {
                 }
                 
                 ForEach(filteredBills) { doc in
-                    
                     AllBillsCard(doc: doc) {
-                        refreshBill(doc)
+                        markAsPaid(doc)
                     }
                     .onTapGesture {
                         selectedBill = doc
                     }
+                    .transition(.asymmetric(
+                        insertion: .opacity,
+                        removal: .opacity.combined(with: .move(edge: .trailing))
+                    ))
                 }
             }
             .padding()
+            .animation(.spring(response: 0.4, dampingFraction: 0.78), value: viewModel.inFetch.map(\.id))
         }
         .navigationTitle("All Bills")
         .navigationBarTitleDisplayMode(.inline)
@@ -57,25 +65,37 @@ struct AllBillsView: View {
             BillSheetView(doc: bill)
                 .presentationDetents([.medium, .large])
         }
-    }
-    
-    // Refresh Logic
-    func refreshBill(_ doc: Infetch) {
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            
-            let isPaid = Bool.random() // API replace later
-            
-            if isPaid {
-                withAnimation {
-                    viewModel.inFetch.removeAll { $0.id == doc.id }
-                }
+        .overlay(alignment: .bottom) {
+            if showPaidToast {
+                PaidToastView(billName: toastBillName)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .padding(.bottom, 16)
             }
         }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showPaidToast)
     }
-    // Filtered documents
+    
+    // MARK: - Mark as paid
+    private func markAsPaid(_ bill: Infetch) {
+        var paidBill = bill
+        paidBill.isPaid = true
+        paidBill.dueDate = Date()
+
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
+            viewModel.inFetch.removeAll { $0.id == bill.id }
+            viewModel.billHistory.insert(paidBill, at: 0)
+        }
+
+        toastBillName = bill.name
+        showPaidToast = true
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
+            withAnimation { showPaidToast = false }
+        }
+    }
+
+    // MARK: - Filtered bills
     var filteredBills: [Infetch] {
-        
         if let selectedCategory {
             return viewModel.inFetch.filter {
                 $0.inFetchCatgogry == selectedCategory
@@ -86,8 +106,7 @@ struct AllBillsView: View {
     }
 }
 
-    // MARK: - Scrollable Category Filter Chips
-
+// MARK: - CategoryChip
 struct CategoryChip: View {
     
     var title: String
@@ -95,31 +114,50 @@ struct CategoryChip: View {
     var onTap: () -> Void
     
     var body: some View {
-        
         Text(title)
             .font(.subheadline)
             .fontWeight(.medium)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(
-                isSelected ? Color.blue : Color.gray.opacity(0.2)
-            )
+            .background(isSelected ? Color.blue : Color.gray.opacity(0.2))
             .foregroundColor(isSelected ? .white : .primary)
             .cornerRadius(20)
-            .onTapGesture {
-                onTap()
-            }
+            .onTapGesture { onTap() }
     }
 }
-/*
- ForEach(filteredBills) { doc in
-     
-     NavigationLink(destination: PayBillView(doc: doc)) {
-         AllBillsCard(doc: doc) {
-             refreshBill(doc)
-         }
-     }
-     .buttonStyle(.plain)
- }
 
- */
+// MARK: - PaidToastView
+struct PaidToastView: View {
+
+    let billName: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 18))
+                .foregroundStyle(.green)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Bill Paid!")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                Text("\(billName) added to Bills History")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color(.separator).opacity(0.3), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
+        .padding(.horizontal, 16)
+    }
+}

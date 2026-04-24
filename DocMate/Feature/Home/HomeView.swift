@@ -9,7 +9,8 @@ import SwiftUI
 
 struct HomeView: View {
 
-    @Environment(AppViewModel.self) var viewModel
+    @Environment(AppViewModel.self)  var viewModel
+    @Environment(AuthViewModel.self) var authVM
     @State private var showProfileView: Bool = false
     @State private var showScannerFlow: Bool = false
     @State private var showPhotoPicker: Bool = false
@@ -178,13 +179,16 @@ struct HomeView: View {
         // MARK: - Profile
         .sheet(isPresented: $showProfileView) {
             ProfileView()
+                .environment(viewModel)       
+                .environment(authVM)
         }
 
         // MARK: - Scanner Flow (owns camera + review + OCR + save)
         .fullScreenCover(isPresented: $showScannerFlow) {
             ScannerFlowView()
+                .environment(viewModel)
+                .environment(authVM)
         }
-
         // MARK: - Photo Picker
         .sheet(isPresented: $showPhotoPicker) {
             PhotoPickerView { image in
@@ -209,6 +213,8 @@ struct HomeView: View {
                     }
                 )
             }
+            .environment(viewModel)
+            .environment(authVM)      
         }
     }
 }
@@ -218,5 +224,6 @@ struct HomeView: View {
     NavigationStack {
         HomeView()
             .environment(AppViewModel())
+            .environment(AuthViewModel())  
     }
 }

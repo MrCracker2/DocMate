@@ -11,7 +11,9 @@ private enum AddAction { case scan, photo }
 
 struct ContentView: View {
 
-    @Environment(AppViewModel.self) var viewModel
+    @Environment(AppViewModel.self)  var viewModel
+    @Environment(AuthViewModel.self) var authVM
+
     
     var body: some View {
 
@@ -20,6 +22,8 @@ struct ContentView: View {
             // MARK: - Home
             NavigationStack {
                 HomeView()
+                    .environment(viewModel)
+                    .environment(authVM)
             }
             .tabItem { Label("Home", systemImage: "house") }
            
@@ -36,4 +40,5 @@ struct ContentView: View {
 #Preview {
     ContentView()
         .environment(AppViewModel())
+        .environment(AuthViewModel())  
 }
