@@ -243,8 +243,8 @@ struct HistoryBillCard: View {
                     .fontWeight(.semibold)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(Color.green.opacity(0.15))
-                    .foregroundStyle(Color.green)
+                    .background(Color.blue.opacity(0.15))
+                    .foregroundStyle(Color.blue)
                     .clipShape(Capsule())
 
                 Text(formattedDate)

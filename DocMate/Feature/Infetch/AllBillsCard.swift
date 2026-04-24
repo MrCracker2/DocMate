@@ -52,8 +52,8 @@ struct AllBillsCard: View {
                         .fontWeight(.semibold)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(!isPaidLocally ? Color.orange.opacity(0.15) : Color.clear)
-                        .foregroundStyle(!isPaidLocally ? Color.orange : Color.secondary)
+                        .background(!isPaidLocally ? Color.white.opacity(0.15) : Color.clear)
+                        .foregroundStyle(!isPaidLocally ? Color.blue : Color.secondary)
                 }
                 .buttonStyle(.plain)
                 .disabled(isPaidLocally)
@@ -74,8 +74,8 @@ struct AllBillsCard: View {
                         .fontWeight(.semibold)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(isPaidLocally ? Color.green.opacity(0.15) : Color.clear)
-                        .foregroundStyle(isPaidLocally ? Color.green : Color.secondary)
+                        .background(isPaidLocally ? Color.blue.opacity(0.15) : Color.clear)
+                        .foregroundStyle(isPaidLocally ? Color.blue : Color.secondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -84,8 +84,13 @@ struct AllBillsCard: View {
             .animation(.easeInOut(duration: 0.2), value: isPaidLocally)
         }
         .padding()
-        .background(Color.white)
+        .background(
+            LinearGradient(
+                colors: [Color.gray.opacity(0.1), Color.cyan.opacity(0.1)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
         .cornerRadius(14)
-        .shadow(radius: 2)
     }
 }
