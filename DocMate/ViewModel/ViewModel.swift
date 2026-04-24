@@ -115,7 +115,7 @@ class AppViewModel {
             SubjectName: "BSES",
             amount: 1200,
             customerName: "Rahul Sharma",
-            accountNumber: "ELEC123456",
+            phoneNumber: 9874125630,
             billNumber: "BSES20260301",
             isPaid: false,
             inFetchCatgogry: .bill
@@ -127,7 +127,7 @@ class AppViewModel {
             SubjectName: "LIC",
             amount: 8000,
             customerName: "Neelam Gupta",
-            accountNumber: "LIC998877",
+            phoneNumber: 8127394056,
             billNumber: "LIC20260315",
             isPaid: false,
             inFetchCatgogry: .insurance
@@ -139,7 +139,7 @@ class AppViewModel {
             SubjectName: "HDFC",
             amount: 4700,
             customerName: "Amit Verma",
-            accountNumber: "XXXX-1234",
+            phoneNumber: 9456012738,
             billNumber: "CC20260310",
             isPaid: false,
             inFetchCatgogry: .finance
@@ -151,7 +151,7 @@ class AppViewModel {
             SubjectName: "SBI",
             amount: 12550,
             customerName: "Vikas Singh",
-            accountNumber: "HL009988",
+            phoneNumber: 9038756214,
             billNumber: "SBIHL202603",
             isPaid: false,
             inFetchCatgogry: .finance
@@ -163,7 +163,7 @@ class AppViewModel {
             SubjectName: "Netflix",
             amount: 649,
             customerName: "Priya Mehta",
-            accountNumber: "NETFLIX-IND",
+            phoneNumber: 7682941503,
             billNumber: "NFLX202603",
             isPaid: false,
             inFetchCatgogry: .other
@@ -175,7 +175,7 @@ class AppViewModel {
             SubjectName: "ICICI Lombard",
             amount: 15000,
             customerName: "Karan Patel",
-            accountNumber: "CAR998877",
+            phoneNumber: 6297410853,
             billNumber: "CARINS2026",
             isPaid: false,
             inFetchCatgogry: .policy
@@ -192,7 +192,7 @@ class AppViewModel {
             SubjectName: "DJB",
             amount: 430,
             customerName: "Rahul Sharma",
-            accountNumber: "WTR001122",
+            phoneNumber: nil ,
             billNumber: "DJB202602",
             isPaid: true,
             inFetchCatgogry: .bill
@@ -204,7 +204,7 @@ class AppViewModel {
             SubjectName: "Airtel",
             amount: 999,
             customerName: "Rahul Sharma",
-            accountNumber: "AIRTEL55566",
+            phoneNumber: 7549823160,
             billNumber: "AIR20260218",
             isPaid: true,
             inFetchCatgogry: .bill
@@ -216,7 +216,7 @@ class AppViewModel {
             SubjectName: "Star Health",
             amount: 18000,
             customerName: "Neelam Gupta",
-            accountNumber: "SH-MED-0099",
+            phoneNumber:  nil ,
             billNumber: "STARH20260101",
             isPaid: true,
             inFetchCatgogry: .insurance

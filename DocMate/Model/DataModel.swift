@@ -120,7 +120,7 @@ struct Infetch: Identifiable {
     var amount: Double?
     
     var customerName: String        // NEW
-    var accountNumber: String       // NEW (mobile no / bill no)
+    var phoneNumber: Int?       // NEW (mobile no )
     var billNumber: String        // NEW
     
     var isPaid: Bool                // NEW

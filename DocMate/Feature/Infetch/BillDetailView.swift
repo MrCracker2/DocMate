@@ -4,9 +4,7 @@
 //
 //  Created by Naman Yadav on 06/04/26.
 //
-
 import SwiftUI
-
 
 struct BillDetailView: View {
     
@@ -22,10 +20,14 @@ struct BillDetailView: View {
             Divider()
             
             detailRow("Customer Name", doc.customerName)
-            detailRow("Account No", doc.accountNumber)
+            
+            if let phone = doc.phoneNumber {
+                detailRow("Mobile No", "\(phone)")
+            }
+            
             detailRow("Bill Number", doc.billNumber)
-            detailRow("Bill Date", doc.billDate.formatted(date: .numeric , time: .omitted))
-            detailRow("Due Date", doc.dueDate.formatted(date: .numeric , time: .omitted))
+            detailRow("Bill Date", doc.billDate.formatted(date: .numeric, time: .omitted))
+            detailRow("Due Date", doc.dueDate.formatted(date: .numeric, time: .omitted))
             
             Spacer()
         }

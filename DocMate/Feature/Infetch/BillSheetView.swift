@@ -5,7 +5,6 @@
 //  Created by Naman Yadav on 06/04/26.
 //
 
-
 import SwiftUI
 
 struct BillSheetView: View {
@@ -28,7 +27,7 @@ struct BillSheetView: View {
             .background(.blue.opacity(0.15))
             .cornerRadius(8)
             
-            // Amount only — status removed
+            // Amount
             HStack {
                 VStack(alignment: .leading) {
                     Text("AMOUNT")
@@ -45,13 +44,18 @@ struct BillSheetView: View {
             
             // Details
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Mobile No")
-                        .foregroundStyle(.gray)
-                    Spacer()
-                    Text(doc.accountNumber)
-                        .foregroundStyle(.gray)
+                
+                // phoneNumber is optional Int
+                if let phone = doc.phoneNumber {
+                    HStack {
+                        Text("Mobile No")
+                            .foregroundStyle(.gray)
+                        Spacer()
+                        Text(String(phone))
+                            .foregroundStyle(.gray)
+                    }
                 }
+                
                 HStack {
                     Text("Customer Name")
                         .foregroundStyle(.gray)
@@ -95,7 +99,7 @@ struct BillSheetView: View {
         SubjectName: "Airtel",
         amount: 664.34,
         customerName: "Neelam Gupta",
-        accountNumber: "9711225575",
+        phoneNumber: 9711225575,
         billNumber: "MF26091012081043",
         isPaid: false,
         inFetchCatgogry: .bill
