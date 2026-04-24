@@ -49,6 +49,8 @@ class Document {
     var createdAt: Date
     var fileTypeRaw: String
     var assetName: String?
+    var filePath: String?
+
 
     var fileType: DocumentFileType {
         get { DocumentFileType(rawValue: fileTypeRaw) ?? .image }
@@ -63,7 +65,8 @@ class Document {
         categoryId: UUID,
         createdAt: Date = Date(),
         fileType: DocumentFileType = .image,
-        assetName: String? = nil
+        assetName: String? = nil,
+        filePath: String? = nil
     ) {
         self.name = name
         self.dueDate = dueDate
@@ -73,6 +76,7 @@ class Document {
         self.createdAt = createdAt
         self.fileTypeRaw = fileType.rawValue
         self.assetName = assetName
+        self.filePath = filePath       
     }
 }
 
