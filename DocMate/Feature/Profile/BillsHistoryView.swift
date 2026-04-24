@@ -2,11 +2,10 @@
 //  BillsHistoryView.swift
 //  DocMate
 //
+//  Created by Naman Yadav on 06/04/26.
+//
 
-//
-//  BillsHistoryView.swift
-//  DocMate
-//
+
 
 import SwiftUI
 
@@ -18,6 +17,7 @@ struct BillsHistoryView: View {
     @State private var activeMonthOffset: Int? = nil
     @State private var customMonth: Date? = nil
     @State private var selectedCategory: InfetchCategory? = nil
+    @State private var selectedBill: Infetch? = nil
 
     // MARK: - Helpers
 
@@ -90,6 +90,10 @@ struct BillsHistoryView: View {
         .animation(.easeInOut(duration: 0.22), value: activeMonthOffset)
         .animation(.easeInOut(duration: 0.22), value: customMonth)
         .animation(.easeInOut(duration: 0.22), value: selectedCategory)
+        .sheet(item: $selectedBill) { bill in
+            BillSheetView(doc: bill)
+                .presentationDetents([.medium, .large])
+        }
     }
 
     // MARK: - Category Chips
@@ -119,19 +123,6 @@ struct BillsHistoryView: View {
                 customMonth = nil
             } label: {
                 Label("Last 3 Months", systemImage: "calendar")
-            }
-
-            Divider()
-
-            ForEach(0..<3) { offset in
-                let cal = Calendar.current
-                let date = cal.date(byAdding: .month, value: -offset, to: Date()) ?? Date()
-                Button {
-                    activeMonthOffset = offset
-                    customMonth = nil
-                } label: {
-                    Label(shortMonthLabel(date), systemImage: offset == 0 ? "calendar.circle.fill" : "calendar.circle")
-                }
             }
 
             Divider()
@@ -170,6 +161,7 @@ struct BillsHistoryView: View {
                             VStack(spacing: 8) {
                                 ForEach(catBills) { bill in
                                     HistoryBillCard(bill: bill)
+                                        .onTapGesture { selectedBill = bill }
                                 }
                             }
                             .padding(.horizontal)

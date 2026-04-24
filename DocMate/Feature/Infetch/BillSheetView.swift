@@ -18,10 +18,8 @@ struct BillSheetView: View {
             
             // Header
             VStack(alignment: .leading, spacing: 8) {
-                
                 Text(doc.name)
                     .font(.headline)
-                
                 Text(doc.SubjectName)
                     .foregroundColor(.gray)
             }
@@ -30,9 +28,9 @@ struct BillSheetView: View {
             .background(.blue.opacity(0.15))
             .cornerRadius(8)
             
-            HStack{
-                // Amount
-                VStack(alignment:.leading){
+            // Amount only — status removed
+            HStack {
+                VStack(alignment: .leading) {
                     Text("AMOUNT")
                     if let amount = doc.amount {
                         Text("₹\(amount, specifier: "%.2f")")
@@ -41,50 +39,45 @@ struct BillSheetView: View {
                     }
                 }
                 Spacer()
-                // Status
-                Text(doc.isPaid ? "Paid" : "Overdue")
-                    .font(.caption)
-                    .padding(6)
-                    .background(doc.isPaid ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
-                    .cornerRadius(6)
             }
+
             Divider()
             
-            // Details preview
-            VStack(alignment:.leading , spacing: 8){
-                HStack{
-                    Text("mobile no")
+            // Details
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Mobile No")
                         .foregroundStyle(.gray)
                     Spacer()
-                    Text("\(doc.accountNumber)")
+                    Text(doc.accountNumber)
                         .foregroundStyle(.gray)
                 }
-                HStack{
-                    Text("custumer name")
+                HStack {
+                    Text("Customer Name")
                         .foregroundStyle(.gray)
                     Spacer()
-                    Text("\(doc.customerName)")
+                    Text(doc.customerName)
                         .foregroundStyle(.gray)
                 }
-                HStack{
+                HStack {
                     Text("Bill Number")
                         .foregroundStyle(.gray)
                     Spacer()
-                    Text("\(doc.billNumber)")
+                    Text(doc.billNumber)
                         .foregroundStyle(.gray)
                 }
-                HStack{
+                HStack {
                     Text("Bill Date")
                         .foregroundStyle(.gray)
                     Spacer()
-                    Text("\(doc.billDate.formatted(date: .numeric , time: .omitted))")
+                    Text(doc.billDate.formatted(date: .numeric, time: .omitted))
                         .foregroundStyle(.gray)
                 }
-                HStack{
+                HStack {
                     Text("Due Date")
                         .foregroundStyle(.gray)
                     Spacer()
-                    Text("\(doc.dueDate.formatted(date: .numeric , time: .omitted))")
+                    Text(doc.dueDate.formatted(date: .numeric, time: .omitted))
                         .foregroundStyle(.gray)
                 }
             }
@@ -93,6 +86,7 @@ struct BillSheetView: View {
         .padding()
     }
 }
+
 #Preview {
     BillSheetView(doc: Infetch(
         name: "Airtel Postpaid",
