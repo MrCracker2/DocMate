@@ -13,7 +13,7 @@ struct ReviewDocumentView: View {
     // MARK: - Body
     var body: some View {
 
-        ScrollView {   // ✅ Smooth scrolling (important for iOS feel)
+        ScrollView {   // 
             VStack(spacing: 24) {
 
                 // MARK: - Top Preview Card
@@ -25,7 +25,7 @@ struct ReviewDocumentView: View {
             .padding()
             .padding(.bottom, 40)
         }
-        .background(Color(.systemGroupedBackground)) // ✅ iOS style background
+        .background(Color(.systemGroupedBackground)) //
         .navigationTitle("Review Document")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

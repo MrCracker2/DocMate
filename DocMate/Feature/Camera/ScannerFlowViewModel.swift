@@ -74,12 +74,12 @@ class ScannerFlowViewModel {
                 }
             }
 
-            // ✅ Offload heavy parsing to background
+            //  Offload heavy parsing to background
             let result = await Task.detached(priority: .userInitiated) { [parser] in
                 parser.parse(from: combinedText)
             }.value
 
-            // ✅ UI updates stay on main actor
+            //  UI updates stay on main actor
             self.extractedText = combinedText
 
             if let expiry = result.expiryDate {

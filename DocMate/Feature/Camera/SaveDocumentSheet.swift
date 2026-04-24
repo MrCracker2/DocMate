@@ -7,7 +7,7 @@ import SwiftUI
 
 struct SaveDocumentSheet: View {
 
-    // ✅ App data
+    //  App data
     @Environment(AppViewModel.self) var appViewModel
 
     
@@ -114,22 +114,22 @@ struct SaveDocumentSheet: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
 
-        // ✅ Glass effect
+        //  Glass effect
         .background(.ultraThinMaterial)
 
-        // ✅ Rounded card
+        //  Rounded card
         .clipShape(RoundedRectangle(cornerRadius: 18))
 
-        // ✅ Subtle border (important!)
+        //  Subtle border (important!)
         .overlay(
             RoundedRectangle(cornerRadius: 18)
                 .stroke(Color.white.opacity(0.2))
         )
 
-        // ✅ Shadow (floating feel)
+        //  Shadow (floating feel)
         .shadow(color: .black.opacity(0.1), radius: 12, y: 6)
 
-        // ✅ spacing from edges
+        //  spacing from edges
         .padding(.horizontal, 16)
         .padding(.top, 8)
     }
@@ -146,7 +146,7 @@ struct SaveDocumentSheet: View {
 
         appViewModel.addDocument(doc, images: images)
 
-        // ✅ Close entire flow AFTER saving
+        //  Close entire flow AFTER saving
         onSaveComplete?()
     }
 }
