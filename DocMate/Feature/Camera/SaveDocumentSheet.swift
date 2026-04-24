@@ -140,17 +140,21 @@ struct SaveDocumentSheet: View {
 
     // MARK: - Save
     private func save() {
-        let doc = Document(
-            name: documentName,
-            dueDate: detectedDate,
-            userId: appViewModel.user.id,
-            categoryId: selectedCategoryId,
-            fileType: .image
-        )
-
-        appViewModel.addDocument(doc, images: images)
-
-        //  Close entire flow AFTER saving
+        if isScanned {
+            appViewModel.addScannedDocument(
+                images: images,
+                name: documentName,
+                categoryId: selectedCategoryId,
+                dueDate: detectedDate
+            )
+        } else {
+            appViewModel.addPhotoDocument(
+                image: images.first!,
+                name: documentName,
+                categoryId: selectedCategoryId
+            )
+        }
         onSaveComplete?()
     }
+
 }

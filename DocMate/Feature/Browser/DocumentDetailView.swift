@@ -139,7 +139,10 @@ struct DocumentDetailView: View {
 
         // MARK: Share Sheet
         .sheet(isPresented: $showShareSheet) {
-            if let firstImage = viewModel.images(for: document).first {
+            if let path = document.filePath,
+               FileManager.default.fileExists(atPath: path) {
+                ShareSheet(items: [URL(fileURLWithPath: path)])
+            } else if let firstImage = viewModel.images(for: document).first {
                 ShareSheet(items: [firstImage])
             } else {
                 ShareSheet(items: [document.name])
@@ -164,10 +167,20 @@ struct DocumentDetailView: View {
         }
     }
 
-    // MARK: IMAGE BASED PREVIEW
+    // MARK: DOCUMENT PREVIEW (PDF + Image)
     @ViewBuilder
     private var inlinePreview: some View {
-        if let firstImage = viewModel.images(for: document).first {
+        // 1. PDF file on disk
+        if document.fileType == .pdf,
+           let path = document.filePath,
+           FileManager.default.fileExists(atPath: path) {
+            PDFKitView(url: URL(fileURLWithPath: path))
+                .frame(height: 500)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal)
+
+        // 2. In-memory image (thumbnail / old scans)
+        } else if let firstImage = viewModel.images(for: document).first {
             Image(uiImage: firstImage)
                 .resizable()
                 .scaledToFit()
@@ -175,6 +188,7 @@ struct DocumentDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal)
 
+        // 3. Bundled asset image (seed data)
         } else if let assetName = document.assetName,
                   let image = UIImage(named: assetName) {
             Image(uiImage: image)
@@ -183,6 +197,7 @@ struct DocumentDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal)
 
+        // 4. No preview
         } else {
             previewPlaceholder
                 .padding(.horizontal)

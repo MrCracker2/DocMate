@@ -138,10 +138,17 @@ class AppViewModel {
     }
 
     func deleteDocument(_ document: Document) {
+        // Delete PDF file from disk
+        if let path = document.filePath {
+            try? FileManager.default.removeItem(atPath: path)
+        }
+        
         modelContext?.delete(document)
         try? modelContext?.save()
+        imageStore.removeValue(forKey: document.id)
         fetchAll()
     }
+
 
     @discardableResult
     func togglePin(_ document: Document) -> Bool {
@@ -171,27 +178,77 @@ class AppViewModel {
         imageStore[document.id] ?? []
     }
 
-    func addScannedDocument(images: [UIImage], name: String, categoryId: UUID) {
+    func addScannedDocument(images: [UIImage], name: String, categoryId: UUID, dueDate: Date? = nil) {
+        // 1. Convert images to PDF
+        let pdfData = PDFConverter.makePDF(from: images)
+        
+        // 2. Create document
         let doc = Document(
             name: name,
+            dueDate: dueDate,
             isPinned: false,
             userId: user.id,
             categoryId: categoryId,
-            fileType: .image
+            fileType: .pdf           // ← NOW .pdf, NOT .image
         )
-        addDocument(doc, images: images)
+        
+        // 3. Save PDF to disk
+        ensureDirectoryExists()
+        let fileURL = documentsDirectory().appendingPathComponent("\(doc.id).pdf")
+        try? pdfData.write(to: fileURL)
+        
+        // 4. Store path in document
+        doc.filePath = fileURL.path
+        
+        // 5. Save to SwiftData
+        modelContext?.insert(doc)
+        try? modelContext?.save()
+        
+        // 6. Keep thumbnail in memory for quick preview
+        if let first = images.first {
+            imageStore[doc.id] = [first]
+        }
+        
+        fetchAll()
     }
 
+
     func addPhotoDocument(image: UIImage, name: String, categoryId: UUID) {
+        let pdfData = PDFConverter.makePDF(from: [image])
+        
         let doc = Document(
             name: name,
             isPinned: false,
             userId: user.id,
             categoryId: categoryId,
-            fileType: .image
+            fileType: .pdf
         )
-        addDocument(doc, images: [image])
+        
+        ensureDirectoryExists()
+        let fileURL = documentsDirectory().appendingPathComponent("\(doc.id).pdf")
+        try? pdfData.write(to: fileURL)
+        doc.filePath = fileURL.path
+        
+        modelContext?.insert(doc)
+        try? modelContext?.save()
+        imageStore[doc.id] = [image]
+        
+        fetchAll()
     }
+
+    // Create a helper to get the save folder
+    private func documentsDirectory() -> URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("ScannedPDFs", isDirectory: true)
+    }
+
+    private func ensureDirectoryExists() {
+        let dir = documentsDirectory()
+        if !FileManager.default.fileExists(atPath: dir.path) {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+    }
+
 
     // =========================================================
     // MARK: - Category CRUD
