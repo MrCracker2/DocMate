@@ -14,15 +14,25 @@ struct RootView: View {
     @Environment(AuthViewModel.self) var authVM
     @Environment(AppViewModel.self) var viewModel
     @Environment(\.modelContext) private var modelContext
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     
     var body: some View {
         Group {
-            if authVM.isLoading {
-                ProgressView()
-            } else if authVM.isLoggedIn {
-                ContentView()
+            
+            if !hasSeenOnboarding {
+                OnboardingView()
+                
             } else {
-                LoginView()
+                
+                if authVM.isLoading {
+                    ProgressView()
+                    
+                } else if authVM.isLoggedIn {
+                    ContentView()
+                    
+                } else {
+                    LoginView()
+                }
             }
         }
         .task {
