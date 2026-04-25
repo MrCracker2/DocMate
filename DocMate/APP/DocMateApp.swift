@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import SwiftData
+
 @main
 struct DocMateApp: App {
     @State var viewModel = AppViewModel()
@@ -17,7 +17,6 @@ struct DocMateApp: App {
                 .environment(authVM)
                 .environment(viewModel)
         }
-        .modelContainer(for: [Document.self, Category.self, Tag.self, User.self, Infetch.self])
     }
 }
 

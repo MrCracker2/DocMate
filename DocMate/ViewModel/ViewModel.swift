@@ -7,13 +7,9 @@
 
 import Foundation
 import UIKit
-import SwiftData
 
 @Observable
 class AppViewModel {
-
-    // MARK: - ModelContext (SwiftData)
-    var modelContext: ModelContext?
 
     // MARK: - In-Memory Image Store (stays in memory for now)
     var imageStore: [UUID: [UIImage]] = [:]
@@ -25,7 +21,7 @@ class AppViewModel {
     static let maxPinnedDocuments = 5
 
     // =========================================================
-    // MARK: - Stored Data (populated from SwiftData)
+    // MARK: - Stored Data (in-memory arrays)
     // =========================================================
 
     var categories: [Category] = []
@@ -45,6 +41,12 @@ class AppViewModel {
         )
     }
 
+    func updateUser(name: String, dateOfBirth: Date, gender: String) {
+        _user?.name = name
+        _user?.dateOfBirth = dateOfBirth
+        _user?.gender = gender
+    }
+
     // MARK: - Unpaid Bills (computed from stored allBills)
     var inFetch: [Infetch] {
         allBills.filter { !$0.isPaid }
@@ -53,40 +55,6 @@ class AppViewModel {
     // MARK: - Paid Bills (computed from stored allBills)
     var billHistory: [Infetch] {
         allBills.filter { $0.isPaid }
-    }
-
-    // =========================================================
-    // MARK: - Configure (call from view on appear)
-    // =========================================================
-
-    func configure(context: ModelContext) {
-        guard self.modelContext == nil else { return }
-        self.modelContext = context
-        seedIfNeeded()
-        fetchAll()
-    }
-
-    // =========================================================
-    // MARK: - Fetch All (refreshes stored arrays from database)
-    // =========================================================
-
-    func fetchAll() {
-        guard let modelContext else { return }
-
-        let catDescriptor = FetchDescriptor<Category>(sortBy: [SortDescriptor(\.name)])
-        categories = (try? modelContext.fetch(catDescriptor)) ?? []
-
-        let docDescriptor = FetchDescriptor<Document>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
-        documents = (try? modelContext.fetch(docDescriptor)) ?? []
-
-        let tagDescriptor = FetchDescriptor<Tag>()
-        tags = (try? modelContext.fetch(tagDescriptor)) ?? []
-
-        let billDescriptor = FetchDescriptor<Infetch>()
-        allBills = (try? modelContext.fetch(billDescriptor)) ?? []
-
-        let userDescriptor = FetchDescriptor<User>()
-        _user = (try? modelContext.fetch(userDescriptor))?.first
     }
 
     // =========================================================
@@ -129,12 +97,10 @@ class AppViewModel {
     // =========================================================
 
     func addDocument(_ document: Document, images: [UIImage] = []) {
-        modelContext?.insert(document)
-        try? modelContext?.save()
+        documents.append(document)
         if !images.isEmpty {
             imageStore[document.id] = images
         }
-        fetchAll()
     }
 
     func deleteDocument(_ document: Document) {
@@ -143,25 +109,21 @@ class AppViewModel {
             try? FileManager.default.removeItem(atPath: path)
         }
         
-        modelContext?.delete(document)
-        try? modelContext?.save()
+        documents.removeAll { $0.id == document.id }
         imageStore.removeValue(forKey: document.id)
-        fetchAll()
     }
 
 
     @discardableResult
     func togglePin(_ document: Document) -> Bool {
-        if document.isPinned {
-            document.isPinned = false
-            try? modelContext?.save()
-            fetchAll()
+        guard let index = documents.firstIndex(where: { $0.id == document.id }) else { return false }
+
+        if documents[index].isPinned {
+            documents[index].isPinned = false
             return true
         } else {
             guard pinnedDocuments.count < AppViewModel.maxPinnedDocuments else { return false }
-            document.isPinned = true
-            try? modelContext?.save()
-            fetchAll()
+            documents[index].isPinned = true
             return true
         }
     }
@@ -183,13 +145,13 @@ class AppViewModel {
         let pdfData = PDFConverter.makePDF(from: images)
         
         // 2. Create document
-        let doc = Document(
+        var doc = Document(
             name: name,
             dueDate: dueDate,
             isPinned: false,
             userId: user.id,
             categoryId: categoryId,
-            fileType: .pdf           // ← NOW .pdf, NOT .image
+            fileType: .pdf
         )
         
         // 3. Save PDF to disk
@@ -200,23 +162,20 @@ class AppViewModel {
         // 4. Store path in document
         doc.filePath = fileURL.path
         
-        // 5. Save to SwiftData
-        modelContext?.insert(doc)
-        try? modelContext?.save()
+        // 5. Add to array
+        documents.append(doc)
         
         // 6. Keep thumbnail in memory for quick preview
         if let first = images.first {
             imageStore[doc.id] = [first]
         }
-        
-        fetchAll()
     }
 
 
     func addPhotoDocument(image: UIImage, name: String, categoryId: UUID) {
         let pdfData = PDFConverter.makePDF(from: [image])
         
-        let doc = Document(
+        var doc = Document(
             name: name,
             isPinned: false,
             userId: user.id,
@@ -229,11 +188,8 @@ class AppViewModel {
         try? pdfData.write(to: fileURL)
         doc.filePath = fileURL.path
         
-        modelContext?.insert(doc)
-        try? modelContext?.save()
+        documents.append(doc)
         imageStore[doc.id] = [image]
-        
-        fetchAll()
     }
 
     // Create a helper to get the save folder
@@ -256,9 +212,7 @@ class AppViewModel {
 
     func addCategory(name: String, sfSymbol: String) {
         let cat = Category(name: name, sfSymbol: sfSymbol)
-        modelContext?.insert(cat)
-        try? modelContext?.save()
-        fetchAll()
+        categories.append(cat)
     }
 
     // =========================================================
@@ -271,11 +225,9 @@ class AppViewModel {
             guard let self else { return }
             let isPaid = Bool.random()
 
-            if isPaid {
-                bill.isPaid = true
-                bill.dueDate = Date()
-                try? self.modelContext?.save()
-                self.fetchAll()
+            if isPaid, let index = allBills.firstIndex(where: { $0.id == bill.id }) {
+                allBills[index].isPaid = true
+                allBills[index].dueDate = Date()
             }
             completion(isPaid)
         }
@@ -301,12 +253,8 @@ class AppViewModel {
     // =========================================================
 
     func seedIfNeeded() {
-        guard let modelContext else { return }
-
-        // Check if already seeded
-        let catDescriptor = FetchDescriptor<Category>()
-        let catCount = (try? modelContext.fetchCount(catDescriptor)) ?? 0
-        guard catCount == 0 else { return }
+        // Only seed if arrays are empty
+        guard categories.isEmpty else { return }
 
         // --- Categories ---
         let finance   = Category(name: "Finance",       sfSymbol: "dollarsign.circle")
@@ -317,9 +265,7 @@ class AppViewModel {
         let policies  = Category(name: "Policies",      sfSymbol: "doc")
         let other     = Category(name: "Other",         sfSymbol: "questionmark.circle")
 
-        [finance, identity, education, vehicle, bills, policies, other].forEach {
-            modelContext.insert($0)
-        }
+        categories = [finance, identity, education, vehicle, bills, policies, other]
 
         // --- User ---
         let seedUser = User(
@@ -330,7 +276,7 @@ class AppViewModel {
             dateOfBirth: Date(),
             gender: "Male"
         )
-        modelContext.insert(seedUser)
+        _user = seedUser
 
         // --- Tags ---
         let tagData: [(String, String)] = [
@@ -338,12 +284,10 @@ class AppViewModel {
             ("Yellow", "yellow"), ("Purple", "purple"),
             ("Important", "red"), ("Work", "blue"), ("Personal", "green")
         ]
-        for (name, color) in tagData {
-            modelContext.insert(Tag(name: name, color: color))
-        }
+        tags = tagData.map { Tag(name: $0.0, color: $0.1) }
 
         // --- Documents ---
-        let seedDocs = [
+        documents = [
             Document(name: "Passport",
                      dueDate: Date().addingTimeInterval(86400 * 1),
                      isPinned: true,
@@ -381,7 +325,6 @@ class AppViewModel {
                      categoryId: education.id,
                      assetName: "marksheet"),
         ]
-        seedDocs.forEach { modelContext.insert($0) }
 
         // --- Unpaid Bills ---
         let unpaidBills = [
@@ -428,7 +371,6 @@ class AppViewModel {
                     billNumber: "CARINS2026", isPaid: false,
                     inFetchCatgogry: .policy),
         ]
-        unpaidBills.forEach { modelContext.insert($0) }
 
         // --- Paid Bills (History) ---
         let paidBills = [
@@ -454,9 +396,7 @@ class AppViewModel {
                     billNumber: "STARH20260101", isPaid: true,
                     inFetchCatgogry: .insurance),
         ]
-        paidBills.forEach { modelContext.insert($0) }
 
-        // --- Save all ---
-        try? modelContext.save()
+        allBills = unpaidBills + paidBills
     }
 }

@@ -7,13 +7,11 @@
 
 import Foundation
 import SwiftUI
-import SwiftData
 
 struct RootView: View {
     
     @Environment(AuthViewModel.self) var authVM
     @Environment(AppViewModel.self) var viewModel
-    @Environment(\.modelContext) private var modelContext
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     
     var body: some View {
@@ -36,7 +34,7 @@ struct RootView: View {
             }
         }
         .task {
-            viewModel.configure(context: modelContext)
+            viewModel.seedIfNeeded()
             await authVM.checkSession()
         }
     }

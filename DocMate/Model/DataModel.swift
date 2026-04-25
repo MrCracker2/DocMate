@@ -7,11 +7,9 @@
 
 import Foundation
 import SwiftUI
-import SwiftData
 
 // MARK: - User
-@Model
-class User {
+struct User: Identifiable, Hashable {
     var id: UUID = UUID()
     var name: String
     var email: String
@@ -38,8 +36,7 @@ class User {
 }
 
 // MARK: - Document
-@Model
-class Document {
+struct Document: Identifiable, Hashable {
     var id: UUID = UUID()
     var name: String
     var dueDate: Date?
@@ -80,8 +77,6 @@ class Document {
     }
 }
 
-// Hashable conformance is provided automatically by @Model
-
 // MARK: - Document File Type
 enum DocumentFileType: String, Codable, Hashable {
     case image
@@ -96,10 +91,9 @@ enum DocumentFileType: String, Codable, Hashable {
 }
 
 // MARK: - Category
-@Model
-class Category {
+struct Category: Identifiable, Hashable {
     var id: UUID = UUID()
-    @Attribute(.unique) var name: String
+    var name: String
     var sfSymbol: String
 
     init(name: String, sfSymbol: String) {
@@ -110,10 +104,9 @@ class Category {
 
 
 // MARK: - Tag
-@Model
-class Tag {
+struct Tag: Identifiable, Hashable {
     var id: UUID = UUID()
-    @Attribute(.unique) var name: String
+    var name: String
     var color: String
 
     init(name: String, color: String) {
@@ -129,8 +122,7 @@ class Tag {
 //    var documentId : UUID
 //    var tagId      : UUID
 //}
-@Model
-class Infetch {
+struct Infetch: Identifiable, Hashable {
     var id: UUID = UUID()
     var name: String
     var dueDate: Date

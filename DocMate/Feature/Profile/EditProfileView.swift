@@ -92,9 +92,11 @@ struct EditProfileView: View {
                 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        viewModel.user.name = "\(firstName) \(lastName)"
-                        viewModel.user.dateOfBirth = dob
-                        viewModel.user.gender = gender
+                        viewModel.updateUser(
+                            name: "\(firstName) \(lastName)",
+                            dateOfBirth: dob,
+                            gender: gender
+                        )
                         dismiss()
                     } label: {
                         Text("Save")
