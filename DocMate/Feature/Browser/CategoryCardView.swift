@@ -4,7 +4,6 @@
 //
 //  Created by Naman Yadav on 18/03/26.
 //
-
 import SwiftUI
 
 struct CategoryCardView: View {
@@ -12,10 +11,10 @@ struct CategoryCardView: View {
     let docCount: Int
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            
+        VStack(alignment: .leading, spacing: 0) {
+
             ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [Color.blue, Color.blue.opacity(0.75)],
@@ -23,35 +22,36 @@ struct CategoryCardView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 42, height: 42)
+                    .frame(width: 38, height: 38)
                 
                 Image(systemName: category.sfSymbol)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
             }
-            
+            .padding(.bottom, 10)
+
             Spacer(minLength: 0)
-            
+
             Text(category.name)
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.primary)
                 .lineLimit(2)
-                .multilineTextAlignment(.leading)
-            
+
             Text("\(docCount) docs")
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(.blue.opacity(0.85))
+                .padding(.top, 2)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 126, alignment: .topLeading)
+        .padding(12) //
+        .frame(maxWidth: .infinity, minHeight: 104, alignment: .topLeading) //
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Color(.systemBackground))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [Color.blue.opacity(0.08), Color.clear],
@@ -61,7 +61,7 @@ struct CategoryCardView: View {
                 )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(
                     LinearGradient(
                         colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.1)],
