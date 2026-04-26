@@ -8,6 +8,8 @@ struct BrowseView: View {
     // MARK: - UI State
     @State private var searchText: String = ""
     @State private var isGridView: Bool = true
+    @State private var showNewCategoryAlert = false
+    @State private var categoryName = ""
 
     // MARK: - Selection Mode (IMPORTANT)
     let isSelecting: Bool
@@ -250,8 +252,10 @@ struct BrowseView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
 
-                    Button { } label: {
-                        Label("New Folder", systemImage: "folder.badge.plus")
+                    Button {
+                        showNewCategoryAlert = true
+                    } label: {
+                        Label("New Category", systemImage: "folder.badge.plus")
                     }
 
                     Divider()
@@ -279,6 +283,24 @@ struct BrowseView: View {
                     Image(systemName: "ellipsis")
                         .font(.title3)
                 }
+            }
+        }
+        .alert("New Category", isPresented: $showNewCategoryAlert) {
+
+            TextField("Category Name", text: $categoryName)
+
+            Button("Create") {
+                if !categoryName.isEmpty {
+                    viewModel.addCategory(
+                        name: categoryName,
+                        sfSymbol: "folder.fill"
+                    )
+                    categoryName = ""
+                }
+            }
+
+            Button("Cancel", role: .cancel) {
+                categoryName = ""
             }
         }
     }
