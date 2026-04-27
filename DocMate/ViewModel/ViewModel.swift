@@ -383,24 +383,20 @@ class AppViewModel {
     // =========================================================
     // MARK: - Bill Operations
     // =========================================================
-    
-    /// Marks a bill as paid and syncs to Supabase.
     @MainActor
     func markBillAsPaid(_ bill: Infetch) async {
         guard let index = allBills.firstIndex(where: { $0.id == bill.id }) else { return }
-        
+
         allBills[index].isPaid = true
-        allBills[index].dueDate = Date()
-        
+        allBills[index].paidAt = Date()
+
         do {
             try await supa.updateBill(allBills[index])
         } catch {
             print("Mark paid error: \(error)")
-            // Revert on failure
             await fetchAll()
         }
     }
-    
     /// Simulates an API call. On success marks bill as paid.
     func refreshBill(_ bill: Infetch, completion: @escaping (Bool) -> Void) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
@@ -431,6 +427,91 @@ class AppViewModel {
         }
     }
     
+    // =========================================================
+    // MARK: - Gmail Bill Sync
+    // =========================================================
+    /// Marks a bill as paid and syncs to Supabase.
+    @MainActor
+    func syncBillsFromGmail() async {
+        guard let userId = await supa.currentUserId else { return }
+
+        do {
+            errorMessage = nil
+
+            let emails = try await GmailService.shared.fetchBillEmails()
+
+            for email in emails {
+
+                let exists = try await supa.billExists(
+                    messageId: email.id
+                )
+
+                if exists {
+                    continue
+                }
+
+                let bill = BillParser.makeBill(
+                    from: email,
+                    userId: userId
+                )
+
+                try await supa.insertBill(bill)
+            }
+            // Refresh all local data
+            await fetchAll()
+
+        } catch {
+            print("Gmail Sync Error:", error)
+            errorMessage = "Unable to sync bills."
+        }
+    }
+    func makeBillFromGemini(
+        _ data: ExtractedBill?,
+        email: GmailEmail,
+        userId: UUID
+    ) -> Infetch {
+
+        let vendor = data?.vendorName ?? "Bill"
+        let amount = data?.amount
+
+        let dueDate = parseDateString(data?.dueDate) ?? Calendar.current.date(byAdding: .day, value: 7, to: Date())!
+
+        let billDate = parseDateString(data?.billDate) ?? email.receivedAt
+
+        let category = mapCategory(data?.category ?? "bill")
+
+        return Infetch(
+            name: vendor,
+            dueDate: dueDate,
+            billDate: billDate,
+            SubjectName: vendor,
+            amount: amount,
+            customerName: "",
+            phoneNumber: nil,
+            billNumber: email.id,
+            isPaid: false,
+            gmailMessageId: email.id,
+            paidAt: nil,
+            inFetchCatgogry: category,
+            userId: userId
+        )
+    }
+    func parseDateString(_ text: String?) -> Date? {
+        guard let text else { return nil }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: text)
+    }
+
+    func mapCategory(_ value: String) -> InfetchCategory {
+        switch value.lowercased() {
+        case "insurance": return .insurance
+        case "finance": return .finance
+        case "policy": return .policy
+        default: return .bill
+        }
+    }
     @MainActor
     func reset() {
         _user = nil

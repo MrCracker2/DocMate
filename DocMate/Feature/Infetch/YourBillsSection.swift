@@ -12,13 +12,22 @@ struct YourBillsSection: View {
     var bills: [Infetch]
     
     // only 4 nearest upcoming bills
+//    var upcomingBills: [Infetch] {
+//        bills
+//            .filter { $0.dueDate >= Date() }
+//            .sorted { $0.dueDate < $1.dueDate }
+//            .prefix(4)
+//            .map { $0 }
+//    }
+    
     var upcomingBills: [Infetch] {
         bills
-            .filter { $0.dueDate >= Date() }
+            .filter { !$0.isPaid && $0.dueDate >= Date() }
             .sorted { $0.dueDate < $1.dueDate }
             .prefix(4)
             .map { $0 }
     }
+
     
     var body: some View {
         

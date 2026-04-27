@@ -15,15 +15,15 @@
 import SwiftUI
 
 struct EditProfileView: View {
-
+    
     @Environment(AppViewModel.self ) var viewModel
     @Environment(\.dismiss) var dismiss
-
+    
     @State private var firstName = ""
     @State private var lastName = ""
     @State private var dob = Date()
     @State private var gender = ""
-
+    
     var body: some View {
         NavigationStack {
             Form {
@@ -74,7 +74,7 @@ struct EditProfileView: View {
                             Text(gender)
                         }
                     }
-
+                    
                 }
             }
             .navigationTitle("Edit Profile")
@@ -114,16 +114,16 @@ struct EditProfileView: View {
             // MARK: - Load Data
             .onAppear {
                 let parts = viewModel.user.name.split(separator: " ")
-
+                
                 firstName = parts.first.map(String.init) ?? ""
                 lastName = parts.dropFirst().joined(separator: " ")
-
+                
                 gender = viewModel.user.gender ?? "Male"
-
+                
                 if let dobString = viewModel.user.dateOfBirth {
                     let formatter = DateFormatter()
                     formatter.dateFormat = "yyyy-MM-dd"
-
+                    
                     dob = formatter.date(from: dobString) ?? Date()
                 } else {
                     dob = Date()

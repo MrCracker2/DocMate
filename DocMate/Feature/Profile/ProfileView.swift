@@ -59,15 +59,21 @@ struct ProfileView: View {
                 
                 // MARK: Features — now includes Bills History
                 Section {
+
                     NavigationLink("Notification") {
                         Text("Notification Screen")
                     }
-                    
-                    
+
+                    NavigationLink {
+                        EmailSyncView()
+                    } label: {
+                        Label("Email Sync", systemImage: "envelope.badge")
+                    }
+
                     NavigationLink {
                         BillsHistoryView()
                     } label: {
-                        Text("Your Bills History")
+                        Label("Your Bills History", systemImage: "clock.arrow.circlepath")
                     }
                 }
                 

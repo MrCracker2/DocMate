@@ -189,13 +189,63 @@ class SupabaseManager {
     // MARK: - Bills
     
     func fetchBills() async throws -> [Infetch] {
-        try await client
+
+        let response = try await client
             .from("bills")
             .select()
             .execute()
-            .value
+
+        let decoder = JSONDecoder()
+
+        decoder.dateDecodingStrategy = .custom { decoder in
+
+            let container = try decoder.singleValueContainer()
+            let value = try container.decode(String.self)
+
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+            // Format 1: 2026-05-04
+            formatter.dateFormat = "yyyy-MM-dd"
+            if let date = formatter.date(from: value) {
+                return date
+            }
+
+            // Format 2: 2026-05-04T00:00:00Z
+            let iso = ISO8601DateFormatter()
+
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = iso.date(from: value) {
+                return date
+            }
+
+            iso.formatOptions = [.withInternetDateTime]
+            if let date = iso.date(from: value) {
+                return date
+            }
+
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Invalid date format: \(value)"
+            )
+        }
+
+        return try decoder.decode([Infetch].self, from: response.data)
     }
     
+    func billExists(messageId: String) async throws -> Bool {
+        let rows: [Infetch] = try await client
+            .from("bills")
+            .select()
+            .eq("gmail_message_id", value: messageId)
+            .execute()
+            .value
+
+        return !rows.isEmpty
+    }
+
+
     func insertBill(_ bill: Infetch) async throws {
         try await client
             .from("bills")

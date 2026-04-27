@@ -156,17 +156,24 @@ struct Tag: Identifiable, Hashable, Codable {
 
 // MARK: - Infetch / Bill (maps to `bills` table in Supabase)
 struct Infetch: Identifiable, Hashable, Codable {
+
     var id: UUID = UUID()
     var userId: UUID?
+
     var name: String
     var dueDate: Date
     var billDate: Date
     var subjectName: String
     var amount: Double?
+
     var customerName: String
     var phoneNumber: Int?
     var billNumber: String
+
     var isPaid: Bool
+    var gmailMessageId: String?
+    var paidAt: Date?
+
     var category: String
 
     var inFetchCatgogry: InfetchCategory {
@@ -176,6 +183,7 @@ struct Infetch: Identifiable, Hashable, Codable {
 
     enum CodingKeys: String, CodingKey {
         case id, name, amount, category
+
         case userId = "user_id"
         case dueDate = "due_date"
         case billDate = "bill_date"
@@ -184,14 +192,24 @@ struct Infetch: Identifiable, Hashable, Codable {
         case phoneNumber = "phone_number"
         case billNumber = "bill_number"
         case isPaid = "is_paid"
+
+        case gmailMessageId = "gmail_message_id"
+        case paidAt = "paid_at"
     }
 
     init(
         id: UUID = UUID(),
-        name: String, dueDate: Date, billDate: Date,
-        SubjectName: String, amount: Double?,
-        customerName: String, phoneNumber: Int?,
-        billNumber: String, isPaid: Bool,
+        name: String,
+        dueDate: Date,
+        billDate: Date,
+        SubjectName: String,
+        amount: Double?,
+        customerName: String,
+        phoneNumber: Int?,
+        billNumber: String,
+        isPaid: Bool,
+        gmailMessageId: String? = nil,
+        paidAt: Date? = nil,
         inFetchCatgogry: InfetchCategory,
         userId: UUID? = nil
     ) {
@@ -205,18 +223,19 @@ struct Infetch: Identifiable, Hashable, Codable {
         self.phoneNumber = phoneNumber
         self.billNumber = billNumber
         self.isPaid = isPaid
+        self.gmailMessageId = gmailMessageId
+        self.paidAt = paidAt
         self.category = inFetchCatgogry.rawValue
         self.userId = userId
     }
 }
-
 enum InfetchCategory: String, CaseIterable, Identifiable {
-    
+
     case bill = "Bill"
     case finance = "Finance"
     case insurance = "Insurance"
     case policy = "Policy"
     case other = "Other"
 
-    var id: String { self.rawValue }
+    var id: String { rawValue }
 }

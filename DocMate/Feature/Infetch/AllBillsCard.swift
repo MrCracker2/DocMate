@@ -1,93 +1,120 @@
-
 //
 //  AllBillsCard.swift
-//  DocMateDummy
+//  DocMate
 //
-//  Created by Naman Yadav on 25/03/26.
-//
-
 
 import SwiftUI
 
 struct AllBillsCard: View {
-    
+
     let doc: Infetch
     var onMarkPaid: () -> Void
 
-    @State private var isPaidLocally = false
+    @State private var isUpdating = false
+
+    private var isPaid: Bool {
+        doc.isPaid
+    }
 
     var body: some View {
-        
-        HStack {
-            
+
+        HStack(alignment: .center, spacing: 14) {
+
+            // MARK: Left Content
             VStack(alignment: .leading, spacing: 6) {
-                
+
                 Text(doc.subjectName)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 Text(doc.name)
                     .font(.headline)
-                
-                if let amount = doc.amount {
-                    Text("₹\(amount, specifier: "%.0f")")
+                    .lineLimit(1)
+
+                HStack(spacing: 8) {
+
+                    if let amount = doc.amount {
+                        Text("₹\(amount, specifier: "%.0f")")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                    }
+
+                    Text("•")
+                        .foregroundStyle(.secondary)
+
+                    Text("Due \(doc.dueDate, style: .date)")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.secondary)
                 }
             }
-            
+
             Spacer()
 
-            // Unpaid / Paid toggle
-            HStack(spacing: 0) {
+            // MARK: Right Action
+            if isPaid {
 
-                Button {
-                    // already unpaid — no action
-                } label: {
-                    Text("Unpaid")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(!isPaidLocally ? Color.white.opacity(0.15) : Color.clear)
-                        .foregroundStyle(!isPaidLocally ? Color.blue : Color.secondary)
-                }
-                .buttonStyle(.plain)
-                .disabled(isPaidLocally)
-
-                Divider().frame(height: 22)
-
-                Button {
-                    guard !isPaidLocally else { return }
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        isPaidLocally = true
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        onMarkPaid()
-                    }
-                } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
                     Text("Paid")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(isPaidLocally ? Color.blue.opacity(0.15) : Color.clear)
-                        .foregroundStyle(isPaidLocally ? Color.blue : Color.secondary)
+                }
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(.green)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.green.opacity(0.12))
+                .clipShape(Capsule())
+
+            } else {
+
+                Button {
+                    guard !isUpdating else { return }
+
+                    isUpdating = true
+
+                    Task {
+                        onMarkPaid()
+
+                        try? await Task.sleep(for: .milliseconds(500))
+
+                        isUpdating = false
+                    }
+
+                } label: {
+
+                    HStack(spacing: 6) {
+
+                        if isUpdating {
+                            ProgressView()
+                                .controlSize(.small)
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "checkmark")
+                        }
+
+                        Text(isUpdating ? "Updating..." : "Mark Paid")
+                    }
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .background(Color.blue)
+                    .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
+                .disabled(isUpdating)
             }
-            .background(Color.black.opacity(0.04))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .animation(.easeInOut(duration: 0.2), value: isPaidLocally)
         }
-        .padding()
+        .padding(16)
         .background(
-            LinearGradient(
-                colors: [Color.gray.opacity(0.1), Color.cyan.opacity(0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
         )
-        .cornerRadius(14)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+        )
+        .contentShape(Rectangle())
     }
 }
