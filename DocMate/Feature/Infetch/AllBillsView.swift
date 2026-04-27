@@ -76,11 +76,8 @@ struct AllBillsView: View {
     
     // MARK: - Mark as paid
     private func markAsPaid(_ bill: Infetch) {
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
-            if let index = viewModel.allBills.firstIndex(where: { $0.id == bill.id }) {
-                viewModel.allBills[index].isPaid = true
-                viewModel.allBills[index].dueDate = Date()
-            }
+        Task {
+            await viewModel.markBillAsPaid(bill)
         }
 
         toastBillName = bill.name

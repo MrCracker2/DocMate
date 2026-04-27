@@ -9,6 +9,12 @@ struct DocumentDetailView: View {
     @State private var showShareSheet     = false
     @State private var showDeleteConfirm  = false
     @State private var showPinLimitAlert  = false   //  limit alert
+    @State private var localPDFURL: URL?            // cached PDF from Supabase
+    @State private var isDownloadingPDF = false
+    @State private var showInfoSheet = false
+    @State private var showEditSheet = false
+    @Environment(\.dismiss) var dismiss
+    @State private var isDeleting = false
 
     // Live document — array se seedha read karo
     var liveDocument: Document {
@@ -21,9 +27,11 @@ struct DocumentDetailView: View {
 
     // Pin toggle — return value check karke alert dikhao
     func handleTogglePin() {
-        let success = viewModel.togglePin(document)
-        if !success {
-            showPinLimitAlert = true
+        Task {
+            let success = await viewModel.togglePin(document)
+            if !success {
+                showPinLimitAlert = true
+            }
         }
     }
 
@@ -33,6 +41,7 @@ struct DocumentDetailView: View {
 
                 inlinePreview
                     .padding(.top)
+                    .onAppear { downloadPDFIfNeeded() }
 
                 VStack(alignment: .leading, spacing: 12) {
                     infoRow("Category", categoryName)
@@ -52,7 +61,7 @@ struct DocumentDetailView: View {
                 Spacer(minLength: 80)
             }
         }
-        .navigationTitle(document.name)
+        .navigationTitle(liveDocument.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
 
@@ -73,6 +82,11 @@ struct DocumentDetailView: View {
                             liveDocument.isPinned ? "Unpin" : "Pin",
                             systemImage: liveDocument.isPinned ? "pin.slash" : "pin"
                         )
+                    }
+                    Button {
+                        showEditSheet = true
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
                     }
 
                     Divider()
@@ -109,7 +123,9 @@ struct DocumentDetailView: View {
 
                 Spacer()
 
-                Button { } label: {
+                Button {
+                    showEditSheet = true
+                } label: {
                     Image(systemName: "slider.horizontal.3")
                         .font(.title2)
                         .foregroundStyle(.blue)
@@ -117,7 +133,9 @@ struct DocumentDetailView: View {
 
                 Spacer()
 
-                Button { } label: {
+                Button {
+                    showInfoSheet = true
+                } label: {
                     Image(systemName: "info.circle")
                         .font(.title2)
                         .foregroundStyle(.blue)
@@ -125,11 +143,15 @@ struct DocumentDetailView: View {
 
                 Spacer()
 
-                Button { showDeleteConfirm = true } label: {
+                Button {
+                    showDeleteConfirm = true
+                } label: {
                     Image(systemName: "trash")
                         .font(.title2)
                         .foregroundStyle(.red)
                 }
+                .disabled(isDeleting)
+               
 
                 Spacer()
             }
@@ -137,28 +159,54 @@ struct DocumentDetailView: View {
             .background(.regularMaterial)
         }
 
-        // MARK: Share Sheet
         .sheet(isPresented: $showShareSheet) {
-            if let path = document.filePath,
-               FileManager.default.fileExists(atPath: path) {
-                ShareSheet(items: [URL(fileURLWithPath: path)])
+            if let pdfURL = localPDFURL {
+                ShareSheet(items: [pdfURL])
             } else if let firstImage = viewModel.images(for: document).first {
                 ShareSheet(items: [firstImage])
             } else {
                 ShareSheet(items: [document.name])
             }
         }
+        
+        .sheet(isPresented: $showEditSheet) {
+            EditDocumentView(document: liveDocument)
+        }
+        .sheet(isPresented: $showInfoSheet) {
+            DocumentInfoView(document: liveDocument)
+        }
+        .overlay {
+            if isDeleting {
+                ZStack {
+                    Color.black.opacity(0.2).ignoresSafeArea()
 
-        // MARK: Delete Confirmation
-        .confirmationDialog(
-            "Delete \"\(document.name)\"?",
-            isPresented: $showDeleteConfirm
-        ) {
-            Button("Delete", role: .destructive) {
-                viewModel.deleteDocument(document)
+                    ProgressView("Deleting...")
+                        .padding()
+                        .background(.regularMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
             }
         }
 
+        // MARK: Delete Confirmation
+        .alert("Delete Document?", isPresented: $showDeleteConfirm) {
+
+            Button("Cancel", role: .cancel) { }
+
+            Button("Delete", role: .destructive) {
+                Task {
+                    isDeleting = true
+                    await viewModel.deleteDocument(document)
+                    isDeleting = false
+                    dismiss()
+                }
+            }
+
+        } message: {
+            Text("Are you sure you want to delete \"\(liveDocument.name)\"? This action cannot be undone.")
+        }
+        
+        
         //  Pin Limit Alert
         .alert("Pin Limit Reached", isPresented: $showPinLimitAlert) {
             Button("OK", role: .cancel) { }
@@ -170,16 +218,23 @@ struct DocumentDetailView: View {
     // MARK: DOCUMENT PREVIEW (PDF + Image)
     @ViewBuilder
     private var inlinePreview: some View {
-        // 1. PDF file on disk
-        if document.fileType == .pdf,
-           let path = document.filePath,
-           FileManager.default.fileExists(atPath: path) {
-            PDFKitView(url: URL(fileURLWithPath: path))
+        // 1. PDF from Supabase (downloaded and cached locally)
+        if let pdfURL = localPDFURL {
+            PDFKitView(url: pdfURL)
                 .frame(height: 500)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal)
 
-        // 2. In-memory image (thumbnail / old scans)
+        // 2. Downloading PDF
+        } else if isDownloadingPDF {
+            VStack(spacing: 12) {
+                ProgressView()
+                Text("Loading PDF...")
+                    .foregroundStyle(.secondary)
+            }
+            .frame(height: 300)
+
+        // 3. In-memory image (thumbnail / old scans)
         } else if let firstImage = viewModel.images(for: document).first {
             Image(uiImage: firstImage)
                 .resizable()
@@ -188,7 +243,7 @@ struct DocumentDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal)
 
-        // 3. Bundled asset image (seed data)
+        // 4. Bundled asset image (seed data)
         } else if let assetName = document.assetName,
                   let image = UIImage(named: assetName) {
             Image(uiImage: image)
@@ -197,10 +252,37 @@ struct DocumentDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal)
 
-        // 4. No preview
+        // 5. No preview
         } else {
             previewPlaceholder
                 .padding(.horizontal)
+        }
+    }
+
+    // MARK: Download PDF from Supabase
+    private func downloadPDFIfNeeded() {
+        guard document.fileTypeEnum == .pdf,
+              let storagePath = document.filePath,
+              !storagePath.isEmpty,
+              localPDFURL == nil else { return }
+
+        isDownloadingPDF = true
+        Task {
+            do {
+                let data = try await SupabaseManager.shared.downloadPDF(path: storagePath)
+                let tempURL = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("\(document.id).pdf")
+                try data.write(to: tempURL)
+                await MainActor.run {
+                    localPDFURL = tempURL
+                    isDownloadingPDF = false
+                }
+            } catch {
+                print("PDF download error: \(error)")
+                await MainActor.run {
+                    isDownloadingPDF = false
+                }
+            }
         }
     }
 
@@ -211,7 +293,7 @@ struct DocumentDetailView: View {
                 .frame(height: 300)
 
             VStack(spacing: 10) {
-                Image(systemName: document.fileType.sfSymbol)
+                Image(systemName: document.fileTypeEnum.sfSymbol)
                     .font(.largeTitle)
                     .foregroundStyle(.secondary)
 

@@ -8,15 +8,13 @@
 import Foundation
 import SwiftUI
 
-// MARK: - User
-struct User: Identifiable, Hashable {
+// MARK: - User (maps to `profiles` table in Supabase)
+struct User: Identifiable, Hashable, Codable {
     var id: UUID = UUID()
     var name: String
-    var email: String
-    var password: String
-    var phoneNumber: Int
-    var dateOfBirth: Date
-    var gender: String
+    var phone: Int?
+    var dateOfBirth: String?
+    var gender: String?
 
     var initials: String {
         let parts = name.split(separator: " ")
@@ -25,55 +23,78 @@ struct User: Identifiable, Hashable {
         return "\(first)\(last)".uppercased()
     }
 
-    init(name: String, email: String, password: String, phoneNumber: Int, dateOfBirth: Date, gender: String) {
+    enum CodingKeys: String, CodingKey {
+        case id, name, phone, gender
+        case dateOfBirth = "date_of_birth"
+    }
+
+    init(
+        id: UUID = UUID(),
+        name: String = "",
+        phone: Int? = nil,
+        dateOfBirth: String? = nil,
+        gender: String? = "Male"
+    ) {
+        self.id = id
         self.name = name
-        self.email = email
-        self.password = password
-        self.phoneNumber = phoneNumber
+        self.phone = phone
         self.dateOfBirth = dateOfBirth
         self.gender = gender
     }
 }
 
-// MARK: - Document
-struct Document: Identifiable, Hashable {
+// MARK: - Document (maps to `documents` table in Supabase)
+struct Document: Identifiable, Hashable, Codable {
     var id: UUID = UUID()
+    var userId: UUID
+    var categoryId: UUID?
     var name: String
     var dueDate: Date?
     var isPinned: Bool
-    var userId: UUID
-    var categoryId: UUID
-    var createdAt: Date
-    var fileTypeRaw: String
+    var fileType: String
     var assetName: String?
     var filePath: String?
+    var createdAt: Date
 
+    var fileTypeEnum: DocumentFileType {
+        get { DocumentFileType(rawValue: fileType) ?? .image }
+        set { fileType = newValue.rawValue }
+    }
 
-    var fileType: DocumentFileType {
-        get { DocumentFileType(rawValue: fileTypeRaw) ?? .image }
-        set { fileTypeRaw = newValue.rawValue }
+    enum CodingKeys: String, CodingKey {
+        case id, name
+        case userId = "user_id"
+        case categoryId = "category_id"
+        case dueDate = "due_date"
+        case isPinned = "is_pinned"
+        case fileType = "file_type"
+        case assetName = "asset_name"
+        case filePath = "file_path"
+        case createdAt = "created_at"
     }
 
     init(
+        id: UUID = UUID(),
         name: String,
         dueDate: Date? = nil,
         isPinned: Bool = false,
         userId: UUID,
-        categoryId: UUID,
+        categoryId: UUID? = nil,
         createdAt: Date = Date(),
         fileType: DocumentFileType = .image,
         assetName: String? = nil,
         filePath: String? = nil
     ) {
+        self.id = id
         self.name = name
         self.dueDate = dueDate
         self.isPinned = isPinned
         self.userId = userId
         self.categoryId = categoryId
         self.createdAt = createdAt
-        self.fileTypeRaw = fileType.rawValue
+        self.fileType = fileType.rawValue
         self.assetName = assetName
-        self.filePath = filePath       
+        self.filePath = filePath
     }
 }
 
@@ -82,7 +103,7 @@ enum DocumentFileType: String, Codable, Hashable {
     case image
     case pdf
 
-    var sfSymbol: String {              // computed property it depended on file type ,no need to store it
+    var sfSymbol: String {
         switch self {
         case .image: return "photo.fill"
         case .pdf:   return "doc.fill"
@@ -90,40 +111,53 @@ enum DocumentFileType: String, Codable, Hashable {
     }
 }
 
-// MARK: - Category
-struct Category: Identifiable, Hashable {
+// MARK: - Category (maps to `categories` table in Supabase)
+struct Category: Identifiable, Hashable, Codable {
     var id: UUID = UUID()
+    var userId: UUID?
     var name: String
     var sfSymbol: String
 
-    init(name: String, sfSymbol: String) {
+    enum CodingKeys: String, CodingKey {
+        case id, name
+        case userId = "user_id"
+        case sfSymbol = "sf_symbol"
+    }
+
+    init(id: UUID = UUID(), name: String, sfSymbol: String, userId: UUID? = nil) {
+        self.id = id
         self.name = name
         self.sfSymbol = sfSymbol
+        self.userId = userId
     }
 }
 
 
-// MARK: - Tag
-struct Tag: Identifiable, Hashable {
+// MARK: - Tag (maps to `tags` table in Supabase)
+struct Tag: Identifiable, Hashable, Codable {
     var id: UUID = UUID()
+    var userId: UUID?
     var name: String
     var color: String
 
-    init(name: String, color: String) {
+    enum CodingKeys: String, CodingKey {
+        case id, name, color
+        case userId = "user_id"
+    }
+
+    init(id: UUID = UUID(), name: String, color: String, userId: UUID? = nil) {
+        self.id = id
         self.name = name
         self.color = color
+        self.userId = userId
     }
 }
 
 
-// MARK: - DocumentTag
-//struct DocumentTag: Identifiable {
-//    let id         = UUID()
-//    var documentId : UUID
-//    var tagId      : UUID
-//}
-struct Infetch: Identifiable, Hashable {
+// MARK: - Infetch / Bill (maps to `bills` table in Supabase)
+struct Infetch: Identifiable, Hashable, Codable {
     var id: UUID = UUID()
+    var userId: UUID?
     var name: String
     var dueDate: Date
     var billDate: Date
@@ -133,20 +167,35 @@ struct Infetch: Identifiable, Hashable {
     var phoneNumber: Int?
     var billNumber: String
     var isPaid: Bool
-    var infetchCategoryRaw: String
+    var category: String
 
     var inFetchCatgogry: InfetchCategory {
-        get { InfetchCategory(rawValue: infetchCategoryRaw) ?? .other }
-        set { infetchCategoryRaw = newValue.rawValue }
+        get { InfetchCategory(rawValue: category) ?? .other }
+        set { category = newValue.rawValue }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, amount, category
+        case userId = "user_id"
+        case dueDate = "due_date"
+        case billDate = "bill_date"
+        case subjectName = "subject_name"
+        case customerName = "customer_name"
+        case phoneNumber = "phone_number"
+        case billNumber = "bill_number"
+        case isPaid = "is_paid"
     }
 
     init(
+        id: UUID = UUID(),
         name: String, dueDate: Date, billDate: Date,
         SubjectName: String, amount: Double?,
         customerName: String, phoneNumber: Int?,
         billNumber: String, isPaid: Bool,
-        inFetchCatgogry: InfetchCategory
+        inFetchCatgogry: InfetchCategory,
+        userId: UUID? = nil
     ) {
+        self.id = id
         self.name = name
         self.dueDate = dueDate
         self.billDate = billDate
@@ -156,7 +205,8 @@ struct Infetch: Identifiable, Hashable {
         self.phoneNumber = phoneNumber
         self.billNumber = billNumber
         self.isPaid = isPaid
-        self.infetchCategoryRaw = inFetchCatgogry.rawValue
+        self.category = inFetchCatgogry.rawValue
+        self.userId = userId
     }
 }
 

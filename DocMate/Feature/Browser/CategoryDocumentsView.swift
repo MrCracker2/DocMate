@@ -77,7 +77,7 @@ struct CategoryDocumentsView: View {
                                             .resizable()
                                             .frame(width: 40, height: 50)
                                     } else {
-                                        Image(systemName: doc.fileType.sfSymbol)
+                                        Image(systemName: doc.fileTypeEnum.sfSymbol)
                                             .resizable()
                                             .scaledToFit()
                                             .frame(width: 40, height: 50)

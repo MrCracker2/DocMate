@@ -8,16 +8,16 @@
 import SwiftUI
 
 struct ProfileView: View {
-
+    
     @Environment(AppViewModel.self)  var viewModel
     @Environment(AuthViewModel.self) var authVM
     @State private var showEditSheet = false
     @Environment(\.dismiss) var dismiss
-
+    
     var body: some View {
         NavigationStack {
             Form {
-
+                
                 // MARK: Profile Header
                 Section {
                     HStack {
@@ -34,7 +34,7 @@ struct ProfileView: View {
                     }
                 }
                 .listRowBackground(Color.clear)
-
+                
                 // MARK: Profile Info
                 Section {
                     HStack {
@@ -46,23 +46,23 @@ struct ProfileView: View {
                     HStack {
                         Text("Date of Birth")
                         Spacer()
-                        Text(viewModel.user.dateOfBirth.formatted(date: .abbreviated, time: .omitted))
+                        Text(viewModel.user.dateOfBirth ?? "Not set")
                             .foregroundStyle(.gray)
                     }
                     HStack {
                         Text("Gender")
                         Spacer()
-                        Text(viewModel.user.gender)
+                        Text(viewModel.user.gender ?? "Not set")
                             .foregroundStyle(.gray)
                     }
                 }
-
+                
                 // MARK: Features — now includes Bills History
                 Section {
                     NavigationLink("Notification") {
                         Text("Notification Screen")
                     }
-
+                    
                     
                     NavigationLink {
                         BillsHistoryView()
@@ -70,7 +70,7 @@ struct ProfileView: View {
                         Text("Your Bills History")
                     }
                 }
-
+                
                 // MARK: Info
                 Section {
                     NavigationLink("Terms & Conditions") {
@@ -83,7 +83,7 @@ struct ProfileView: View {
                         Text("Support Screen")
                     }
                 }
-
+                
                 // MARK: Logout
                 Section {
                     Button("Logout") {
@@ -118,11 +118,12 @@ struct ProfileView: View {
             EditProfileView()
         }
     }
-
+    
     // MARK: - Helpers
     func logout() async {
         do {
             try await SupabaseManager.shared.signOut()
+             viewModel.reset()
             authVM.isLoggedIn = false
             dismiss()
         } catch {

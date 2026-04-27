@@ -5,27 +5,31 @@
 //  Created by Shashwat kumar on 23/04/26.
 //
 
-//
-//  SignupView.swift
-//  DocMate
-//
-
 import SwiftUI
 
 struct SignupView: View {
     
     @Environment(\.dismiss) var dismiss
+    @Environment(AuthViewModel.self) var authVM
+    @Environment(AppViewModel.self) var viewModel
     
-    @State private var fullName = ""
+    // Auth fields
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
-    
     @State private var showPassword = false
     @State private var showConfirmPassword = false
     
+    // Profile fields
+    @State private var firstName = ""
+    @State private var lastName = ""
+    @State private var dateOfBirth = Date()
+    @State private var gender = "Male"
+    
     @State private var isLoading = false
     @State private var errorMessage = ""
+    
+    let genderOptions = ["Male", "Female", "Other"]
     
     var body: some View {
         NavigationStack {
@@ -73,13 +77,22 @@ struct SignupView: View {
                         // MARK: Fields
                         VStack(spacing: 16) {
                             
+                            // Name fields
                             authField(
-                                title: "Full Name",
-                                placeholder: "Enter your full name",
+                                title: "First Name",
+                                placeholder: "Enter your first name",
                                 icon: "person",
-                                text: $fullName
+                                text: $firstName
                             )
                             
+                            authField(
+                                title: "Last Name",
+                                placeholder: "Enter your last name",
+                                icon: "person.2",
+                                text: $lastName
+                            )
+                            
+                            // Email
                             authField(
                                 title: "Email",
                                 placeholder: "Enter your email",
@@ -87,6 +100,59 @@ struct SignupView: View {
                                 text: $email
                             )
                             
+                            // Date of Birth
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Date of Birth")
+                                    .font(.headline)
+                                
+                                HStack {
+                                    Image(systemName: "calendar")
+                                        .foregroundStyle(.blue)
+                                    
+                                    DatePicker(
+                                        "",
+                                        selection: $dateOfBirth,
+                                        displayedComponents: .date
+                                    )
+                                    .labelsHidden()
+                                    
+                                    Spacer()
+                                }
+                                .padding()
+                                .background(.white)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.blue.opacity(0.45), lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                            }
+                            
+                            // Gender
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Gender")
+                                    .font(.headline)
+                                
+                                HStack {
+                                    Image(systemName: "person.crop.circle")
+                                        .foregroundStyle(.blue)
+                                    
+                                    Picker("Gender", selection: $gender) {
+                                        ForEach(genderOptions, id: \.self) { option in
+                                            Text(option)
+                                        }
+                                    }
+                                    .pickerStyle(.segmented)
+                                }
+                                .padding()
+                                .background(.white)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.blue.opacity(0.45), lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                            }
+                            
+                            // Passwords
                             passwordField(
                                 title: "Password",
                                 placeholder: "Enter your password",
@@ -153,42 +219,55 @@ struct SignupView: View {
     
     // MARK: Sign Up
     func signUp() async {
-        
-        guard !fullName.isEmpty else {
-            errorMessage = "Enter full name"
+
+        guard !firstName.isEmpty else {
+            errorMessage = "Enter your first name"
             return
         }
-        
+
+        guard !lastName.isEmpty else {
+            errorMessage = "Enter your last name"
+            return
+        }
+
         guard email.contains("@") else {
             errorMessage = "Invalid email"
             return
         }
-        
+
         guard password.count >= 6 else {
             errorMessage = "Password must be 6+ characters"
             return
         }
-        
+
         guard password == confirmPassword else {
             errorMessage = "Passwords do not match"
             return
         }
-        
+
         do {
             isLoading = true
             errorMessage = ""
-            
+
+            let fullName = "\(firstName) \(lastName)"
+
             try await SupabaseManager.shared.signUp(
                 email: email,
-                password: password
+                password: password,
+                name: fullName,
+                phone: nil,
+                dateOfBirth: dateOfBirth,
+                gender: gender
             )
-            
-            dismiss()
-            
+
+            viewModel.reset()
+            authVM.isLoggedIn = true
+            await viewModel.fetchAll()
+
         } catch {
             errorMessage = error.localizedDescription
         }
-        
+
         isLoading = false
     }
     
@@ -266,4 +345,6 @@ struct SignupView: View {
 
 #Preview {
     SignupView()
+        .environment(AuthViewModel())
+        .environment(AppViewModel())
 }

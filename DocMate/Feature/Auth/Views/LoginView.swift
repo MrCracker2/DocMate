@@ -8,6 +8,7 @@ import SwiftUI
 struct LoginView: View {
     
     @Environment(AuthViewModel.self) var authVM
+    @Environment(AppViewModel.self) var viewModel
     
     @State private var email = ""
     @State private var password = ""
@@ -180,6 +181,7 @@ struct LoginView: View {
                                 .frame(height: 1)
                         }
                         
+                        
                         // Signup
                         HStack(spacing: 4) {
                             Text("Don't have an account?")
@@ -204,18 +206,20 @@ struct LoginView: View {
         do {
             isLoading = true
             errorMessage = ""
-            
+
             try await SupabaseManager.shared.signIn(
                 email: email,
                 password: password
             )
-            
+
+            viewModel.reset()
             authVM.isLoggedIn = true
-            
+            await viewModel.fetchAll()
+
         } catch {
             errorMessage = error.localizedDescription
         }
-        
+
         isLoading = false
     }
 }
@@ -223,4 +227,5 @@ struct LoginView: View {
 #Preview {
     LoginView()
         .environment(AuthViewModel())
+        .environment(AppViewModel())
 }

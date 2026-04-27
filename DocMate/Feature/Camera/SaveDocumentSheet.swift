@@ -140,21 +140,23 @@ struct SaveDocumentSheet: View {
 
     // MARK: - Save
     private func save() {
-        if isScanned {
-            appViewModel.addScannedDocument(
-                images: images,
-                name: documentName,
-                categoryId: selectedCategoryId,
-                dueDate: detectedDate
-            )
-        } else {
-            appViewModel.addPhotoDocument(
-                image: images.first!,
-                name: documentName,
-                categoryId: selectedCategoryId
-            )
+        Task {
+            if isScanned {
+                await appViewModel.addScannedDocument(
+                    images: images,
+                    name: documentName,
+                    categoryId: selectedCategoryId,
+                    dueDate: detectedDate
+                )
+            } else {
+                await appViewModel.addPhotoDocument(
+                    image: images.first!,
+                    name: documentName,
+                    categoryId: selectedCategoryId
+                )
+            }
+            onSaveComplete?()
         }
-        onSaveComplete?()
     }
 
 }

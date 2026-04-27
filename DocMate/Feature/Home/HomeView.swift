@@ -43,12 +43,36 @@ struct HomeView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 24) {
-
+                
+                
+                if viewModel.documents.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "doc.text.viewfinder")
+                            .font(.system(size: 44))
+                            .foregroundStyle(.blue)
+                        
+                        Text("Welcome to DocMate")
+                            .font(.title2.bold())
+                        
+                        Text("Scan and organize important documents securely.")
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.secondary)
+                        
+                        Button("Scan First Document") {
+                            showScannerFlow = true
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding(.top, 120)
+                }
+                else{
+                
+                
                 // MARK: Due Soon
                 Text("Expiring Shortly")
                     .font(.title3)
                     .fontWeight(.bold)
-
+                
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHGrid(rows: rows, spacing: 16) {
                         ForEach(viewModel.expiringDocuments) { doc in
@@ -66,7 +90,7 @@ struct HomeView: View {
                         }
                     }
                 }
-
+                
                 // MARK: Your Bills
                 if !viewModel.inFetch.isEmpty {
                     YourBillsSection(
@@ -78,13 +102,13 @@ struct HomeView: View {
                         )
                     )
                 }
-
+                
                 // MARK: Recently Saved
                 HStack {
                     Text("Recently Saved")
                         .font(.title3)
                         .fontWeight(.bold)
-
+                    
                     if viewModel.recentDocuments.count > 4 {
                         NavigationLink(destination: RecentlySavedView()) {
                             Image(systemName: "chevron.right")
@@ -92,7 +116,7 @@ struct HomeView: View {
                         }
                     }
                 }
-
+                
                 
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(Array(viewModel.recentDocuments.prefix(4))) { doc in
@@ -111,13 +135,13 @@ struct HomeView: View {
                     }
                 }
                 
-
+                
                 // MARK: Pinned Documents
                 HStack {
                     Text("Pinned Documents")
                         .font(.title3)
                         .fontWeight(.bold)
-
+                    
                     if viewModel.pinnedDocuments.count > 5 {
                         NavigationLink(destination: PinnedView()) {
                             Image(systemName: "chevron.right")
@@ -126,7 +150,7 @@ struct HomeView: View {
                         }
                     }
                 }
-
+                
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHGrid(rows: rows, spacing: 16) {
                         ForEach(Array(viewModel.pinnedDocuments.prefix(5))) { doc in
@@ -142,6 +166,7 @@ struct HomeView: View {
                     }
                 }
             }
+        }
             .padding()
         }
         .navigationTitle("Home")

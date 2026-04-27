@@ -34,8 +34,13 @@ struct RootView: View {
             }
         }
         .task {
-            viewModel.seedIfNeeded()
+            NotificationManager.shared.requestPermission()
             await authVM.checkSession()
+
+            guard authVM.isLoggedIn else { return }
+
+            await viewModel.seedIfNeeded()
+            await viewModel.fetchAll()
         }
     }
 }

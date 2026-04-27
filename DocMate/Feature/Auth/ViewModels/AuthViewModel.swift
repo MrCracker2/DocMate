@@ -10,20 +10,25 @@ import SwiftUI
 
 @Observable
 class AuthViewModel {
-    
+
     var isLoggedIn = false
     var isLoading = true
-    
+    private var hasCheckedSession = false
+
     func checkSession() async {
+        guard !hasCheckedSession else { return }
+        hasCheckedSession = true
+
         do {
             let session = try await SupabaseManager.shared.currentSession()
             isLoggedIn = session != nil
         } catch {
             isLoggedIn = false
         }
+
         isLoading = false
     }
-    
+
     func logout() async {
         try? await SupabaseManager.shared.signOut()
         isLoggedIn = false

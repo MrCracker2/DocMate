@@ -92,12 +92,14 @@ struct EditProfileView: View {
                 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        viewModel.updateUser(
-                            name: "\(firstName) \(lastName)",
-                            dateOfBirth: dob,
-                            gender: gender
-                        )
-                        dismiss()
+                        Task {
+                            await viewModel.updateUser(
+                                name: "\(firstName) \(lastName)",
+                                dateOfBirth: dob,
+                                gender: gender
+                            )
+                            dismiss()
+                        }
                     } label: {
                         Text("Save")
                             .fontWeight(.regular)
@@ -112,12 +114,20 @@ struct EditProfileView: View {
             // MARK: - Load Data
             .onAppear {
                 let parts = viewModel.user.name.split(separator: " ")
+
                 firstName = parts.first.map(String.init) ?? ""
-                lastName = parts.last.map(String.init) ?? ""
-                
-                dob = viewModel.user.dateOfBirth
-                gender = viewModel.user.gender
-            }
-        }
+                lastName = parts.dropFirst().joined(separator: " ")
+
+                gender = viewModel.user.gender ?? "Male"
+
+                if let dobString = viewModel.user.dateOfBirth {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd"
+
+                    dob = formatter.date(from: dobString) ?? Date()
+                } else {
+                    dob = Date()
+                }
+            }        }
     }
 }
