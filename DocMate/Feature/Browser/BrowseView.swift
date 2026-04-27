@@ -355,15 +355,17 @@ struct BrowseView: View {
             TextField("Category Name", text: $categoryName)
 
             Button("Create") {
-                if !categoryName.isEmpty {
-                    viewModel.addCategory(
+                guard !categoryName.isEmpty else { return }
+
+                Task {
+                    await viewModel.addCategory(
                         name: categoryName,
                         sfSymbol: "folder.fill"
                     )
+
                     categoryName = ""
                 }
             }
-
             Button("Cancel", role: .cancel) {
                 categoryName = ""
             }
