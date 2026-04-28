@@ -379,39 +379,45 @@ class AppViewModel {
             errorMessage = error.localizedDescription
         }
     }
-    
     // =========================================================
-    // MARK: - Bill Operations
-    // =========================================================
-    @MainActor
-    func markBillAsPaid(_ bill: Infetch) async {
-        guard let index = allBills.firstIndex(where: { $0.id == bill.id }) else { return }
+        // MARK: - Bill Operations
+        // =========================================================
+        @MainActor
+        func toggleBillStatus(_ bill: Infetch) async {
 
-        allBills[index].isPaid = true
-        allBills[index].paidAt = Date()
+            guard let index = allBills.firstIndex(where: { $0.id == bill.id }) else { return }
 
-        do {
-            try await supa.updateBill(allBills[index])
-        } catch {
-            print("Mark paid error: \(error)")
-            await fetchAll()
-        }
-    }
-    /// Simulates an API call. On success marks bill as paid.
-    func refreshBill(_ bill: Infetch, completion: @escaping (Bool) -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
-            guard let self else { return }
-            let isPaid = Bool.random()
-            
-            if isPaid {
-                Task { @MainActor in
-                    await self.markBillAsPaid(bill)
-                }
+            allBills[index].isPaid.toggle()
+
+            if allBills[index].isPaid {
+                allBills[index].paidAt = Date()
+            } else {
+                allBills[index].paidAt = nil
             }
-            completion(isPaid)
+
+            do {
+                try await supa.updateBill(allBills[index])
+            } catch {
+                print("Toggle bill error:", error)
+                await fetchAll()
+            }
         }
-    }
-    
+        /// Simulates an API call. On success marks bill as paid.
+        func refreshBill(_ bill: Infetch, completion: @escaping (Bool) -> Void) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+                guard let self else { return }
+                let isPaid = Bool.random()
+                
+                if isPaid {
+                    Task { @MainActor in
+                        await self.toggleBillStatus(bill)
+                    }
+                }
+                completion(isPaid)
+            }
+        }
+        
+
     /// Returns total amount paid within the given month filter.
     func totalSpend(for filter: BillMonthFilter) -> Double {
         billsFiltered(by: filter)

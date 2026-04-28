@@ -1,120 +1,93 @@
+
 //
 //  AllBillsCard.swift
 //  DocMate
 //
+//  Created by Naman Yadav on 25/03/26.
+//
+
 
 import SwiftUI
 
 struct AllBillsCard: View {
-
+    
     let doc: Infetch
     var onMarkPaid: () -> Void
 
-    @State private var isUpdating = false
-
-    private var isPaid: Bool {
-        doc.isPaid
-    }
+    @State private var isPaidLocally = false
 
     var body: some View {
-
-        HStack(alignment: .center, spacing: 14) {
-
-            // MARK: Left Content
+        
+        HStack {
+            
             VStack(alignment: .leading, spacing: 6) {
-
+                
                 Text(doc.subjectName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                
                 Text(doc.name)
                     .font(.headline)
-                    .lineLimit(1)
-
-                HStack(spacing: 8) {
-
-                    if let amount = doc.amount {
-                        Text("₹\(amount, specifier: "%.0f")")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                    }
-
-                    Text("•")
-                        .foregroundStyle(.secondary)
-
-                    Text("Due \(doc.dueDate, style: .date)")
+                
+                if let amount = doc.amount {
+                    Text("₹\(amount, specifier: "%.0f")")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundColor(.gray)
                 }
             }
-
+            
             Spacer()
 
-            // MARK: Right Action
-            if isPaid {
-
-                HStack(spacing: 6) {
-                    Image(systemName: "checkmark.circle.fill")
-                    Text("Paid")
-                }
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(.green)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.green.opacity(0.12))
-                .clipShape(Capsule())
-
-            } else {
+            // Unpaid / Paid toggle
+            HStack(spacing: 0) {
 
                 Button {
-                    guard !isUpdating else { return }
-
-                    isUpdating = true
-
-                    Task {
-                        onMarkPaid()
-
-                        try? await Task.sleep(for: .milliseconds(500))
-
-                        isUpdating = false
-                    }
-
+                    // already unpaid — no action
                 } label: {
-
-                    HStack(spacing: 6) {
-
-                        if isUpdating {
-                            ProgressView()
-                                .controlSize(.small)
-                                .tint(.white)
-                        } else {
-                            Image(systemName: "checkmark")
-                        }
-
-                        Text(isUpdating ? "Updating..." : "Mark Paid")
-                    }
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 9)
-                    .background(Color.blue)
-                    .clipShape(Capsule())
+                    Text("Unpaid")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(!isPaidLocally ? Color.white.opacity(0.15) : Color.clear)
+                        .foregroundStyle(!isPaidLocally ? Color.blue : Color.secondary)
                 }
                 .buttonStyle(.plain)
-                .disabled(isUpdating)
+                .disabled(isPaidLocally)
+
+                Divider().frame(height: 22)
+
+                Button {
+                    guard !isPaidLocally else { return }
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        isPaidLocally = true
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        onMarkPaid()
+                    }
+                } label: {
+                    Text("Paid")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(isPaidLocally ? Color.blue.opacity(0.15) : Color.clear)
+                        .foregroundStyle(isPaidLocally ? Color.blue : Color.secondary)
+                }
+                .buttonStyle(.plain)
             }
+            .background(Color.black.opacity(0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .animation(.easeInOut(duration: 0.2), value: isPaidLocally)
         }
-        .padding(16)
+        .padding()
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
+            LinearGradient(
+                colors: [Color.gray.opacity(0.1), Color.cyan.opacity(0.1)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
-        )
-        .contentShape(Rectangle())
+        .cornerRadius(14)
     }
 }

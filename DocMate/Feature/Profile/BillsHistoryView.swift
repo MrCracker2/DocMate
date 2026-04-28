@@ -38,7 +38,9 @@ struct BillsHistoryView: View {
     private func billsForMonth(_ month: Date) -> [Infetch] {
         let cal = Calendar.current
         return viewModel.billHistory.filter {
-            cal.isDate($0.dueDate, equalTo: month, toGranularity: .month)
+            guard let paidAt = $0.paidAt else { return false }
+            return cal.isDate(paidAt, equalTo: month, toGranularity: .month)
+
         }
     }
 
@@ -212,10 +214,12 @@ struct HistoryBillCard: View {
 
     let bill: Infetch
 
+    // HistoryBillCard mein
     private var formattedDate: String {
         let f = DateFormatter()
         f.dateFormat = "d MMM, h:mm a"
-        return f.string(from: bill.dueDate)
+        let dateToShow = bill.paidAt ?? bill.dueDate  
+        return f.string(from: dateToShow)
     }
 
     var body: some View {

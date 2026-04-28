@@ -141,7 +141,7 @@ struct AllBillsView: View {
     private func markAsPaid(_ bill: Infetch) {
 
         Task {
-            await viewModel.markBillAsPaid(bill)
+            await viewModel.toggleBillStatus(bill)
         }
 
         toastBillName = bill.name
@@ -160,7 +160,7 @@ struct AllBillsView: View {
     // MARK: Bills Source
 
     private var baseBills: [Infetch] {
-        viewModel.allBills.sorted {
+        viewModel.inFetch.sorted {
             if $0.isPaid != $1.isPaid {
                 return !$0.isPaid
             }
@@ -185,31 +185,21 @@ struct AllBillsView: View {
 // MARK: CategoryChip
 
 struct CategoryChip: View {
-
-    let title: String
-    let isSelected: Bool
-    let onTap: () -> Void
-
+    
+    var title: String
+    var isSelected: Bool
+    var onTap: () -> Void
+    
     var body: some View {
-        Button(action: onTap) {
-            Text(title)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(
-                    isSelected
-                    ? Color.blue
-                    : Color(.secondarySystemGroupedBackground)
-                )
-                .foregroundStyle(
-                    isSelected
-                    ? Color.white
-                    : Color.primary
-                )
-                .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
+        Text(title)
+            .font(.subheadline)
+            .fontWeight(.medium)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(isSelected ? Color.blue : Color.gray.opacity(0.2))
+            .foregroundColor(isSelected ? .white : .primary)
+            .cornerRadius(20)
+            .onTapGesture { onTap() }
     }
 }
 
@@ -221,17 +211,15 @@ struct PaidToastView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-
             Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 18))
                 .foregroundStyle(.green)
 
-            VStack(alignment: .leading, spacing: 2) {
-
-                Text("Bill Paid")
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Bill Paid!")
                     .font(.subheadline)
                     .fontWeight(.semibold)
-
-                Text("\(billName) moved to Bills History")
+                Text("\(billName) added to Bills History")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -243,8 +231,12 @@ struct PaidToastView: View {
         .padding(.vertical, 12)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .padding(.horizontal, 16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color(.separator).opacity(0.3), lineWidth: 0.5)
+        )
         .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
+        .padding(.horizontal, 16)
     }
 }
 
