@@ -6,10 +6,8 @@
 //
 
 
-//
-//  DocumentScannerView.swift
-//  DocMateDummy
-//
+
+
 
 import SwiftUI
 import VisionKit

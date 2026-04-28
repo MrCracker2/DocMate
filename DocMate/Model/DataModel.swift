@@ -176,7 +176,7 @@ struct Infetch: Identifiable, Hashable, Codable {
 
     var category: String
 
-    var inFetchCatgogry: InfetchCategory {
+    var inFetchCategory: InfetchCategory {
         get { InfetchCategory(rawValue: category) ?? .other }
         set { category = newValue.rawValue }
     }
@@ -210,7 +210,7 @@ struct Infetch: Identifiable, Hashable, Codable {
         isPaid: Bool,
         gmailMessageId: String? = nil,
         paidAt: Date? = nil,
-        inFetchCatgogry: InfetchCategory,
+        inFetchCategory: InfetchCategory,
         userId: UUID? = nil
     ) {
         self.id = id
@@ -225,7 +225,7 @@ struct Infetch: Identifiable, Hashable, Codable {
         self.isPaid = isPaid
         self.gmailMessageId = gmailMessageId
         self.paidAt = paidAt
-        self.category = inFetchCatgogry.rawValue
+        self.category = inFetchCategory.rawValue
         self.userId = userId
     }
 }

@@ -24,7 +24,7 @@ struct InfetchBillCard: View {
                 
                 Spacer()
                 
-                Text(doc.inFetchCatgogry.rawValue)
+                Text(doc.inFetchCategory.rawValue)
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.blue)

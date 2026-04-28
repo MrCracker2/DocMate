@@ -5,14 +5,7 @@
 //  Created by Shashwat kumar on 27/04/26.
 //
 
-//
-//  EmailSyncViewModel.swift
-//  DocMate
-//
-//
-//  EmailSyncViewModel.swift
-//  DocMate
-//
+
 
 import SwiftUI
 

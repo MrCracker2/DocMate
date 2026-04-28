@@ -177,7 +177,7 @@ struct AllBillsView: View {
         }
 
         return baseBills.filter {
-            $0.inFetchCatgogry == selectedCategory
+            $0.inFetchCategory == selectedCategory
         }
     }
 }

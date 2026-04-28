@@ -56,7 +56,7 @@ struct SignupView: View {
                         // MARK: Logo
                         VStack(spacing: 12) {
                             
-                            Image("DocImage")
+                            Image("DOCLogo")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 90, height: 90)

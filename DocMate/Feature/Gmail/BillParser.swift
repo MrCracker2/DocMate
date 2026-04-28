@@ -33,7 +33,7 @@ struct BillParser {
             isPaid: false,
             gmailMessageId: email.id,
             paidAt: nil,
-            inFetchCatgogry: category,
+            inFetchCategory: category,
             userId: userId
         )
     }

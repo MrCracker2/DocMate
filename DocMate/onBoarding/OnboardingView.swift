@@ -105,6 +105,7 @@ struct OnboardingView: View {
                         
                         // Skip
                         Button("Skip") {
+                            hasSeenOnboarding = true
                             goToSignup = true
                         }
                         .font(.subheadline)

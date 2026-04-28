@@ -102,6 +102,6 @@ struct BillSheetView: View {
         phoneNumber: 9711225575,
         billNumber: "MF26091012081043",
         isPaid: false,
-        inFetchCatgogry: .bill
+        inFetchCategory: .bill
     ))
 }

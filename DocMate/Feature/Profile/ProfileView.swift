@@ -108,7 +108,7 @@ struct ProfileView: View {
                     .frame(maxWidth: .infinity)
                 }
                 .listRowBackground(Color.clear)
-                .listRowBackground(Color.clear)
+                
             }
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)

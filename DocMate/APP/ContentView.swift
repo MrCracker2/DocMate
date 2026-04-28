@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-private enum AddAction { case scan, photo }
+
 
 struct ContentView: View {
 

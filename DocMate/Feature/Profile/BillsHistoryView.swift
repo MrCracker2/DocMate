@@ -45,12 +45,12 @@ struct BillsHistoryView: View {
     }
 
     private func billsForMonth(_ month: Date, category: InfetchCategory) -> [Infetch] {
-        billsForMonth(month).filter { $0.inFetchCatgogry == category }.sorted { $0.dueDate > $1.dueDate }
+        billsForMonth(month).filter { $0.inFetchCategory == category }.sorted { $0.dueDate > $1.dueDate }
     }
 
     private func visibleBillsForMonth(_ month: Date) -> [Infetch] {
         if let cat = selectedCategory {
-            return billsForMonth(month).filter { $0.inFetchCatgogry == cat }
+            return billsForMonth(month).filter { $0.inFetchCategory == cat }
         }
         return billsForMonth(month)
     }

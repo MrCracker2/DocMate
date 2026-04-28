@@ -24,10 +24,8 @@ class AppViewModel {
     var isLoading = false
     var errorMessage: String?
     
-    // =========================================================
     // MARK: - Stored Data (populated from Supabase)
-    // =========================================================
-    
+
     var categories: [Category] = []
     var documents: [Document] = []
     var tags: [Tag] = []
@@ -51,18 +49,13 @@ class AppViewModel {
         allBills.filter { $0.isPaid }
     }
     
-    // =========================================================
+ 
     // MARK: - Supabase Helper
-    // =========================================================
-    
     private let supa = SupabaseManager.shared
-    
-    // =========================================================
     // MARK: - Fetch All from Supabase
-    // =========================================================
     
-    /// Fetches all data from Supabase and populates local arrays.
-    /// Call this once on login / app launch.
+    // Fetches all data from Supabase and populates local arrays.
+    // Call this once on login / app launch.
     @MainActor
     func fetchAll() async {
         isLoading = true
@@ -111,12 +104,8 @@ class AppViewModel {
         
         isLoading = false
     }
-    
-    // =========================================================
     // MARK: - Seed Default Categories (first login only)
-    // =========================================================
-    
-    /// Seeds default categories for a new user if they have none.
+    // Seeds default categories for a new user if they have none.
     @MainActor
     func seedIfNeeded() async {
         guard let userId = await supa.currentUserId else { return }
@@ -146,11 +135,8 @@ class AppViewModel {
             print("Seed error: \(error)")
         }
     }
-    
-    // =========================================================
+
     // MARK: - Category Helpers
-    // =========================================================
-    
     func category(named name: String) -> Category? {
         categories.first { $0.name == name }
     }
@@ -159,10 +145,8 @@ class AppViewModel {
         categories.first(where: { $0.id == document.categoryId })?.sfSymbol ?? "doc.text"
     }
     
-    // =========================================================
+  
     // MARK: - Document Computed Properties
-    // =========================================================
-    
     var expiringDocuments: [Document] {
         let now = Date()
         let tenDaysLater = now.addingTimeInterval(86400 * 10)
@@ -182,9 +166,9 @@ class AppViewModel {
         documents.filter { $0.isPinned }
     }
     
-    // =========================================================
+    
     // MARK: - Document CRUD
-    // =========================================================
+   
     
     @MainActor
     func addDocument(_ document: Document, images: [UIImage] = []) async {
@@ -289,10 +273,10 @@ class AppViewModel {
                 imageStore[doc.id] = [first]
             }
         // for testing only
-            print("✅ Upload success:", storagePath)
-            print("✅ DB insert success:", doc.id)
-            print("✅ Category:", categoryId)
-            print("✅ User:", userId)
+            print(" Upload success:", storagePath)
+            print(" DB insert success:", doc.id)
+            print(" Category:", categoryId)
+            print(" User:", userId)
             
             // 7. Refresh
             await fetchAll()
@@ -337,10 +321,8 @@ class AppViewModel {
         }
     }
     
-    // =========================================================
+   
     // MARK: - Category CRUD
-    // =========================================================
-    
     @MainActor
     func addCategory(name: String, sfSymbol: String) async {
         guard let userId = await supa.currentUserId else { return }
@@ -433,46 +415,7 @@ class AppViewModel {
         }
     }
     
-    // =========================================================
-    // MARK: - Gmail Bill Sync
-    // =========================================================
-    /// Marks a bill as paid and syncs to Supabase.
-//    @MainActor
-//    func syncBillsFromGmail() async {
-//        guard let userId = await supa.currentUserId else { return }
-//
-//        do {
-//            errorMessage = nil
-//
-//            let emails = try await GmailService.shared.fetchBillEmails()
-//
-//            for email in emails {
-//
-//                let exists = try await supa.billExists(
-//                    messageId: email.id
-//                )
-//
-//                if exists {
-//                    continue
-//                }
-//
-//                let bill = BillParser.makeBill(
-//                    from: email,
-//                    userId: userId
-//                )
-//
-//                try await supa.insertBill(bill)
-//            }
-//            // Refresh all local data
-//            await fetchAll()
-//
-//        } catch {
-//            print("Gmail Sync Error:", error)
-//            errorMessage = "Unable to sync bills."
-//        }
-//    }
     
-    // t
     @MainActor
     func syncBillsFromGmail() async {
         guard let userId = await supa.currentUserId else { return }
@@ -500,53 +443,7 @@ class AppViewModel {
         }
     }
     
-    func makeBillFromGemini(
-        _ data: ExtractedBill?,
-        email: GmailEmail,
-        userId: UUID
-    ) -> Infetch {
-
-        let vendor = data?.vendorName ?? "Bill"
-        let amount = data?.amount
-
-        let dueDate = parseDateString(data?.dueDate) ?? Calendar.current.date(byAdding: .day, value: 7, to: Date())!
-
-        let billDate = parseDateString(data?.billDate) ?? email.receivedAt
-
-        let category = mapCategory(data?.category ?? "bill")
-
-        return Infetch(
-            name: vendor,
-            dueDate: dueDate,
-            billDate: billDate,
-            SubjectName: vendor,
-            amount: amount,
-            customerName: "",
-            phoneNumber: nil,
-            billNumber: email.id,
-            isPaid: false,
-            gmailMessageId: email.id,
-            paidAt: nil,
-            inFetchCatgogry: category,
-            userId: userId
-        )
-    }
-    func parseDateString(_ text: String?) -> Date? {
-        guard let text else { return nil }
-
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: text)
-    }
-
-    func mapCategory(_ value: String) -> InfetchCategory {
-        switch value.lowercased() {
-        case "insurance": return .insurance
-        case "finance": return .finance
-        case "policy": return .policy
-        default: return .bill
-        }
-    }
+ 
     @MainActor
     func reset() {
         _user = nil

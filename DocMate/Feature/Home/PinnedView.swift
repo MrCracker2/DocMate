@@ -24,7 +24,7 @@ struct PinnedView: View {
                     
                     NavigationLink(destination: DocumentDetailView(document: doc)) {
                         DocumentCard(
-                            icon: "doc.text",
+                            icon: viewModel.icon(for: doc),
                             title: doc.name
                         )
                     }
