@@ -454,4 +454,45 @@ class AppViewModel {
         errorMessage = nil
         isLoading = false
     }
+    // =========================================================
+    // MARK: - Thumbnail Loader
+    // =========================================================
+    @MainActor
+    private func loadThumbnails(for docs: [Document]) async {
+        await withTaskGroup(of: (UUID, UIImage?).self) { group in
+            for doc in docs {
+                guard imageStore[doc.id] == nil else { continue }
+                guard let path = doc.filePath else { continue }
+                
+                group.addTask {
+                    guard let data = try? await SupabaseManager.shared.downloadPDF(path: path),
+                          let provider = CGDataProvider(data: data as CFData),
+                          let pdf = CGPDFDocument(provider),
+                          let page = pdf.page(at: 1) else {
+                        return (doc.id, nil)
+                    }
+                    let pageRect = page.getBoxRect(.mediaBox)
+                    let scale: CGFloat = 0.4
+                    let size = CGSize(
+                        width: pageRect.width * scale,
+                        height: pageRect.height * scale
+                    )
+                    let renderer = UIGraphicsImageRenderer(size: size)
+                    let img = renderer.image { ctx in
+                        UIColor.white.set()
+                        ctx.fill(CGRect(origin: .zero, size: size))
+                        ctx.cgContext.translateBy(x: 0, y: size.height)
+                        ctx.cgContext.scaleBy(x: scale, y: -scale)
+                        ctx.cgContext.drawPDFPage(page)
+                    }
+                    return (doc.id, img)
+                }
+            }
+            for await (id, img) in group {
+                if let img {
+                    imageStore[id] = [img]
+                }
+            }
+        }
+    }
 }

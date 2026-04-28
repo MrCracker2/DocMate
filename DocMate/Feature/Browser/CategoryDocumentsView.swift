@@ -24,9 +24,9 @@ struct CategoryDocumentsView: View {
     }
 
     private let columns = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible())
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10)
     ]
 
     func formatDate(_ date: Date) -> String {
@@ -37,25 +37,20 @@ struct CategoryDocumentsView: View {
 
     var body: some View {
         VStack {
-
-            // MARK: Content
             if documents.isEmpty {
                 Spacer()
-
                 VStack(spacing: 12) {
                     Image(systemName: "doc.text.magnifyingglass")
                         .font(.system(size: 50))
                         .foregroundStyle(.secondary)
-
                     Text("No documents in \(category.name)")
                         .foregroundStyle(.secondary)
                 }
-
                 Spacer()
             } else {
                 if isGridView {
                     ScrollView(showsIndicators: false) {
-                        LazyVGrid(columns: columns, spacing: 16) {
+                        LazyVGrid(columns: columns, spacing: 14) {
                             ForEach(documents) { doc in
                                 NavigationLink(destination: DocumentDetailView(document: doc)) {
                                     DocumentThumbnailView(document: doc)
@@ -63,7 +58,8 @@ struct CategoryDocumentsView: View {
                                 .buttonStyle(.plain)
                             }
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 10)
                         .padding(.bottom, 30)
                     }
                 } else {
@@ -83,7 +79,6 @@ struct CategoryDocumentsView: View {
                                             .frame(width: 40, height: 50)
                                             .foregroundStyle(.secondary)
                                     }
-
                                     VStack(alignment: .leading) {
                                         Text(doc.name)
                                         if let due = doc.dueDate {
@@ -107,7 +102,6 @@ struct CategoryDocumentsView: View {
         }
         .navigationTitle(category.name)
         .navigationBarTitleDisplayMode(.inline)
-        // MARK: Search Bar
         .searchable(
             text: $searchText,
             placement: .navigationBarDrawer(displayMode: .always),
@@ -119,18 +113,14 @@ struct CategoryDocumentsView: View {
                     Button { } label: {
                         Label("New folder", systemImage: "folder.badge.plus")
                     }
-
                     Divider()
-
                     Button { isGridView = true } label: {
                         Label("Icons", systemImage: "square.grid.2x2")
                     }
                     Button { isGridView = false } label: {
                         Label("List", systemImage: "list.bullet")
                     }
-
                     Divider()
-
                     Button { } label: { Label("Name", systemImage: "textformat") }
                     Button { } label: { Label("Kind", systemImage: "doc") }
                     Button { } label: { Label("Date", systemImage: "calendar") }
