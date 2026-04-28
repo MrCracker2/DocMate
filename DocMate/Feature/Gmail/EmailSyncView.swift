@@ -164,6 +164,15 @@ struct EmailSyncView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .disabled(syncVM.isSyncing)
+                if syncVM.isGmailConnected {
+                    Button("Disconnect Gmail") {
+                        GmailService.shared.signOut()
+                        syncVM.refreshState()
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.red)
+                }
 
                 // MARK: - What We Detect
                 VStack(alignment: .leading, spacing: 12) {

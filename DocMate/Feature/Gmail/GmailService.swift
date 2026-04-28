@@ -46,6 +46,11 @@ class GmailService: NSObject {
         set { UserDefaults.standard.set(newValue, forKey: "gmail_access_token") }
     }
     var isSignedIn: Bool { accessToken != nil }
+    func signOut() {
+        UserDefaults.standard.removeObject(
+            forKey: "gmail_access_token"
+        )
+    }
 
     // MARK: - Sign In (PKCE flow)
     func signIn(presenting viewController: UIViewController) async throws {
