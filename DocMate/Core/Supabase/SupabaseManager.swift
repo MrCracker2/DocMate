@@ -306,4 +306,26 @@ class SupabaseManager {
             .from("documents")
             .remove(paths: [path])
     }
+    func deleteCurrentUserData() async throws {
+        guard let userId = await currentUserId else { return }
+
+        try await client.from("bills")
+            .delete()
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+
+        try await client.from("documents")
+            .delete()
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+
+        try await client.from("categories")
+            .delete()
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+
+        try await signOut()
+    }
+
 }
+

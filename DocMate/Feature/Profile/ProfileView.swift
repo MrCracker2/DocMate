@@ -99,6 +99,15 @@ struct ProfileView: View {
                     .foregroundStyle(.red)
                     .buttonStyle(.bordered)
                 }
+                Section {
+                    Button("Delete Account", role: .destructive) {
+                        Task {
+                            await deleteAccount()
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .listRowBackground(Color.clear)
                 .listRowBackground(Color.clear)
             }
             .navigationTitle("Profile")
@@ -132,6 +141,20 @@ struct ProfileView: View {
              viewModel.reset()
             authVM.isLoggedIn = false
             dismiss()
+        } catch {
+            print(error.localizedDescription)
+        }
+    }
+    func deleteAccount() async {
+        do {
+            try await SupabaseManager.shared.deleteCurrentUserData()
+
+            GmailService.shared.signOut()
+
+            viewModel.reset()
+            authVM.isLoggedIn = false
+            dismiss()
+
         } catch {
             print(error.localizedDescription)
         }

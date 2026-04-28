@@ -431,6 +431,42 @@ class AppViewModel {
     // MARK: - Gmail Bill Sync
     // =========================================================
     /// Marks a bill as paid and syncs to Supabase.
+//    @MainActor
+//    func syncBillsFromGmail() async {
+//        guard let userId = await supa.currentUserId else { return }
+//
+//        do {
+//            errorMessage = nil
+//
+//            let emails = try await GmailService.shared.fetchBillEmails()
+//
+//            for email in emails {
+//
+//                let exists = try await supa.billExists(
+//                    messageId: email.id
+//                )
+//
+//                if exists {
+//                    continue
+//                }
+//
+//                let bill = BillParser.makeBill(
+//                    from: email,
+//                    userId: userId
+//                )
+//
+//                try await supa.insertBill(bill)
+//            }
+//            // Refresh all local data
+//            await fetchAll()
+//
+//        } catch {
+//            print("Gmail Sync Error:", error)
+//            errorMessage = "Unable to sync bills."
+//        }
+//    }
+    
+    // t
     @MainActor
     func syncBillsFromGmail() async {
         guard let userId = await supa.currentUserId else { return }
@@ -442,14 +478,6 @@ class AppViewModel {
 
             for email in emails {
 
-                let exists = try await supa.billExists(
-                    messageId: email.id
-                )
-
-                if exists {
-                    continue
-                }
-
                 let bill = BillParser.makeBill(
                     from: email,
                     userId: userId
@@ -457,7 +485,7 @@ class AppViewModel {
 
                 try await supa.insertBill(bill)
             }
-            // Refresh all local data
+
             await fetchAll()
 
         } catch {
@@ -465,6 +493,7 @@ class AppViewModel {
             errorMessage = "Unable to sync bills."
         }
     }
+    
     func makeBillFromGemini(
         _ data: ExtractedBill?,
         email: GmailEmail,
