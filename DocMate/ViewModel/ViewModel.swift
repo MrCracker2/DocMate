@@ -426,6 +426,13 @@ class AppViewModel {
             let emails = try await GmailService.shared.fetchBillEmails()
 
             for email in emails {
+                
+                let exists = try await supa.billExists(
+                    messageId: email.id
+                )
+                if exists {
+                       continue
+                   }
 
                 let bill = BillParser.makeBill(
                     from: email,
