@@ -1,10 +1,9 @@
+
 //
-//  AllBillsView.swift
+//  AllBillsCard.swift
 //  DocMate
 //
-//
-//  AllBillsView.swift
-//  DocMate
+//  Created by Naman Yadav on 25/03/26.
 //
 
 import SwiftUI

@@ -86,10 +86,10 @@ struct BrowseView: View {
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(filteredCategories) { category in
                                 
-                                // 🔥 CORE LOGIC: SWITCH BEHAVIOR BASED ON MODE
+                                //  CORE LOGIC: SWITCH BEHAVIOR BASED ON MODE
                                 if isSelecting {
                                     
-                                    // ✅ SELECT MODE (NO NAVIGATION)
+                                    //  SELECT MODE (NO NAVIGATION)
                                     Button {
                                         selectedCategoryId = category.id
                                     } label: {
@@ -98,7 +98,7 @@ struct BrowseView: View {
                                             category: category,
                                             docCount: viewModel.documentCount(for: category)
                                         )
-                                        // ✅ Highlight selected category
+                                        //  Highlight selected category
                                         .background(
                                             selectedCategoryId == category.id
                                             ? Color.blue.opacity(0.15)
@@ -119,7 +119,7 @@ struct BrowseView: View {
                                     
                                 } else {
                                     
-                                    // ✅ NORMAL MODE (NAVIGATION)
+                                    //  NORMAL MODE (NAVIGATION)
                                     NavigationLink {
                                         CategoryDocumentsView(
                                             category: category,
@@ -148,7 +148,7 @@ struct BrowseView: View {
                                 
                                 if isSelecting {
                                     
-                                    // ✅ SELECT MODE (NO NAVIGATION)
+                                    //  SELECT MODE (NO NAVIGATION)
                                     Button {
                                         selectedCategoryId = category.id
                                     } label: {
@@ -177,7 +177,6 @@ struct BrowseView: View {
                                         }
                                         .padding(.vertical, 10)
                                         .padding(.horizontal)
-                                        // ✅ Highlight
                                         .background(
                                             selectedCategoryId == category.id
                                             ? Color.blue.opacity(0.15)
@@ -188,7 +187,6 @@ struct BrowseView: View {
                                     
                                 } else {
                                     
-                                    // ✅ NORMAL MODE
                                     NavigationLink {
                                         CategoryDocumentsView(
                                             category: category,

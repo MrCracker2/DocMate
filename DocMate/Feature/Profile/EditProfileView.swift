@@ -2,14 +2,6 @@
 //  EditProfileView.swift
 //  DocMate
 //
-//  Created by Naman Yadav on 19/03/26.
-//
-
-
-//
-//  EditProfileView.swift
-//  DocMate
-//
 //  Created by Naman Yadav on 16/03/26.
 //
 import SwiftUI

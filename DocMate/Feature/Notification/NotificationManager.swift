@@ -27,9 +27,9 @@ class NotificationManager {
             .requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
 
                 if granted {
-                    print("✅ Notifications allowed")
+                    print("Notifications allowed")
                 } else {
-                    print("❌ Notifications denied")
+                    print("Notifications denied")
                 }
 
                 if let error = error {
@@ -83,7 +83,7 @@ class NotificationManager {
 
             UNUserNotificationCenter.current().add(request)
 
-            print("✅ Reminder scheduled:", document.name, "-", day, "days before")
+            print("Reminder scheduled:", document.name, "-", day, "days before")
         }
     }
 
