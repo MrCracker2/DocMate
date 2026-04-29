@@ -1,3 +1,9 @@
+//
+//  DocumentInfoView.swift
+//  DocMate
+//
+//  Created by Naman Yadav on 27/04/26.
+//
 import SwiftUI
 
 struct BrowseView: View {
@@ -10,6 +16,13 @@ struct BrowseView: View {
     @State private var isGridView: Bool = true
     @State private var showNewCategoryAlert = false
     @State private var categoryName = ""
+
+    // MARK: - Category Context Menu State
+    @State private var showRenameCategoryAlert = false
+    @State private var renameCategoryText = ""
+    @State private var categoryToRename: Category?
+    @State private var showDeleteCategoryAlert = false
+    @State private var categoryToDelete: Category?
 
     // MARK: - Selection Mode (IMPORTANT)
     let isSelecting: Bool
@@ -119,6 +132,9 @@ struct BrowseView: View {
                                         )
                                     }
                                     .buttonStyle(.plain)
+                                    .contextMenu {
+                                        categoryContextMenuItems(for: category)
+                                    }
                                 }
                             }
                         }
@@ -206,6 +222,9 @@ struct BrowseView: View {
                                         .padding(.horizontal)
                                     }
                                     .buttonStyle(.plain)
+                                    .contextMenu {
+                                        categoryContextMenuItems(for: category)
+                                    }
                                 }
                                 
                                 // Divider
@@ -369,6 +388,55 @@ struct BrowseView: View {
             Button("Cancel", role: .cancel) {
                 categoryName = ""
             }
+        }
+
+        // MARK: - Rename Category Alert
+        .alert("Rename Category", isPresented: $showRenameCategoryAlert) {
+            TextField("Category name", text: $renameCategoryText)
+                .autocorrectionDisabled()
+            Button("Rename") {
+                if let cat = categoryToRename, !renameCategoryText.isEmpty {
+                    Task {
+                        await viewModel.renameCategory(cat, to: renameCategoryText)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        }
+
+        // MARK: - Delete Category Confirmation
+        .alert("Delete Category", isPresented: $showDeleteCategoryAlert) {
+            Button("Delete", role: .destructive) {
+                if let cat = categoryToDelete {
+                    Task {
+                        await viewModel.deleteCategory(cat)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            if let cat = categoryToDelete {
+                Text("Are you sure you want to delete \"\(cat.name)\"? All documents inside will also be deleted.")
+            }
+        }
+    }
+
+    // MARK: - Category Context Menu
+    @ViewBuilder
+    func categoryContextMenuItems(for category: Category) -> some View {
+        Button {
+            categoryToRename = category
+            renameCategoryText = category.name
+            showRenameCategoryAlert = true
+        } label: {
+            Label("Rename", systemImage: "pencil")
+        }
+
+        Button(role: .destructive) {
+            categoryToDelete = category
+            showDeleteCategoryAlert = true
+        } label: {
+            Label("Delete", systemImage: "trash")
         }
     }
 }

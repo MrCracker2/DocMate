@@ -336,6 +336,28 @@ class AppViewModel {
             errorMessage = error.localizedDescription
         }
     }
+
+    @MainActor
+    func renameCategory(_ category: Category, to newName: String) async {
+        do {
+            try await supa.updateCategoryName(id: category.id, newName: newName)
+            await fetchAll()
+        } catch {
+            print("Rename category error: \(error)")
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    @MainActor
+    func deleteCategory(_ category: Category) async {
+        do {
+            try await supa.deleteCategory(id: category.id)
+            await fetchAll()
+        } catch {
+            print("Delete category error: \(error)")
+            errorMessage = error.localizedDescription
+        }
+    }
     
     // =========================================================
     // MARK: - User Profile

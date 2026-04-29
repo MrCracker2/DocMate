@@ -126,6 +126,14 @@ class SupabaseManager {
             .eq("id", value: id)
             .execute()
     }
+
+    func updateCategoryName(id: UUID, newName: String) async throws {
+        try await client
+            .from("categories")
+            .update(["name": newName])
+            .eq("id", value: id)
+            .execute()
+    }
     
     // MARK: - Documents
     
@@ -328,4 +336,3 @@ class SupabaseManager {
     }
 
 }
-

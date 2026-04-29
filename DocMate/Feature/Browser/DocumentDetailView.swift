@@ -1,3 +1,9 @@
+//
+//  DocumentInfoView.swift
+//  DocMate
+//
+//  Created by Naman Yadav on 27/04/26.
+//
 import SwiftUI
 import PDFKit
 
