@@ -65,31 +65,31 @@ class AppViewModel {
         do {
             _user = try await supa.fetchProfile()
         } catch {
-            print("⚠️ Profile fetch error: \(error)")
+            print(" Profile fetch error: \(error)")
         }
         
         do {
             categories = try await supa.fetchCategories()
         } catch {
-            print("⚠️ Categories fetch error: \(error)")
+            print(" Categories fetch error: \(error)")
         }
         
         do {
             documents = try await supa.fetchDocuments()
         } catch {
-            print("⚠️ Documents fetch error: \(error)")
+            print(" Documents fetch error: \(error)")
         }
         
         do {
             tags = try await supa.fetchTags()
         } catch {
-            print("⚠️ Tags fetch error: \(error)")
+            print(" Tags fetch error: \(error)")
         }
         
         do {
             allBills = try await supa.fetchBills()
         } catch {
-            print("⚠️ Bills fetch error: \(error)")
+            print(" Bills fetch error: \(error)")
         }
         
         NotificationManager.shared.removeAll()
@@ -426,6 +426,13 @@ class AppViewModel {
             let emails = try await GmailService.shared.fetchBillEmails()
 
             for email in emails {
+                
+                let exists = try await supa.billExists(
+                    messageId: email.id
+                )
+                if exists {
+                       continue
+                   }
 
                 let bill = BillParser.makeBill(
                     from: email,

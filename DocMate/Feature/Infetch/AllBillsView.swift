@@ -2,6 +2,10 @@
 //  AllBillsView.swift
 //  DocMate
 //
+//
+//  AllBillsView.swift
+//  DocMate
+//
 
 import SwiftUI
 
@@ -12,64 +16,65 @@ struct AllBillsView: View {
     @State private var selectedCategory: InfetchCategory? = nil
     @State private var selectedBill: Infetch?
 
+    // MARK: Paid Toast
     @State private var showPaidToast = false
     @State private var toastBillName = ""
 
+    // MARK: Delete + Undo
+    @State private var deletedBill: Infetch? = nil
+    @State private var showDeleteToast = false
+    @State private var undoTask: Task<Void, Never>? = nil
+
     var body: some View {
 
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 18) {
+        VStack(spacing: 0) {
 
-                // MARK: Category Filters
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-
-                        CategoryChip(
-                            title: "All",
-                            isSelected: selectedCategory == nil
-                        ) {
-                            selectedCategory = nil
-                        }
-
-                        ForEach(InfetchCategory.allCases) { category in
-                            CategoryChip(
-                                title: category.rawValue,
-                                isSelected: selectedCategory == category
-                            ) {
-                                selectedCategory = category
-                            }
+            // MARK: Category Filters
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    CategoryChip(title: "All", isSelected: selectedCategory == nil) {
+                        selectedCategory = nil
+                    }
+                    ForEach(InfetchCategory.allCases) { category in
+                        CategoryChip(title: category.rawValue, isSelected: selectedCategory == category) {
+                            selectedCategory = category
                         }
                     }
-                    .padding(.horizontal, 16)
                 }
-
-                // MARK: Content
-                if filteredBills.isEmpty {
-
-                    emptyState
-
-                } else {
-
-                    LazyVStack(spacing: 14) {
-                        ForEach(filteredBills) { bill in
-
-                            AllBillsCard(doc: bill) {
-                                markAsPaid(bill)
-                            }
-                            .onTapGesture {
-                                selectedBill = bill
-                            }
-                            .transition(
-                                .move(edge: .bottom)
-                                .combined(with: .opacity)
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
             }
-            .padding(.top, 14)
-            .padding(.bottom, 28)
+
+            // MARK: Content
+            if filteredBills.isEmpty {
+                Spacer()
+                emptyState
+                Spacer()
+            } else {
+                List {
+                    ForEach(filteredBills) { bill in
+                        AllBillsCard(doc: bill) {
+                            markAsPaid(bill)
+                        }
+                        .onTapGesture {
+                            selectedBill = bill
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                deleteBill(bill)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                    }
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .background(Color(.systemGroupedBackground))
+            }
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("All Bills")
@@ -90,23 +95,32 @@ struct AllBillsView: View {
                 .presentationDetents([.medium, .large])
         }
 
+        // MARK: Toast Overlay
         .overlay(alignment: .bottom) {
-            if showPaidToast {
-                PaidToastView(billName: toastBillName)
-                    .padding(.bottom, 14)
+            VStack(spacing: 10) {
+                if showDeleteToast, let bill = deletedBill {
+                    DeleteUndoToastView(billName: bill.name) {
+                        undoBillDelete()
+                    }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
+                if showPaidToast {
+                    PaidToastView(billName: toastBillName)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
+            .padding(.bottom, 14)
         }
 
         .animation(.spring(response: 0.35, dampingFraction: 0.82), value: filteredBills.count)
         .animation(.spring(response: 0.35, dampingFraction: 0.82), value: showPaidToast)
+        .animation(.spring(response: 0.35, dampingFraction: 0.82), value: showDeleteToast)
     }
 
     // MARK: Empty State
-
     private var emptyState: some View {
         VStack(spacing: 14) {
-
             Image(systemName: "tray")
                 .font(.system(size: 42))
                 .foregroundStyle(.secondary)
@@ -132,64 +146,130 @@ struct AllBillsView: View {
             }
             .padding(.top, 4)
         }
-        .padding(.top, 80)
         .padding(.horizontal, 30)
     }
 
     // MARK: Mark Paid
-
     private func markAsPaid(_ bill: Infetch) {
-
-        Task {
-            await viewModel.toggleBillStatus(bill)
-        }
-
+        Task { await viewModel.toggleBillStatus(bill) }
         toastBillName = bill.name
+        withAnimation { showPaidToast = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            withAnimation { showPaidToast = false }
+        }
+    }
 
+    // MARK: Delete Bill
+    private func deleteBill(_ bill: Infetch) {
         withAnimation {
-            showPaidToast = true
+            viewModel.allBills.removeAll { $0.id == bill.id }
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-            withAnimation {
-                showPaidToast = false
+        deletedBill = bill
+        undoTask?.cancel()
+
+        withAnimation { showDeleteToast = true }
+
+        // 4 sec baad Supabase se delete
+        undoTask = Task {
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled else { return }
+
+            try? await SupabaseManager.shared.deleteBill(id: bill.id)
+
+            await MainActor.run {
+                withAnimation { showDeleteToast = false }
+                deletedBill = nil
             }
         }
     }
 
-    // MARK: Bills Source
+    // MARK: Undo Delete
+    private func undoBillDelete() {
+        guard let bill = deletedBill else { return }
 
+        undoTask?.cancel()
+        undoTask = nil
+
+        withAnimation {
+            viewModel.allBills.append(bill)
+            showDeleteToast = false
+        }
+        deletedBill = nil
+    }
+
+    // MARK: Bills Source
     private var baseBills: [Infetch] {
         viewModel.inFetch.sorted {
-            if $0.isPaid != $1.isPaid {
-                return !$0.isPaid
-            }
+            if $0.isPaid != $1.isPaid { return !$0.isPaid }
             return $0.dueDate < $1.dueDate
         }
     }
 
     // MARK: Filtered Bills
-
     private var filteredBills: [Infetch] {
-
-        guard let selectedCategory else {
-            return baseBills
-        }
-
-        return baseBills.filter {
-            $0.inFetchCategory == selectedCategory
-        }
+        guard let selectedCategory else { return baseBills }
+        return baseBills.filter { $0.inFetchCategory == selectedCategory }
     }
 }
 
-// MARK: CategoryChip
+// MARK: - Delete Undo Toast
+
+struct DeleteUndoToastView: View {
+    let billName: String
+    let onUndo: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "trash.fill")
+                .font(.system(size: 16))
+                .foregroundStyle(.red)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Bill Deleted")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                Text(billName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            Button {
+                onUndo()
+            } label: {
+                Text("Undo")
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.blue)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.blue.opacity(0.12))
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color(.separator).opacity(0.3), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
+        .padding(.horizontal, 16)
+    }
+}
+
+// MARK: - CategoryChip
 
 struct CategoryChip: View {
-    
     var title: String
     var isSelected: Bool
     var onTap: () -> Void
-    
+
     var body: some View {
         Text(title)
             .font(.subheadline)
@@ -203,10 +283,9 @@ struct CategoryChip: View {
     }
 }
 
-// MARK: PaidToastView
+// MARK: - PaidToastView
 
 struct PaidToastView: View {
-
     let billName: String
 
     var body: some View {
