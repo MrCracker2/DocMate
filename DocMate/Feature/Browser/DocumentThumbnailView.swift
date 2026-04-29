@@ -21,10 +21,9 @@ struct DocumentThumbnailView: View {
 
     var body: some View {
         VStack(spacing: 5) {
-
             GeometryReader { geo in
                 let w = geo.size.width
-                let h = w * 1.3 // portrait ratio
+                let h = w * 1.3
 
                 ZStack(alignment: .topTrailing) {
                     RoundedRectangle(cornerRadius: 10)
@@ -33,7 +32,7 @@ struct DocumentThumbnailView: View {
 
                     thumbnailContent
                         .frame(width: w, height: h)
-                        .clipped() // ✅ scaledToFill overflow rokta hai
+                        .clipped()
                         .clipShape(RoundedRectangle(cornerRadius: 10))
 
                     if document.isPinned {
@@ -50,7 +49,6 @@ struct DocumentThumbnailView: View {
             }
             .aspectRatio(1/1.3, contentMode: .fit)
 
-            // MARK: Name + Date
             VStack(spacing: 1) {
                 Text(document.name)
                     .font(.caption2)
@@ -68,7 +66,6 @@ struct DocumentThumbnailView: View {
         .onAppear { loadThumbnail() }
     }
 
-    // MARK: Thumbnail Content
     @ViewBuilder
     private var thumbnailContent: some View {
         if let img = thumbnail ?? viewModel.images(for: document).first {
@@ -96,7 +93,6 @@ struct DocumentThumbnailView: View {
         }
     }
 
-    // MARK: Async thumbnail load
     private func loadThumbnail() {
         if let cached = viewModel.images(for: document).first {
             thumbnail = cached
@@ -131,7 +127,6 @@ struct DocumentThumbnailView: View {
         }
     }
 }
-
 // MARK: - ShareSheet
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]

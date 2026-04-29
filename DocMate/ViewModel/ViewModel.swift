@@ -495,4 +495,36 @@ class AppViewModel {
             }
         }
     }
+    // MARK: - Rename Document
+    @MainActor
+    func renameDocument(_ document: Document, to newName: String) async {
+        guard let index = documents.firstIndex(where: { $0.id == document.id }) else { return }
+        documents[index].name = newName
+        do {
+            try await supa.updateDocument(documents[index])
+        } catch {
+            print("Rename error: \(error)")
+            await fetchAll()
+        }
+    }
+
+    // MARK: - Duplicate Document
+    @MainActor
+    func duplicateDocument(_ document: Document) async {
+        guard let userId = await supa.currentUserId else { return }
+        let copy = Document(
+            name: document.name + " Copy",
+            dueDate: document.dueDate,
+            isPinned: false,
+            userId: userId,
+            categoryId: document.categoryId,
+            fileType: document.fileTypeEnum
+        )
+        do {
+            try await supa.insertDocument(copy)
+            await fetchAll()
+        } catch {
+            print("Duplicate error: \(error)")
+        }
+    }
 }

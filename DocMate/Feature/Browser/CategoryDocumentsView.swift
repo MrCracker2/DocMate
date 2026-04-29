@@ -15,6 +15,15 @@ struct CategoryDocumentsView: View {
     @State private var searchText = ""
     @State private var isGridView = true
 
+    // MARK: - Context Menu State
+    @State private var showRenameAlert = false
+    @State private var renameText = ""
+    @State private var documentToRename: Document?
+    @State private var shareItems: [Any] = []
+    @State private var showShareSheet = false
+    @State private var showInfoSheet = false
+    @State private var infoDocument: Document?
+
     var documents: [Document] {
         let base = viewModel.documents(for: category)
         guard !searchText.isEmpty else { return base }
@@ -56,6 +65,15 @@ struct CategoryDocumentsView: View {
                                     DocumentThumbnailView(document: doc)
                                 }
                                 .buttonStyle(.plain)
+                                .contextMenu {
+                                    contextMenuItems(for: doc)
+                                } preview: {
+                                    DocumentThumbnailView(document: doc)
+                                        .frame(width: 200, height: 260)
+                                        .padding()
+                                        .background(Color(.systemBackground))
+                                        .environment(viewModel)
+                                }
                             }
                         }
                         .padding(.horizontal, 12)
@@ -92,6 +110,24 @@ struct CategoryDocumentsView: View {
                                 .padding(.vertical, 6)
                             }
                             .listRowBackground(Color.clear)
+                            .contextMenu {
+                                contextMenuItems(for: doc)
+                            } preview: {
+                                HStack(spacing: 14) {
+                                    Image(systemName: doc.fileTypeEnum.sfSymbol)
+                                        .font(.system(size: 32))
+                                        .foregroundStyle(.blue)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(doc.name)
+                                            .fontWeight(.semibold)
+                                        Text(formatDate(doc.createdAt))
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .padding()
+                                .background(Color(.systemBackground))
+                            }
                         }
                     }
                     .scrollContentBackground(.hidden)
@@ -135,6 +171,161 @@ struct CategoryDocumentsView: View {
             if selectedCategoryId != category.id {
                 selectedCategoryId = category.id
             }
+        }
+
+        // MARK: - Rename Alert
+        .alert("Rename", isPresented: $showRenameAlert) {
+            TextField("Document name", text: $renameText)
+                .autocorrectionDisabled()
+            Button("Rename") {
+                if let doc = documentToRename, !renameText.isEmpty {
+                    Task {
+                        await viewModel.renameDocument(doc, to: renameText)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        }
+
+        // MARK: - Get Info Sheet
+        .sheet(isPresented: $showInfoSheet) {
+            if let doc = infoDocument {
+                DocumentInfoSheet(document: doc)
+            }
+        }
+
+        // MARK: - Share Sheet
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheet(items: shareItems)
+        }
+    }
+
+    // MARK: - Context Menu Items
+    @ViewBuilder
+    func contextMenuItems(for doc: Document) -> some View {
+
+        Button {
+            shareItems = [doc.name]
+            showShareSheet = true
+        } label: {
+            Label("Share", systemImage: "square.and.arrow.up")
+        }
+
+        Button {
+            UIPasteboard.general.string = doc.name
+        } label: {
+            Label("Copy", systemImage: "doc.on.doc")
+        }
+
+        Button {
+            // TODO: category picker for move
+        } label: {
+            Label("Move", systemImage: "folder")
+        }
+
+        Divider()
+
+        Button {
+            // handled by NavigationLink on tap
+        } label: {
+            Label("Quick Look", systemImage: "eye")
+        }
+
+        Divider()
+
+        Button {
+            infoDocument = doc
+            showInfoSheet = true
+        } label: {
+            Label("Get Info", systemImage: "info.circle")
+        }
+
+        Button {
+            documentToRename = doc
+            renameText = doc.name
+            showRenameAlert = true
+        } label: {
+            Label("Rename", systemImage: "pencil")
+        }
+
+        Button {
+            Task {
+                await viewModel.duplicateDocument(doc)
+            }
+        } label: {
+            Label("Duplicate", systemImage: "plus.square.on.square")
+        }
+
+        Button {
+            Task {
+                await viewModel.togglePin(doc)
+            }
+        } label: {
+            Label(
+                doc.isPinned ? "Unpin" : "Pin",
+                systemImage: doc.isPinned ? "pin.slash" : "pin"
+            )
+        }
+
+        Divider()
+
+        Button(role: .destructive) {
+            Task {
+                await viewModel.deleteDocument(doc)
+            }
+        } label: {
+            Label("Delete", systemImage: "trash")
+        }
+    }
+}
+
+// MARK: - Document Info Sheet
+struct DocumentInfoSheet: View {
+
+    let document: Document
+    @Environment(\.dismiss) var dismiss
+
+    func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Document") {
+                    infoRow(label: "Name", value: document.name)
+                    infoRow(label: "Type", value: document.fileTypeEnum.rawValue.uppercased())
+                }
+                Section("Dates") {
+                    infoRow(label: "Date Added", value: formatDate(document.createdAt))
+                    if let due = document.dueDate {
+                        infoRow(label: "Expiry Date", value: formatDate(due))
+                    }
+                }
+                Section("Other") {
+                    infoRow(label: "Pinned", value: document.isPinned ? "Yes" : "No")
+                }
+            }
+            .navigationTitle("Document Info")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .fontWeight(.semibold)
+                }
+            }
+        }
+    }
+
+    func infoRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label).foregroundStyle(.primary)
+            Spacer()
+            Text(value).foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
         }
     }
 }
