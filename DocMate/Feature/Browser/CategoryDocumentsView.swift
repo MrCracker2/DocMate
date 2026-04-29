@@ -23,6 +23,7 @@ struct CategoryDocumentsView: View {
     @State private var showShareSheet = false
     @State private var showInfoSheet = false
     @State private var infoDocument: Document?
+    @State private var isPreparingShare = false
 
     var documents: [Document] {
         let base = viewModel.documents(for: category)
@@ -143,6 +144,24 @@ struct CategoryDocumentsView: View {
             placement: .navigationBarDrawer(displayMode: .always),
             prompt: "Search Document"
         )
+        .overlay {
+            if isPreparingShare {
+                ZStack {
+                    Color.black.opacity(0.3).ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .scaleEffect(1.3)
+                            .tint(.white)
+                        Text("Preparing PDF...")
+                            .font(.subheadline)
+                            .foregroundStyle(.white)
+                    }
+                    .padding(24)
+                    .background(.regularMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
@@ -200,13 +219,58 @@ struct CategoryDocumentsView: View {
         }
     }
 
+    // MARK: - Share (PDF-first)
+    @MainActor
+    private func prepareAndShare(_ doc: Document) async {
+        // Check temp cache first — avoid re-downloading
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(doc.id).pdf")
+
+        if FileManager.default.fileExists(atPath: tempURL.path) {
+            shareItems = [tempURL]
+            showShareSheet = true
+            return
+        }
+
+        // PDF from Supabase storage
+        if doc.fileTypeEnum == .pdf, let storagePath = doc.filePath, !storagePath.isEmpty {
+            isPreparingShare = true
+            do {
+                let data = try await SupabaseManager.shared.downloadPDF(path: storagePath)
+                try data.write(to: tempURL)
+                shareItems = [tempURL]
+            } catch {
+                print("Share PDF download error: \(error)")
+                // Fallback to image if download fails
+                if let img = viewModel.images(for: doc).first {
+                    shareItems = [img]
+                } else {
+                    shareItems = [doc.name]
+                }
+            }
+            isPreparingShare = false
+            showShareSheet = true
+            return
+        }
+
+        // Image document
+        if let img = viewModel.images(for: doc).first {
+            shareItems = [img]
+            showShareSheet = true
+            return
+        }
+
+        // Last fallback
+        shareItems = [doc.name]
+        showShareSheet = true
+    }
+
     // MARK: - Context Menu Items
     @ViewBuilder
     func contextMenuItems(for doc: Document) -> some View {
 
         Button {
-            shareItems = [doc.name]
-            showShareSheet = true
+            Task { await prepareAndShare(doc) }
         } label: {
             Label("Share", systemImage: "square.and.arrow.up")
         }
