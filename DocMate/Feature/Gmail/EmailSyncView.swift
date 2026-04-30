@@ -134,7 +134,7 @@ struct EmailSyncView: View {
                     icon: "bolt.fill",
                     title: "Utility Bills",
                     subtitle: "Electricity, water, gas",
-                    color: .yellow
+                    color: .blue
                 )
                 
                 detectRow(
@@ -148,14 +148,14 @@ struct EmailSyncView: View {
                     icon: "shield.fill",
                     title: "Insurance",
                     subtitle: "Health, vehicle, life",
-                    color: .green
+                    color: .blue
                 )
                 
                 detectRow(
                     icon: "doc.text.fill",
                     title: "Policies",
                     subtitle: "Renewals & notices",
-                    color: .purple
+                    color: .blue
                 )
             }
             
