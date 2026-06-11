@@ -50,3 +50,18 @@ fastlane/test_output
 
 ## SwiftLint / tools
 .swiftlint-cache
+
+## AI Assistant Configs
+.claude/
+.claude.md
+.codex/
+.codex.md
+.antigravity/
+.antigravity.md
+
+## Environment Files
+.env
+.env.local
+
+## Logs
+*.log
