@@ -6,9 +6,6 @@
 //
 
 import SwiftUI
-
-
-
 struct ContentView: View {
 
     @Environment(AppViewModel.self)  var viewModel
