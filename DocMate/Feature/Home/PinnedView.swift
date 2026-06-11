@@ -11,25 +11,35 @@ struct PinnedView: View {
     
     @Environment(AppViewModel.self) var viewModel
     
-    let columns = [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16)
-    ]
     
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 16) {
-                
-                ForEach(viewModel.pinnedDocuments) { doc in
-                    
-                    NavigationLink(destination: DocumentDetailView(document: doc)) {
-                        DocumentCard(
-                            icon: viewModel.icon(for: doc),
-                            title: doc.name
-                        )
+            HStack {
+                Spacer()
+                Grid(horizontalSpacing: 16, verticalSpacing: 16) {
+                    let items = viewModel.pinnedDocuments
+                    ForEach(0..<((items.count + 1) / 2), id: \.self) { rowIndex in
+                        GridRow {
+                            ForEach(0..<2) { columnIndex in
+                                let index = rowIndex * 2 + columnIndex
+                                if index < items.count {
+                                    let doc = items[index]
+                                    NavigationLink(destination: DocumentDetailView(document: doc)) {
+                                        DocumentCard(
+                                            icon: viewModel.icon(for: doc),
+                                            title: doc.name
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                } else {
+                                    Color.clear
+                                    .frame(width: 170, height: 170)
+                                }
+                            }
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
+                Spacer()
             }
             .padding()
         }

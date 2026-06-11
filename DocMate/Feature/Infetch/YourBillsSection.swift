@@ -21,19 +21,7 @@ struct YourBillsSection: View {
     
     var body: some View {
         
-        VStack(alignment: .leading, spacing: 16) {
-            
-            HStack {
-                Text("Your Bills")
-                    .font(.title3)
-                    .fontWeight(.bold)
-                
-                NavigationLink(destination: AllBillsView()) {
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.gray)
-                }
-            }
-            
+        Group {
             if !upcomingBills.isEmpty {
                 BillsCarouselView(bills: upcomingBills)
             }

@@ -51,7 +51,7 @@ struct InfetchBillCard: View {
                 .foregroundColor(.blue.opacity(0.85))
         }
         .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 160, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Color(.systemBackground))

@@ -63,7 +63,7 @@ struct DocumentCard: View {
             }
         }
         .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 126, alignment: .topLeading)
+        .frame(width: 170, height: 170, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(Color(.systemBackground))

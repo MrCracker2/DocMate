@@ -28,14 +28,13 @@ struct BillsCarouselView: View {
         
         if !bills.isEmpty {
             
-            ZStack {
+            ZStack(alignment: .bottom) {
                 
                 TabView(selection: $currentIndex) {
                     
                     ForEach(loopBills.indices, id: \.self) { index in
                         InfetchBillCard(doc: loopBills[index])
                             .tag(index)
-                            .padding(.horizontal, 2)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
@@ -60,27 +59,23 @@ struct BillsCarouselView: View {
                 }
                 
                 // Dots
-                VStack {
-                    Spacer()
-                    
-                    HStack(spacing: 6) {
-                        ForEach(0..<bills.count, id: \.self) { index in
-                            
-                            Circle()
-                                .fill(
-                                    realIndex == index
-                                    ? Color.blue
-                                    : Color.blue.opacity(0.28)
-                                )
-                                .frame(
-                                    width: realIndex == index ? 8 : 6,
-                                    height: realIndex == index ? 8 : 6
-                                )
-                                .animation(.easeInOut, value: realIndex)
-                        }
+                HStack(spacing: 6) {
+                    ForEach(0..<bills.count, id: \.self) { index in
+                        
+                        Circle()
+                            .fill(
+                                realIndex == index
+                                ? Color.blue
+                                : Color.blue.opacity(0.28)
+                            )
+                            .frame(
+                                width: realIndex == index ? 8 : 6,
+                                height: realIndex == index ? 8 : 6
+                            )
+                            .animation(.easeInOut, value: realIndex)
                     }
-                    .padding(.bottom, 10)
                 }
+                .padding(.bottom, 20)
             }
         }
     }
