@@ -327,7 +327,7 @@ struct CategoryDocumentsView: View {
         } label: {
             Label(
                 doc.isPinned ? "Unpin" : "Pin",
-                systemImage: doc.isPinned ? "pin.slash" : "pin"
+                systemImage: doc.isPinned ? "pin.fill" : "pin.slash"
             )
         }
 

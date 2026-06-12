@@ -80,15 +80,7 @@ struct DocumentDetailView: View {
                     } label: {
                         Label("Share", systemImage: "square.and.arrow.up")
                     }
-
-                    Button {
-                        handleTogglePin()
-                    } label: {
-                        Label(
-                            liveDocument.isPinned ? "Unpin" : "Pin",
-                            systemImage: liveDocument.isPinned ? "pin.slash" : "pin"
-                        )
-                    }
+                    
                     Button {
                         showEditSheet = true
                     } label: {
@@ -122,7 +114,7 @@ struct DocumentDetailView: View {
                 Spacer()
 
                 Button { handleTogglePin() } label: {
-                    Image(systemName: liveDocument.isPinned ? "pin.slash.fill" : "pin.fill")
+                    Image(systemName: liveDocument.isPinned ? "pin.fill" : "pin")
                         .font(.title2)
                         .foregroundStyle(.blue)
                 }
