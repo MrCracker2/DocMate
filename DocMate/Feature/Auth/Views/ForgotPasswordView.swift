@@ -131,7 +131,10 @@ struct ForgotPasswordView: View {
             message = ""
             
             try await SupabaseManager.shared.client.auth
-                .resetPasswordForEmail(email)
+                .resetPasswordForEmail(
+                    email,
+                    redirectTo: URL(string: "docmate://reset-callback")!
+                )
             
             message = "Reset link sent successfully."
             

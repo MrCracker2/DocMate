@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Supabase
 
 @main
 struct DocMateApp: App {
@@ -16,6 +17,22 @@ struct DocMateApp: App {
             RootView()
                 .environment(authVM)
                 .environment(viewModel)
+                .onOpenURL { url in
+
+                    print("Deep Link:", url)
+
+                    Task {
+                        do {
+                            try await SupabaseManager.shared.client.auth.session(from: url)
+
+                            if url.absoluteString.contains("reset-callback") {
+                                authVM.showResetPassword = true
+                            }
+                        } catch {
+                            print("Deep Link Error:", error)
+                        }
+                    }
+                }
         }
     }
 }
