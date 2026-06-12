@@ -14,6 +14,8 @@ class AuthViewModel {
     var isLoggedIn = false
     var isLoading = true
     private var hasCheckedSession = false
+    var showResetPassword = false
+    
 
     func checkSession() async {
         guard !hasCheckedSession else { return }

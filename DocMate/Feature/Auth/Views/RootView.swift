@@ -25,7 +25,11 @@ struct RootView: View {
                 if authVM.isLoading {
                     ProgressView()
                     
-                } else if authVM.isLoggedIn {
+                }else if authVM.showResetPassword {
+                    ResetPasswordView()
+
+                }
+                else if authVM.isLoggedIn {
                     ContentView()
                     
                 } else {
