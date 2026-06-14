@@ -29,7 +29,19 @@ struct ContentView: View {
                 BrowseView()
             }
             .tabItem { Label("Browse", systemImage: "folder") }
-            
+
+        }
+        .alert(
+            "Something went wrong",
+            isPresented: Binding(
+                get: { viewModel.errorMessage != nil },
+                set: { if !$0 { viewModel.errorMessage = nil } }
+            ),
+            presenting: viewModel.errorMessage
+        ) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { message in
+            Text(message)
         }
     }
 }

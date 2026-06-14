@@ -406,21 +406,6 @@ class AppViewModel {
                 await fetchAll()
             }
         }
-        /// Simulates an API call. On success marks bill as paid.
-        func refreshBill(_ bill: Infetch, completion: @escaping (Bool) -> Void) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
-                guard let self else { return }
-                let isPaid = Bool.random()
-                
-                if isPaid {
-                    Task { @MainActor in
-                        await self.toggleBillStatus(bill)
-                    }
-                }
-                completion(isPaid)
-            }
-        }
-        
 
     /// Returns total amount paid within the given month filter.
     func totalSpend(for filter: BillMonthFilter) -> Double {
@@ -448,18 +433,22 @@ class AppViewModel {
             let emails = try await GmailService.shared.fetchBillEmails()
 
             for email in emails {
-                
+
+                // Only import unpaid bills that are still due (future payments).
+                // Paid receipts / past-due emails return nil and are skipped.
+                guard let bill = BillParser.makeBill(
+                    from: email,
+                    userId: userId
+                ) else {
+                    continue
+                }
+
                 let exists = try await supa.billExists(
                     messageId: email.id
                 )
                 if exists {
-                       continue
-                   }
-
-                let bill = BillParser.makeBill(
-                    from: email,
-                    userId: userId
-                )
+                    continue
+                }
 
                 try await supa.insertBill(bill)
             }

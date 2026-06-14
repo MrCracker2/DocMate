@@ -16,12 +16,14 @@
 import Foundation
 import AuthenticationServices
 import CryptoKit
+import Security
 import UIKit
 
 // MARK: - Email Model
 struct GmailEmail: Identifiable {
     let id: String
     let subject: String
+    let from: String
     let body: String
     let receivedAt: Date
 }
@@ -41,21 +43,46 @@ class GmailService: NSObject {
     "com.googleusercontent.apps.748158363587-a8al5uj74lndf8cguq25rkqvp76ea8e3:/oauth2callback"
     // ──────────────────────────────────────────────────────────────────────
 
-    private var accessToken: String? {
-        get { UserDefaults.standard.string(forKey: "gmail_access_token") }
-        set { UserDefaults.standard.set(newValue, forKey: "gmail_access_token") }
+    // MARK: - Secure Token Storage (Keychain)
+    // Tokens are stored in the Keychain rather than UserDefaults so they are
+    // encrypted at rest and not exposed in plain device backups.
+
+    private enum Key {
+        static let accessToken  = "gmail_access_token"
+        static let refreshToken = "gmail_refresh_token"
+        static let expiry       = "gmail_token_expiry"   // epoch seconds, as String
     }
-    var isSignedIn: Bool { accessToken != nil }
+
+    private var accessToken: String? {
+        get { KeychainStore.read(Key.accessToken) }
+        set { KeychainStore.set(newValue, for: Key.accessToken) }
+    }
+
+    private var refreshToken: String? {
+        get { KeychainStore.read(Key.refreshToken) }
+        set { KeychainStore.set(newValue, for: Key.refreshToken) }
+    }
+
+    /// Absolute time the current access token stops being valid.
+    private var tokenExpiry: Date? {
+        get { KeychainStore.read(Key.expiry).flatMap { Double($0) }.map { Date(timeIntervalSince1970: $0) } }
+        set { KeychainStore.set(newValue.map { String($0.timeIntervalSince1970) }, for: Key.expiry) }
+    }
+
+    /// Signed in as long as we can obtain a token (a refresh token is enough —
+    /// the access token may be expired but renewable without user interaction).
+    var isSignedIn: Bool { refreshToken != nil || accessToken != nil }
+
     func signOut() {
-        UserDefaults.standard.removeObject(
-            forKey: "gmail_access_token"
-        )
+        KeychainStore.delete(Key.accessToken)
+        KeychainStore.delete(Key.refreshToken)
+        KeychainStore.delete(Key.expiry)
     }
 
     // MARK: - Sign In (PKCE flow)
     func signIn(presenting viewController: UIViewController) async throws {
-        // 1. PKCE verifier + challenge generate karo
-        UserDefaults.standard.removeObject(forKey: "gmail_access_token")
+        // 1. Clear any previous session and generate a fresh PKCE pair.
+        signOut()
         let verifier  = pkceVerifier()
         let challenge = pkceChallenge(from: verifier)
 
@@ -71,6 +98,11 @@ class GmailService: NSObject {
             .init(name: "state",                 value: state),
             .init(name: "code_challenge",        value: challenge),
             .init(name: "code_challenge_method", value: "S256"),
+            // Request a refresh token so we can renew access without forcing the
+            // user to log in again every hour. `prompt=consent` guarantees Google
+            // returns a refresh_token even on repeat authorisations.
+            .init(name: "access_type",           value: "offline"),
+            .init(name: "prompt",                value: "consent"),
         ]
 
         guard let authURL = comps.url,
@@ -102,12 +134,12 @@ class GmailService: NSObject {
             }
         }
 
-        // 3. Code ko access_token se exchange karo
-        self.accessToken = try await exchangeCode(code, verifier: verifier)
+        // 3. Exchange the authorization code for access + refresh tokens.
+        try await exchangeCode(code, verifier: verifier)
     }
 
     // MARK: - Token Exchange
-    private func exchangeCode(_ code: String, verifier: String) async throws -> String {
+    private func exchangeCode(_ code: String, verifier: String) async throws {
         var req = URLRequest(url: URL(string: "https://oauth2.googleapis.com/token")!)
         req.httpMethod = "POST"
         req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
@@ -128,6 +160,59 @@ class GmailService: NSObject {
         let json = try JSONDecoder().decode(TokenResponse.self, from: data)
 
         guard let token = json.accessToken else { throw GmailError.authFailed }
+        store(tokenResponse: json, fallbackToken: token)
+    }
+
+    // MARK: - Token Lifecycle
+
+    /// Persists a token response. The refresh token is only returned on the
+    /// first consent, so we keep the existing one when the response omits it.
+    private func store(tokenResponse: TokenResponse, fallbackToken: String) {
+        accessToken = tokenResponse.accessToken ?? fallbackToken
+        if let refresh = tokenResponse.refreshToken {
+            refreshToken = refresh
+        }
+        // Renew a minute early to avoid using a token that expires mid-request.
+        let lifetime = TimeInterval(tokenResponse.expiresIn ?? 3600)
+        tokenExpiry = Date().addingTimeInterval(lifetime - 60)
+    }
+
+    /// Returns a valid access token, transparently refreshing it when expired.
+    private func validAccessToken() async throws -> String {
+        if let token = accessToken, let expiry = tokenExpiry, expiry > Date() {
+            return token
+        }
+        return try await refreshAccessToken()
+    }
+
+    /// Uses the stored refresh token to obtain a new access token without any
+    /// user interaction. Throws `notSignedIn` if the user never consented.
+    private func refreshAccessToken() async throws -> String {
+        guard let refreshToken else { throw GmailError.notSignedIn }
+
+        var req = URLRequest(url: URL(string: "https://oauth2.googleapis.com/token")!)
+        req.httpMethod = "POST"
+        req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        let body = [
+            "client_id":     clientID,
+            "refresh_token": refreshToken,
+            "grant_type":    "refresh_token",
+        ]
+        req.httpBody = body
+            .map { "\($0.key)=\($0.value.urlEncoded)" }
+            .joined(separator: "&")
+            .data(using: .utf8)
+
+        let (data, _) = try await URLSession.shared.data(for: req)
+        let json = try JSONDecoder().decode(TokenResponse.self, from: data)
+
+        guard let token = json.accessToken else {
+            // Refresh token revoked or expired — force a fresh sign-in.
+            signOut()
+            throw GmailError.notSignedIn
+        }
+        store(tokenResponse: json, fallbackToken: token)
         return token
     }
 
@@ -152,7 +237,7 @@ class GmailService: NSObject {
 
     // MARK: - Fetch Emails
     func fetchBillEmails() async throws -> [GmailEmail] {
-        guard let accessToken else { throw GmailError.notSignedIn }
+        let accessToken = try await validAccessToken()
 
         let query = "subject:(bill OR invoice OR payment OR due OR EMI OR recharge OR order OR receipt OR statement OR premium OR subscription) newer_than:30d"
         let listURL = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages?q=\(query.urlEncoded)&maxResults=15")!
@@ -182,18 +267,44 @@ class GmailService: NSObject {
         let msg = try JSONDecoder().decode(MessageDetail.self, from: data)
 
         let subject = msg.payload.headers.first(where: { $0.name == "Subject" })?.value ?? "No Subject"
+        let from    = msg.payload.headers.first(where: { $0.name == "From" })?.value ?? ""
         let dateStr = msg.payload.headers.first(where: { $0.name == "Date" })?.value ?? ""
 
-        return GmailEmail(id: id, subject: subject, body: extractBody(from: msg.payload), receivedAt: parseDate(dateStr))
+        return GmailEmail(id: id, subject: subject, from: from, body: extractBody(from: msg.payload), receivedAt: parseDate(dateStr))
     }
 
+    /// Extracts a usable plain-text body, walking the full MIME tree.
+    /// Real bill emails are commonly `multipart/mixed` → `multipart/alternative`
+    /// nested several levels deep, so a single-level scan misses the content.
     private func extractBody(from payload: MessagePayload) -> String {
-        if let d = payload.body.data, !d.isEmpty { return decodeBase64URL(d) }
-        if let parts = payload.parts {
-            for p in parts where p.mimeType == "text/plain" { if let d = p.body.data { return decodeBase64URL(d) } }
-            for p in parts where p.mimeType == "text/html"  { if let d = p.body.data { return decodeBase64URL(d).strippingHTML() } }
+        // Prefer text/plain anywhere in the tree, then fall back to text/html.
+        if let plain = firstBody(mimeType: "text/plain", parts: payload.parts), !plain.isEmpty {
+            return plain
+        }
+        if let html = firstBody(mimeType: "text/html", parts: payload.parts), !html.isEmpty {
+            return html.strippingHTML()
+        }
+        // Single-part message: the body sits directly on the payload.
+        if let d = payload.body.data, !d.isEmpty {
+            let decoded = decodeBase64URL(d)
+            return payload.mimeType == "text/html" ? decoded.strippingHTML() : decoded
         }
         return ""
+    }
+
+    /// Depth-first search for the first non-empty part of the given MIME type.
+    private func firstBody(mimeType: String, parts: [Part]?) -> String? {
+        guard let parts else { return nil }
+        for p in parts {
+            if p.mimeType == mimeType, let d = p.body.data, !d.isEmpty {
+                let decoded = decodeBase64URL(d)
+                if !decoded.isEmpty { return decoded }
+            }
+            if let nested = firstBody(mimeType: mimeType, parts: p.parts) {
+                return nested
+            }
+        }
+        return nil
     }
 
     private func decodeBase64URL(_ s: String) -> String {
@@ -232,17 +343,67 @@ enum GmailError: LocalizedError {
     case notSignedIn, authFailed, configurationError
     var errorDescription: String? {
         switch self {
-        case .notSignedIn:        return "Gmail se sign in nahi hai"
-        case .authFailed:         return "Google login fail ho gaya"
-        case .configurationError: return "Google OAuth configure nahi hai — clientID set karo"
+        case .notSignedIn:        return "You're not signed in to Gmail."
+        case .authFailed:         return "Google sign-in failed. Please try again."
+        case .configurationError: return "Gmail is not configured correctly."
         }
+    }
+}
+
+// MARK: - Keychain Helper
+/// Minimal generic-password Keychain wrapper for storing OAuth tokens securely.
+private enum KeychainStore {
+    private static let service = "com.docmate.gmail"
+
+    private static func query(_ account: String) -> [String: Any] {
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+        ]
+    }
+
+    static func read(_ account: String) -> String? {
+        var q = query(account)
+        q[kSecReturnData as String] = true
+        q[kSecMatchLimit as String] = kSecMatchLimitOne
+
+        var item: AnyObject?
+        guard SecItemCopyMatching(q as CFDictionary, &item) == errSecSuccess,
+              let data = item as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    /// Sets a value, or removes the entry when `value` is nil.
+    static func set(_ value: String?, for account: String) {
+        guard let value, let data = value.data(using: .utf8) else {
+            delete(account)
+            return
+        }
+        let attrs: [String: Any] = [kSecValueData as String: data]
+        if SecItemUpdate(query(account) as CFDictionary, attrs as CFDictionary) == errSecItemNotFound {
+            var insert = query(account)
+            insert[kSecValueData as String] = data
+            insert[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+            SecItemAdd(insert as CFDictionary, nil)
+        }
+    }
+
+    static func delete(_ account: String) {
+        SecItemDelete(query(account) as CFDictionary)
     }
 }
 
 // MARK: - Codable Models
 private struct TokenResponse: Codable {
     let accessToken: String?
-    enum CodingKeys: String, CodingKey { case accessToken = "access_token" }
+    let refreshToken: String?
+    let expiresIn: Int?
+    enum CodingKeys: String, CodingKey {
+        case accessToken = "access_token"
+        case refreshToken = "refresh_token"
+        case expiresIn = "expires_in"
+    }
 }
 private struct MessageListResponse: Codable { let messages: [MessageRef]? }
 private struct MessageRef: Codable { let id: String }
@@ -252,7 +413,7 @@ private struct MessagePayload: Codable {
 }
 private struct Header: Codable { let name: String; let value: String }
 private struct BodyData: Codable { let data: String? }
-private struct Part: Codable { let mimeType: String?; let body: BodyData }
+private struct Part: Codable { let mimeType: String?; let body: BodyData; let parts: [Part]? }
 
 private extension String {
     var urlEncoded: String { addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? self }
