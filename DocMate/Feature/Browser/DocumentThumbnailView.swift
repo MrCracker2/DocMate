@@ -44,6 +44,17 @@ struct DocumentThumbnailView: View {
                             .clipShape(Circle())
                             .padding(5)
                     }
+                    
+                    if document.filePath == nil {
+                        Image(systemName: "arrow.clockwise.icloud.fill")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.white)
+                            .padding(4)
+                            .background(Color.orange)
+                            .clipShape(Circle())
+                            .padding(5)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    }
                 }
                 .frame(width: w, height: h)
             }
@@ -98,30 +109,88 @@ struct DocumentThumbnailView: View {
             thumbnail = cached
             return
         }
-        guard let path = document.filePath, !isLoading else { return }
-
+        
+        let docIdStr = document.id.uuidString.lowercased()
+        let fileManager = FileManager.default
+        let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let pdfURL = cacheDir.appendingPathComponent("\(docIdStr).pdf")
+        let thumbURL = cacheDir.appendingPathComponent("thumb_\(docIdStr).png")
+        
+        // 1. Try to load from disk cache synchronously
+        if fileManager.fileExists(atPath: thumbURL.path),
+           let img = UIImage(contentsOfFile: thumbURL.path) {
+            self.thumbnail = img
+            viewModel.imageStore[document.id] = [img]
+            return
+        }
+        
+        guard !isLoading else { return }
         isLoading = true
+        
         Task {
-            defer { isLoading = false }
-            guard let data = try? await SupabaseManager.shared.downloadPDF(path: path),
-                  let pdfDoc = PDFDocument(data: data),
-                  let page = pdfDoc.page(at: 0) else { return }
-
-            let pageRect = page.bounds(for: .mediaBox)
-            let scale: CGFloat = 2.0
-            let size = CGSize(width: pageRect.width * scale, height: pageRect.height * scale)
-
-            let renderer = UIGraphicsImageRenderer(size: size)
-            let img = renderer.image { ctx in
-                UIColor.white.set()
-                ctx.fill(CGRect(origin: .zero, size: size))
-                ctx.cgContext.translateBy(x: 0, y: size.height)
-                ctx.cgContext.scaleBy(x: scale, y: -scale)
-                page.draw(with: .mediaBox, to: ctx.cgContext)
+            defer {
+                Task { @MainActor in
+                    self.isLoading = false
+                }
             }
-
+            
+            var pdfData: Data? = nil
+            
+            // 2. Resolve PDF data (from local cache or remote download)
+            if fileManager.fileExists(atPath: pdfURL.path) {
+                pdfData = try? Data(contentsOf: pdfURL)
+            } else if let path = document.filePath {
+                if SyncManager.shared.isOnline {
+                    if let downloadedData = try? await SupabaseManager.shared.downloadPDF(path: path) {
+                        pdfData = downloadedData
+                        try? downloadedData.write(to: pdfURL)
+                    }
+                }
+            }
+            
+            // 3. Render thumbnail using Core Graphics (nonisolated background thread)
+            guard let data = pdfData,
+                  let provider = CGDataProvider(data: data as CFData),
+                  let pdfDoc = CGPDFDocument(provider),
+                  let page = pdfDoc.page(at: 1) else {
+                return
+            }
+            
+            let pageRect = page.getBoxRect(.mediaBox)
+            let scale: CGFloat = 0.3
+            let width = Int(pageRect.width * scale)
+            let height = Int(pageRect.height * scale)
+            
+            guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+                  let context = CGContext(
+                      data: nil,
+                      width: width,
+                      height: height,
+                      bitsPerComponent: 8,
+                      bytesPerRow: 0,
+                      space: colorSpace,
+                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+                  ) else {
+                return
+            }
+            
+            context.setFillColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+            context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+            context.translateBy(x: 0, y: CGFloat(height))
+            context.scaleBy(x: scale, y: -scale)
+            context.drawPDFPage(page)
+            
+            guard let cgImage = context.makeImage() else { return }
+            let img = UIImage(cgImage: cgImage)
+            
+            // 4. Save to disk cache
+            if let pngData = img.pngData() {
+                try? pngData.write(to: thumbURL)
+            }
+            
+            // 5. Update UI on MainActor
             await MainActor.run {
-                thumbnail = img
+                self.thumbnail = img
                 viewModel.imageStore[document.id] = [img]
             }
         }

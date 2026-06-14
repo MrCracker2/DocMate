@@ -288,6 +288,7 @@ struct BrowseView: View {
                 }
                 
                 // MARK: ===================== TAGS =====================
+                /*
                 if searchText.isEmpty {
                     
                     VStack(alignment: .leading, spacing: 12) {
@@ -311,7 +312,8 @@ struct BrowseView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal)
                     }
-                }            }
+                }
+                */            }
             .padding(.top, 8)
             .padding(.bottom, 30)
         }

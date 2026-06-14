@@ -75,17 +75,28 @@ struct HomeView: View {
                 
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHGrid(rows: rows, spacing: 16) {
-                        ForEach(viewModel.expiringDocuments) { doc in
-                            if let due = doc.dueDate {
-                                NavigationLink(destination: DocumentDetailView(document: doc)) {
-                                    DocumentCard(
-                                        icon: viewModel.icon(for: doc),
-                                        title: doc.name,
-                                        dateText: formatDate(due),
-                                        dateLabel: "Due"
-                                    )                                    .frame(width: 160)
+                        if viewModel.expiringDocuments.isEmpty {
+                            DocumentCard(
+                                icon: "checkmark.shield",
+                                title: "All Clear",
+                                dateText: "No documents",
+                                dateLabel: "Expiry"
+                            )
+                            .frame(width: 160)
+                        } else {
+                            ForEach(viewModel.expiringDocuments) { doc in
+                                if let due = doc.dueDate {
+                                    NavigationLink(destination: DocumentDetailView(document: doc)) {
+                                        DocumentCard(
+                                            icon: viewModel.icon(for: doc),
+                                            title: doc.name,
+                                            dateText: formatDate(due),
+                                            dateLabel: "Due",
+                                            isPendingSync: doc.filePath == nil
+                                        )                                    .frame(width: 160)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -128,7 +139,8 @@ struct HomeView: View {
                                     date: .abbreviated,
                                     time: .omitted
                                 ),
-                                dateLabel: "Added"
+                                dateLabel: "Added",
+                                isPendingSync: doc.filePath == nil
                             )
                         }
                         .buttonStyle(.plain)
@@ -153,15 +165,24 @@ struct HomeView: View {
                 
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHGrid(rows: rows, spacing: 16) {
-                        ForEach(Array(viewModel.pinnedDocuments.prefix(5))) { doc in
-                            NavigationLink(destination: DocumentDetailView(document: doc)) {
-                                DocumentCard(
-                                    icon: viewModel.icon(for: doc),
-                                    title: doc.name
-                                )
-                                .frame(width: 160)
+                        if viewModel.pinnedDocuments.isEmpty {
+                            DocumentCard(
+                                icon: "pin.slash",
+                                title: "No Pinned Docs"
+                            )
+                            .frame(width: 160)
+                        } else {
+                            ForEach(Array(viewModel.pinnedDocuments.prefix(5))) { doc in
+                                NavigationLink(destination: DocumentDetailView(document: doc)) {
+                                    DocumentCard(
+                                        icon: viewModel.icon(for: doc),
+                                        title: doc.name,
+                                        isPendingSync: doc.filePath == nil
+                                    )
+                                    .frame(width: 160)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                 }

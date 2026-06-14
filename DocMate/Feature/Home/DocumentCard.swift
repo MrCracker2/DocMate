@@ -12,6 +12,7 @@ struct DocumentCard: View {
     var title: String
     var dateText: String? = nil
     var dateLabel: String? = nil
+    var isPendingSync: Bool = false
     
     private var tintPair: (Color, Color) {
         (Color.blue, Color.blue.opacity(0.7))
@@ -21,20 +22,32 @@ struct DocumentCard: View {
         
         VStack(alignment: .leading, spacing: 12) {
             
-            ZStack {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [tintPair.0, tintPair.1],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+            HStack(alignment: .top) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [tintPair.0, tintPair.1],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
-                    )
-                    .frame(width: 44, height: 44)
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                }
                 
-                Image(systemName: icon)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
+                if isPendingSync {
+                    Spacer()
+                    Image(systemName: "cloud.sun.fill")
+                        .symbolRenderingMode(.multicolor)
+                        .font(.title3)
+                    Image(systemName: "arrow.clockwise.icloud")
+                        .font(.subheadline)
+                        .foregroundStyle(.orange)
+                }
             }
             
             Text(title)

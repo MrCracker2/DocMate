@@ -267,26 +267,37 @@ struct DocumentDetailView: View {
 
     // MARK: Download PDF from Supabase
     private func downloadPDFIfNeeded() {
-        guard document.fileTypeEnum == .pdf,
-              let storagePath = document.filePath,
-              !storagePath.isEmpty,
-              localPDFURL == nil else { return }
-
-        isDownloadingPDF = true
-        Task {
-            do {
-                let data = try await SupabaseManager.shared.downloadPDF(path: storagePath)
-                let tempURL = FileManager.default.temporaryDirectory
-                    .appendingPathComponent("\(document.id).pdf")
-                try data.write(to: tempURL)
-                await MainActor.run {
-                    localPDFURL = tempURL
-                    isDownloadingPDF = false
-                }
-            } catch {
-                print("PDF download error: \(error)")
-                await MainActor.run {
-                    isDownloadingPDF = false
+        if document.fileTypeEnum == .pdf {
+            guard localPDFURL == nil else { return }
+            
+            let fileName = "\(document.id.uuidString.lowercased()).pdf"
+            let fileManager = FileManager.default
+            let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
+            let cachedFileURL = cacheDir.appendingPathComponent(fileName)
+            
+            // 1. If PDF is cached in Caches directory, use it immediately
+            if fileManager.fileExists(atPath: cachedFileURL.path) {
+                localPDFURL = cachedFileURL
+                return
+            }
+            
+            // 2. If online and filePath exists, download and cache it
+            if let storagePath = document.filePath, !storagePath.isEmpty {
+                isDownloadingPDF = true
+                Task {
+                    do {
+                        let data = try await SupabaseManager.shared.downloadPDF(path: storagePath)
+                        try data.write(to: cachedFileURL)
+                        await MainActor.run {
+                            localPDFURL = cachedFileURL
+                            isDownloadingPDF = false
+                        }
+                    } catch {
+                        print("PDF download error: \(error)")
+                        await MainActor.run {
+                            isDownloadingPDF = false
+                        }
+                    }
                 }
             }
         }

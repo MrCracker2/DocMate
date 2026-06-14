@@ -23,6 +23,7 @@ struct SaveDocumentSheet: View {
     @State private var hasSelectedCategory: Bool = false
     @State private var documentName: String = "Scanned Document"
     @State private var showRenameAlert: Bool = false
+    @State private var isSaving: Bool = false
     
     
     @State private var isExpanded: Bool = false
@@ -57,19 +58,26 @@ struct SaveDocumentSheet: View {
                 Button {
                     save()
                 } label: {
-                    Text("Save")
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(
-                            hasSelectedCategory
-                            ? Color.blue
-                            : Color.gray
-                        )
-                        .clipShape(Capsule())
+                    HStack(spacing: 8) {
+                        if isSaving {
+                            ProgressView()
+                                .tint(.white)
+                                .scaleEffect(0.8)
+                        }
+                        Text(isSaving ? "Saving..." : "Save")
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        (hasSelectedCategory && !isSaving)
+                        ? Color.blue
+                        : Color.gray
+                    )
+                    .clipShape(Capsule())
                 }
-                .disabled(!hasSelectedCategory)
+                .disabled(!hasSelectedCategory || isSaving)
             }
         }
 
@@ -140,6 +148,8 @@ struct SaveDocumentSheet: View {
 
     // MARK: - Save
     private func save() {
+        guard !isSaving else { return }
+        isSaving = true
         Task {
             if isScanned {
                 await appViewModel.addScannedDocument(
@@ -155,6 +165,7 @@ struct SaveDocumentSheet: View {
                     categoryId: selectedCategoryId
                 )
             }
+            isSaving = false
             onSaveComplete?()
         }
     }

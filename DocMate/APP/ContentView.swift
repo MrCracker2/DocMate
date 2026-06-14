@@ -31,6 +31,9 @@ struct ContentView: View {
             .tabItem { Label("Browse", systemImage: "folder") }
 
         }
+        .task {
+            await viewModel.fetchAll()
+        }
         .alert(
             "Something went wrong",
             isPresented: Binding(
