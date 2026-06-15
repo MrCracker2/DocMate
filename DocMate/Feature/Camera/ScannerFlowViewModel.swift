@@ -53,10 +53,20 @@ class ScannerFlowViewModel {
 
     // MARK: - Back Navigation
     func goBack() {
+        // If we pushed a route (e.g. Save screen), pop it first.
         if !path.isEmpty {
             path.removeLast()     //  POP
-        } else {
-            phase = .reviewing   // fallback (rare case)
+            return
+        }
+
+        // Otherwise step back through the review phases.
+        switch phase {
+        case .detectingExpiry, .expiryResult, .noDateFound:
+            // Back from an OCR sub-state → return to the review start.
+            phase = .reviewing
+        case .reviewing, .scanning:
+            // Back from the review start → return to the camera.
+            phase = .scanning
         }
     }
 

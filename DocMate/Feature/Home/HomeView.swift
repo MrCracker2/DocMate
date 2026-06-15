@@ -66,8 +66,36 @@ struct HomeView: View {
                     .padding(.top, 120)
                 }
                 else{
-                
-                
+
+
+                // MARK: Overdue
+                if !viewModel.overdueDocuments.isEmpty {
+                    Text("Overdue")
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.red)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHGrid(rows: rows, spacing: 16) {
+                            ForEach(viewModel.overdueDocuments) { doc in
+                                if let due = doc.dueDate {
+                                    NavigationLink(destination: DocumentDetailView(document: doc)) {
+                                        DocumentCard(
+                                            icon: viewModel.icon(for: doc),
+                                            title: doc.name,
+                                            dateText: formatDate(due),
+                                            dateLabel: "Was due",
+                                            isPendingSync: doc.filePath == nil
+                                        )
+                                        .frame(width: 160)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // MARK: Due Soon
                 Text("Expiring Shortly")
                     .font(.title3)

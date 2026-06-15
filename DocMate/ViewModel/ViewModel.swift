@@ -265,6 +265,16 @@ class AppViewModel {
             .sorted { ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture) }
     }
     
+    var overdueDocuments: [Document] {
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        return documents
+            .filter {
+                guard let due = $0.dueDate else { return false }
+                return due < startOfToday
+            }
+            .sorted { ($0.dueDate ?? .distantPast) > ($1.dueDate ?? .distantPast) }
+    }
+
     var recentDocuments: [Document] {
         documents.sorted { $0.createdAt > $1.createdAt }
     }
