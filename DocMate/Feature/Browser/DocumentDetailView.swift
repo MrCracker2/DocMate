@@ -122,7 +122,7 @@ struct DocumentDetailView: View {
                 Spacer()
 
                 Button { handleTogglePin() } label: {
-                    Image(systemName: liveDocument.isPinned ? "pin.slash.fill" : "pin.fill")
+                    Image(systemName: liveDocument.isPinned ? "pin.fill" : "pin.slash")
                         .font(.title2)
                         .foregroundStyle(.blue)
                 }
