@@ -32,9 +32,8 @@ struct SignupView: View {
     let genderOptions = ["Male", "Female", "Other"]
     
     var body: some View {
-        NavigationStack {
             ZStack {
-                
+
                 // MARK: Background
                 LinearGradient(
                     colors: [
@@ -214,9 +213,8 @@ struct SignupView: View {
                 }
             }
             .navigationBarBackButtonHidden()
-        }
     }
-    
+
     // MARK: Sign Up
     func signUp() async {
 

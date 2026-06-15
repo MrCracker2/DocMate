@@ -203,6 +203,17 @@ struct LoginView: View {
     }
     
     func login() async {
+
+        guard !email.trimmingCharacters(in: .whitespaces).isEmpty else {
+            errorMessage = "Please enter your email"
+            return
+        }
+
+        guard !password.isEmpty else {
+            errorMessage = "Please enter your password"
+            return
+        }
+
         do {
             isLoading = true
             errorMessage = ""
