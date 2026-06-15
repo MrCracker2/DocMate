@@ -7,6 +7,7 @@
 
 import Foundation
 import UIKit
+import SwiftData
 
 @Observable
 class AppViewModel {
@@ -19,6 +20,54 @@ class AppViewModel {
     
     // MARK: - Max Pinned
     static let maxPinnedDocuments = 5
+    
+    // MARK: - Expiry Threshold (Days)
+    static let expiryThresholdDays = 10
+    
+    // MARK: - SwiftData Local Cache
+    private var localContainer: ModelContainer? = {
+        try? ModelContainer(for: LocalDocument.self)
+    }()
+    
+    private var localContext: ModelContext? {
+        guard let localContainer = localContainer else { return nil }
+        return ModelContext(localContainer)
+    }
+    
+    init() {
+        // Load cached categories on launch immediately so they are available synchronously
+        if let data = UserDefaults.standard.data(forKey: "cached_categories"),
+           let cached = try? JSONDecoder().decode([Category].self, from: data) {
+            self.categories = cached
+        } else {
+            // Default categories as initial fallback
+            self.categories = [
+                Category(id: UUID(uuidString: "7e50529d-43cf-4c4f-836e-b3de85721111")!, name: "Finance", sfSymbol: "dollarsign.circle"),
+                Category(id: UUID(uuidString: "8e50529d-43cf-4c4f-836e-b3de85722222")!, name: "Identity", sfSymbol: "person.circle"),
+                Category(id: UUID(uuidString: "9e50529d-43cf-4c4f-836e-b3de85723333")!, name: "Education", sfSymbol: "book.circle"),
+                Category(id: UUID(uuidString: "ae50529d-43cf-4c4f-836e-b3de85724444")!, name: "Vehicle", sfSymbol: "car.side"),
+                Category(id: UUID(uuidString: "be50529d-43cf-4c4f-836e-b3de85725555")!, name: "Service Bills", sfSymbol: "house"),
+                Category(id: UUID(uuidString: "ce50529d-43cf-4c4f-836e-b3de85726666")!, name: "Policies", sfSymbol: "doc"),
+                Category(id: UUID(uuidString: "de50529d-43cf-4c4f-836e-b3de85727777")!, name: "Other", sfSymbol: "questionmark.circle")
+            ]
+        }
+        
+        // Load cached documents on launch immediately so they are available synchronously
+        if let data = UserDefaults.standard.data(forKey: "cached_documents"),
+           let cached = try? JSONDecoder().decode([Document].self, from: data) {
+            self.documents = cached
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .docMateDidSyncDocument,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task {
+                await self?.fetchAll()
+            }
+        }
+    }
     
     // MARK: - Loading & Error State
     var isLoading = false
@@ -69,15 +118,70 @@ class AppViewModel {
         }
         
         do {
-            categories = try await supa.fetchCategories()
+            let fetchedCategories = try await supa.fetchCategories()
+            categories = fetchedCategories
+            if let data = try? JSONEncoder().encode(fetchedCategories) {
+                UserDefaults.standard.set(data, forKey: "cached_categories")
+            }
         } catch {
             print(" Categories fetch error: \(error)")
+            if let data = UserDefaults.standard.data(forKey: "cached_categories"),
+               let cached = try? JSONDecoder().decode([Category].self, from: data) {
+                categories = cached
+                print("Loaded categories from local cache fallback.")
+            } else {
+                // Default fallback categories
+                categories = [
+                    Category(id: UUID(uuidString: "7e50529d-43cf-4c4f-836e-b3de85721111")!, name: "Finance", sfSymbol: "dollarsign.circle"),
+                    Category(id: UUID(uuidString: "8e50529d-43cf-4c4f-836e-b3de85722222")!, name: "Identity", sfSymbol: "person.circle"),
+                    Category(id: UUID(uuidString: "9e50529d-43cf-4c4f-836e-b3de85723333")!, name: "Education", sfSymbol: "book.circle"),
+                    Category(id: UUID(uuidString: "ae50529d-43cf-4c4f-836e-b3de85724444")!, name: "Vehicle", sfSymbol: "car.side"),
+                    Category(id: UUID(uuidString: "be50529d-43cf-4c4f-836e-b3de85725555")!, name: "Service Bills", sfSymbol: "house"),
+                    Category(id: UUID(uuidString: "ce50529d-43cf-4c4f-836e-b3de85726666")!, name: "Policies", sfSymbol: "doc"),
+                    Category(id: UUID(uuidString: "de50529d-43cf-4c4f-836e-b3de85727777")!, name: "Other", sfSymbol: "questionmark.circle")
+                ]
+                print("No cached categories found. Loaded default categories.")
+            }
         }
         
         do {
-            documents = try await supa.fetchDocuments()
+            let fetchedDocs = try await supa.fetchDocuments()
+            documents = fetchedDocs
+            if let data = try? JSONEncoder().encode(fetchedDocs) {
+                UserDefaults.standard.set(data, forKey: "cached_documents")
+            }
         } catch {
             print(" Documents fetch error: \(error)")
+            if let data = UserDefaults.standard.data(forKey: "cached_documents"),
+               let cached = try? JSONDecoder().decode([Document].self, from: data) {
+                documents = cached
+                print("Loaded documents from local cache fallback.")
+            } else {
+                documents = []
+            }
+        }
+        
+        // Append local un-synced documents
+        if let context = localContext {
+            let descriptor = FetchDescriptor<LocalDocument>(
+                predicate: #Predicate<LocalDocument> { !$0.isSynced }
+            )
+            if let localDocs = try? context.fetch(descriptor) {
+                let mapped = localDocs.map { local in
+                    Document(
+                        id: local.id,
+                        name: local.name,
+                        dueDate: local.dueDate,
+                        isPinned: local.isPinned,
+                        userId: local.userId,
+                        categoryId: local.categoryId,
+                        createdAt: local.createdAt,
+                        fileType: .pdf,
+                        filePath: nil
+                    )
+                }
+                documents.append(contentsOf: mapped)
+            }
         }
         
         do {
@@ -149,11 +253,11 @@ class AppViewModel {
     // MARK: - Document Computed Properties
     var expiringDocuments: [Document] {
         let now = Date()
-        let tenDaysLater = now.addingTimeInterval(86400 * 10)
+        let threshold = now.addingTimeInterval(Double(86400 * AppViewModel.expiryThresholdDays))
         return documents
             .filter {
                 guard let due = $0.dueDate else { return false }
-                return due >= now && due <= tenDaysLater
+                return due >= now && due <= threshold
             }
             .sorted { ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture) }
     }
@@ -255,6 +359,11 @@ class AppViewModel {
         )
         
         do {
+            // Check if online. If offline, fail immediately to trigger fallback.
+            guard SyncManager.shared.isOnline else {
+                throw NSError(domain: "NSURLErrorDomain", code: -1009)
+            }
+            
             // 3. Upload PDF to Supabase Storage
             let storagePath = try await supa.uploadPDF(
                 data: pdfData,
@@ -272,7 +381,7 @@ class AppViewModel {
             if let first = images.first {
                 imageStore[doc.id] = [first]
             }
-        // for testing only
+            // for testing only
             print(" Upload success:", storagePath)
             print(" DB insert success:", doc.id)
             print(" Category:", categoryId)
@@ -281,12 +390,69 @@ class AppViewModel {
             // 7. Refresh
             await fetchAll()
         } catch {
-            if let path = doc.filePath {
-                try? await supa.deletePDF(path: path)
+            print("Add scanned document error: \(error). Falling back to offline local save.")
+            
+            // Fallback: save PDF to cache folder and store metadata in SwiftData
+            saveOfflineFallback(
+                pdfData: pdfData,
+                id: doc.id,
+                userId: userId,
+                categoryId: categoryId,
+                name: name,
+                dueDate: dueDate,
+                thumbnail: images.first
+            )
+            
+            await fetchAll()
+        }
+    }
+    
+    @MainActor
+    private func saveOfflineFallback(
+        pdfData: Data,
+        id: UUID,
+        userId: UUID,
+        categoryId: UUID,
+        name: String,
+        dueDate: Date?,
+        thumbnail: UIImage?
+    ) {
+        let fileName = "\(id.uuidString.lowercased()).pdf"
+        let fileManager = FileManager.default
+        let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let fileURL = cacheDir.appendingPathComponent(fileName)
+        
+        do {
+            // 1. Save PDF file to cache directory
+            try pdfData.write(to: fileURL)
+            
+            // 2. Insert to SwiftData LocalDocument
+            if let context = localContext {
+                let localDoc = LocalDocument(
+                    id: id,
+                    userId: userId,
+                    categoryId: categoryId,
+                    name: name,
+                    dueDate: dueDate,
+                    isPinned: false,
+                    fileType: "pdf",
+                    localFileName: fileName,
+                    isSynced: false,
+                    createdAt: Date()
+                )
+                context.insert(localDoc)
+                try context.save()
+                
+                // 3. Keep thumbnail in memory for quick preview
+                if let thumbnail = thumbnail {
+                    imageStore[id] = [thumbnail]
+                }
+                
+                print("Offline fallback: Saved \(name) locally to caches and SwiftData.")
             }
-
-            print("Add scanned document error:", error)
-            errorMessage = error.localizedDescription
+        } catch {
+            print("Offline fallback error: \(error)")
+            errorMessage = "Failed to save offline: \(error.localizedDescription)"
         }
     }
     
@@ -305,6 +471,11 @@ class AppViewModel {
         )
         
         do {
+            // Check if online. If offline, fail immediately to trigger fallback.
+            guard SyncManager.shared.isOnline else {
+                throw NSError(domain: "NSURLErrorDomain", code: -1009)
+            }
+            
             let storagePath = try await supa.uploadPDF(
                 data: pdfData,
                 userId: userId,
@@ -316,8 +487,20 @@ class AppViewModel {
             imageStore[doc.id] = [image]
             await fetchAll()
         } catch {
-            print("Add photo document error: \(error)")
-            errorMessage = error.localizedDescription
+            print("Add photo document error: \(error). Falling back to offline local save.")
+            
+            // Fallback: save PDF to cache folder and store metadata in SwiftData
+            saveOfflineFallback(
+                pdfData: pdfData,
+                id: doc.id,
+                userId: userId,
+                categoryId: categoryId,
+                name: name,
+                dueDate: nil,
+                thumbnail: image
+            )
+            
+            await fetchAll()
         }
     }
     
@@ -406,21 +589,6 @@ class AppViewModel {
                 await fetchAll()
             }
         }
-        /// Simulates an API call. On success marks bill as paid.
-        func refreshBill(_ bill: Infetch, completion: @escaping (Bool) -> Void) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
-                guard let self else { return }
-                let isPaid = Bool.random()
-                
-                if isPaid {
-                    Task { @MainActor in
-                        await self.toggleBillStatus(bill)
-                    }
-                }
-                completion(isPaid)
-            }
-        }
-        
 
     /// Returns total amount paid within the given month filter.
     func totalSpend(for filter: BillMonthFilter) -> Double {
@@ -448,18 +616,22 @@ class AppViewModel {
             let emails = try await GmailService.shared.fetchBillEmails()
 
             for email in emails {
-                
+
+                // Only import unpaid bills that are still due (future payments).
+                // Paid receipts / past-due emails return nil and are skipped.
+                guard let bill = BillParser.makeBill(
+                    from: email,
+                    userId: userId
+                ) else {
+                    continue
+                }
+
                 let exists = try await supa.billExists(
                     messageId: email.id
                 )
                 if exists {
-                       continue
-                   }
-
-                let bill = BillParser.makeBill(
-                    from: email,
-                    userId: userId
-                )
+                    continue
+                }
 
                 try await supa.insertBill(bill)
             }
@@ -491,30 +663,33 @@ class AppViewModel {
         await withTaskGroup(of: (UUID, UIImage?).self) { group in
             for doc in docs {
                 guard imageStore[doc.id] == nil else { continue }
-                guard let path = doc.filePath else { continue }
                 
-                group.addTask {
-                    guard let data = try? await SupabaseManager.shared.downloadPDF(path: path),
-                          let provider = CGDataProvider(data: data as CFData),
-                          let pdf = CGPDFDocument(provider),
-                          let page = pdf.page(at: 1) else {
-                        return (doc.id, nil)
+                if let path = doc.filePath {
+                    group.addTask {
+                        guard let data = try? await SupabaseManager.shared.downloadPDF(path: path),
+                              let provider = CGDataProvider(data: data as CFData),
+                              let pdf = CGPDFDocument(provider),
+                              let page = pdf.page(at: 1) else {
+                            return (doc.id, nil)
+                        }
+                        return (doc.id, Self.renderPDFPage(page))
                     }
-                    let pageRect = page.getBoxRect(.mediaBox)
-                    let scale: CGFloat = 0.4
-                    let size = CGSize(
-                        width: pageRect.width * scale,
-                        height: pageRect.height * scale
-                    )
-                    let renderer = UIGraphicsImageRenderer(size: size)
-                    let img = renderer.image { ctx in
-                        UIColor.white.set()
-                        ctx.fill(CGRect(origin: .zero, size: size))
-                        ctx.cgContext.translateBy(x: 0, y: size.height)
-                        ctx.cgContext.scaleBy(x: scale, y: -scale)
-                        ctx.cgContext.drawPDFPage(page)
+                } else {
+                    let fileName = "\(doc.id.uuidString.lowercased()).pdf"
+                    group.addTask {
+                        let fileManager = FileManager.default
+                        let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
+                        let fileURL = cacheDir.appendingPathComponent(fileName)
+                        
+                        guard fileManager.fileExists(atPath: fileURL.path),
+                              let data = try? Data(contentsOf: fileURL),
+                              let provider = CGDataProvider(data: data as CFData),
+                              let pdf = CGPDFDocument(provider),
+                              let page = pdf.page(at: 1) else {
+                            return (doc.id, nil)
+                        }
+                        return (doc.id, Self.renderPDFPage(page))
                     }
-                    return (doc.id, img)
                 }
             }
             for await (id, img) in group {
@@ -523,6 +698,41 @@ class AppViewModel {
                 }
             }
         }
+    }
+    
+    nonisolated private static func renderPDFPage(_ page: CGPDFPage) -> UIImage? {
+        let pageRect = page.getBoxRect(.mediaBox)
+        let scale: CGFloat = 0.4
+        let width = Int(pageRect.width * scale)
+        let height = Int(pageRect.height * scale)
+        
+        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(
+                  data: nil,
+                  width: width,
+                  height: height,
+                  bitsPerComponent: 8,
+                  bytesPerRow: 0,
+                  space: colorSpace,
+                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+              ) else {
+            return nil
+        }
+        
+        // Fill white background
+        context.setFillColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        
+        // Scale and translate context for PDF drawing
+        context.translateBy(x: 0, y: CGFloat(height))
+        context.scaleBy(x: scale, y: -scale)
+        
+        // Draw the PDF page
+        context.drawPDFPage(page)
+        
+        // Create CGImage and UIImage
+        guard let cgImage = context.makeImage() else { return nil }
+        return UIImage(cgImage: cgImage)
     }
     // MARK: - Rename Document
     @MainActor

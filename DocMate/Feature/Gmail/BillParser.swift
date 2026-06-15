@@ -2,28 +2,40 @@
 //  BillParser.swift
 //  DocMate
 //
-//
-//  BillParser.swift
-//  DocMate
-//
 //  Created by Shashwat kumar on 27/04/26.
-//
-
-//
-//  BillParser.swift
-//  DocMate
 //
 
 import Foundation
 
+/// Heuristic parser that turns a raw Gmail bill/invoice email into an `Infetch`.
+///
+/// It is intentionally rule-based (no network / ML): it detects the vendor from
+/// known brand keywords or the sender domain, extracts the payable amount with a
+/// tiered strategy (labelled total → largest currency value → generic), and pulls
+/// a due date from common phrasings. Amounts handle both Western (`1,234,567`) and
+/// Indian (`12,34,567`) digit grouping.
 struct BillParser {
 
-    static func makeBill(from email: GmailEmail, userId: UUID) -> Infetch {
+    /// Builds an importable bill, or returns `nil` when the email should be skipped.
+    ///
+    /// The app's purpose is "don't miss a payment", so we import **every unpaid
+    /// bill** — overdue, due today, or due in the future. The only emails dropped
+    /// are ones that are already settled (receipts, "payment received"
+    /// confirmations like a paid Zepto / Zomato order).
+    static func makeBill(from email: GmailEmail, userId: UUID) -> Infetch? {
 
-        let vendor = detectVendor(from: email.subject, body: email.body)
-        let amount = extractAmount(from: email.subject + " " + email.body)
-        let dueDate = extractDueDate(from: email.subject + " " + email.body) ?? Calendar.current.date(byAdding: .day, value: 7, to: Date())!
-        let category = detectCategory(from: vendor, body: email.body)
+        let haystack = email.subject + "\n" + email.body
+
+        // Skip anything that's already been paid — receipts / confirmations.
+        guard !isAlreadyPaid(text: haystack) else { return nil }
+
+        let vendor = detectVendor(subject: email.subject, body: email.body, sender: email.from)
+        let amount = extractAmount(from: haystack)
+        let dueDate = extractDueDate(from: haystack)
+            ?? Calendar.current.date(byAdding: .day, value: 7, to: email.receivedAt)
+            ?? email.receivedAt
+
+        let category = detectCategory(vendor: vendor, body: email.body, sender: email.from)
 
         return Infetch(
             name: vendor,
@@ -42,11 +54,40 @@ struct BillParser {
         )
     }
 
+    // MARK: - Already-Paid Detection
+
+    /// Returns `true` when the email is a payment confirmation / receipt rather
+    /// than an outstanding bill. Only strong, unambiguous "settled" phrases are
+    /// used so genuine "payment is due" reminders are never dropped by mistake.
+    static func isAlreadyPaid(text: String) -> Bool {
+
+        let t = text.lowercased()
+
+        // Guard: a reminder like "your payment is due" must NOT count as paid,
+        // even though it contains the word "payment".
+        let dueSignals = ["is due", "due on", "due date", "pay by", "payment due",
+                          "amount due", "outstanding", "please pay", "to avoid",
+                          "before due"]
+        if dueSignals.contains(where: { t.contains($0) }) { return false }
+
+        let paidSignals = [
+            "payment received", "payment successful", "successful payment",
+            "payment was successful", "successfully paid", "paid successfully",
+            "thank you for your payment", "thanks for your payment",
+            "thank you for paying", "payment confirmation", "payment confirmed",
+            "we have received your payment", "received your payment",
+            "debited successfully", "successfully debited", "auto-debited",
+            "autopay successful", "transaction successful", "payment receipt",
+            "has been paid", "bill paid", "recharge successful", "order delivered"
+        ]
+        return paidSignals.contains { t.contains($0) }
+    }
+
     // MARK: - Vendor Detection
 
-    static func detectVendor(from subject: String, body: String) -> String {
+    static func detectVendor(subject: String, body: String, sender: String) -> String {
 
-        let text = (subject + " " + body).lowercased()
+        let text = (subject + " " + body + " " + sender).lowercased()
 
         // Telecom
         if text.contains("airtel") { return "Airtel" }
@@ -109,64 +150,104 @@ struct BillParser {
         // Utilities
         if text.contains("indane") || text.contains("hp gas") || text.contains("bharat gas") { return "LPG Gas" }
 
-        // Fallback: try to extract sender domain from email body (e.g. "noreply@amazon.in")
-        if let domain = extractSenderDomain(from: subject + " " + body) {
-            return domain
+        // Fallback: derive a readable name from the sender address (most reliable),
+        // then from any email address found in the body.
+        if let name = extractSenderDomain(from: sender) ?? extractSenderDomain(from: text) {
+            return name
         }
 
         return "Bill"
     }
 
     // MARK: - Domain Fallback
-    /// Tries to extract a readable name from email-like addresses in the text
+
+    /// Derives a human-readable brand name from an email address, e.g.
+    /// `noreply@email.hdfcbank.com` → `Hdfcbank`, `billing@amazon.in` → `Amazon`.
     private static func extractSenderDomain(from text: String) -> String? {
-        let pattern = #"[\w.+-]+@([\w-]+)\."#
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
-              match.numberOfRanges > 1,
-              let range = Range(match.range(at: 1), in: text) else { return nil }
+        guard let domain = firstMatch(pattern: #"[\w.+-]+@([\w.-]+\.\w{2,})"#,
+                                      in: text.lowercased())?.lowercased() else { return nil }
 
-        let domain = String(text[range])
-        // Skip generic mail servers
-        let ignore = ["gmail", "yahoo", "outlook", "hotmail", "noreply", "no-reply", "info", "support", "mail"]
-        if ignore.contains(domain.lowercased()) { return nil }
+        var labels = domain.split(separator: ".").map(String.init)
 
-        // Capitalize first letter
-        return domain.prefix(1).uppercased() + domain.dropFirst()
+        // Strip trailing TLDs / country codes: amazon.co.in → amazon
+        let tlds: Set<String> = ["com", "in", "co", "net", "org", "io", "biz", "info", "gov", "edu"]
+        while let last = labels.last, tlds.contains(last), labels.count > 1 {
+            labels.removeLast()
+        }
+
+        // Strip leading mail-server / department sub-labels: email.amazon → amazon
+        let fluff: Set<String> = [
+            "email", "mail", "mailer", "e", "mkt", "marketing", "noreply", "no-reply",
+            "info", "support", "update", "updates", "news", "newsletter", "notification",
+            "notifications", "alerts", "alert", "billing", "account", "accounts", "smtp",
+            "send", "sender", "txn", "transaction"
+        ]
+        let pick = labels.reversed().first(where: { !fluff.contains($0) }) ?? labels.last
+        guard let name = pick, name.count > 1 else { return nil }
+
+        // Generic consumer mail providers carry no vendor signal.
+        let generic: Set<String> = [
+            "gmail", "yahoo", "outlook", "hotmail", "icloud", "proton", "protonmail",
+            "ymail", "live", "msn", "rediffmail", "rediff", "zoho"
+        ]
+        if generic.contains(name) { return nil }
+
+        return name.prefix(1).uppercased() + name.dropFirst()
     }
 
     // MARK: - Amount Detection
 
+    /// A number that accepts Western (`1,234,567`) and Indian (`12,34,567`) grouping,
+    /// or a plain run of digits, with an optional 1–2 digit decimal part.
+    private static let numberPattern =
+        #"(\d{1,3}(?:,\d{2,3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)"#
+
     static func extractAmount(from text: String) -> Double? {
-
-        // Order matters: try most-specific patterns first
-        let patterns = [
-            // ₹ symbol (with or without space, optional comma in number)
-            #"₹\s?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)"#,
-
-            // INR keyword (case-insensitive handled by lowercasing below)
-            #"inr\s?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)"#,
-
-            // Rs. or Rs with optional dot and optional space
-            #"rs\.?\s?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)"#,
-
-            // "total: 399" or "amount: 399" or "pay 399"
-            #"(?:total|amount|pay|payment|order total)[:\s]+(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)"#,
-        ]
 
         let lowered = text.lowercased()
 
-        for pattern in patterns {
-            if let value = firstMatch(pattern: pattern, in: lowered) {
-                // Remove commas used as thousand separators
-                let cleaned = value.replacingOccurrences(of: ",", with: "")
-                if let amount = Double(cleaned), amount > 0 {
-                    return amount
-                }
+        // ── Tier 1: amounts explicitly labelled as the payable total ──────────
+        // Most specific labels first so "total amount due" wins over "amount due".
+        let totalLabels = [
+            "total amount due", "grand total", "amount payable", "total payable",
+            "net payable", "total amount", "amount due", "total due", "bill amount",
+            "net amount", "amount to be paid", "order total"
+        ]
+        for label in totalLabels {
+            // <label> … [₹|Rs|INR]? <number>   (a few separator chars allowed between)
+            let pattern = label + #"[^\d₹]{0,15}(?:₹|rs\.?|inr)?\s?"# + numberPattern
+            if let v = firstMatch(pattern: pattern, in: lowered), let amt = parseAmount(v) {
+                return amt
             }
         }
 
+        // ── Tier 2: every currency-tagged amount — pick the largest ───────────
+        // For bills the payable figure is almost always the biggest value shown
+        // (totals dwarf line items, taxes, cashback teasers, etc.).
+        let currencyPatterns = [
+            #"₹\s?"# + numberPattern,
+            #"inr\s?"# + numberPattern,
+            #"rs\.?\s?"# + numberPattern,
+        ]
+        var candidates: [Double] = []
+        for pattern in currencyPatterns {
+            candidates.append(contentsOf: allMatches(pattern: pattern, in: lowered).compactMap(parseAmount))
+        }
+        if let best = candidates.max() { return best }
+
+        // ── Tier 3: generic "total: 399" style with no currency marker ────────
+        let generic = #"(?:total|amount|pay|payment)[:\s]+"# + numberPattern
+        if let v = firstMatch(pattern: generic, in: lowered), let amt = parseAmount(v) {
+            return amt
+        }
+
         return nil
+    }
+
+    nonisolated private static func parseAmount(_ raw: String) -> Double? {
+        let cleaned = raw.replacingOccurrences(of: ",", with: "")
+        guard let amount = Double(cleaned), amount > 0 else { return nil }
+        return amount
     }
 
     // MARK: - Due Date Detection
@@ -175,20 +256,23 @@ struct BillParser {
 
         let lower = text.lowercased()
 
-        if let match = firstMatch(pattern: #"due on (\d{1,2}[-/]\d{1,2}[-/]\d{2,4})"#, in: lower) {
-            return parseDate(match)
-        }
+        // A date token: numeric (12/03/2026, 12-03-26) or month-name
+        // (12 mar 2026, 12th march 2026, mar 12, 2026).
+        let dateToken =
+            #"(\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}"# +
+            #"|\d{1,2}(?:st|nd|rd|th)?\s+[a-z]{3,9}\.?\s+\d{2,4}"# +
+            #"|[a-z]{3,9}\.?\s+\d{1,2},?\s+\d{2,4})"#
 
-        if let match = firstMatch(pattern: #"due date[: ]+(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})"#, in: lower) {
-            return parseDate(match)
-        }
-
-        if let match = firstMatch(pattern: #"pay by[: ]+(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})"#, in: lower) {
-            return parseDate(match)
-        }
-
-        if let match = firstMatch(pattern: #"last date[: ]+(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})"#, in: lower) {
-            return parseDate(match)
+        // Most specific phrasings first; bare "due" last to avoid false hits.
+        let keywords = [
+            "due on", "due date", "due by", "pay by", "payment due",
+            "last date of payment", "last date", "payable by", "due"
+        ]
+        for kw in keywords {
+            let pattern = kw + #"[:\s]+"# + dateToken
+            if let match = firstMatch(pattern: pattern, in: lower), let date = parseDate(match) {
+                return date
+            }
         }
 
         return nil
@@ -196,9 +280,9 @@ struct BillParser {
 
     // MARK: - Category
 
-    static func detectCategory(from vendor: String, body: String) -> InfetchCategory {
+    static func detectCategory(vendor: String, body: String, sender: String) -> InfetchCategory {
 
-        let text = (vendor + " " + body).lowercased()
+        let text = (vendor + " " + body + " " + sender).lowercased()
 
         if text.contains("insurance") { return .insurance }
         if text.contains("bank") || text.contains("loan") || text.contains("credit card") || text.contains("emi") { return .finance }
@@ -207,8 +291,9 @@ struct BillParser {
         return .bill
     }
 
-    // MARK: - Helpers
+    // MARK: - Regex Helpers
 
+    /// Returns capture group 1 of the first match, or `nil`.
     static func firstMatch(pattern: String, in text: String) -> String? {
 
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return nil }
@@ -222,24 +307,45 @@ struct BillParser {
         return String(text[range])
     }
 
+    /// Returns capture group 1 of every match.
+    static func allMatches(pattern: String, in text: String) -> [String] {
+
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return [] }
+
+        let nsrange = NSRange(text.startIndex..., in: text)
+
+        return regex.matches(in: text, options: [], range: nsrange).compactMap { match in
+            guard match.numberOfRanges > 1,
+                  let range = Range(match.range(at: 1), in: text) else { return nil }
+            return String(text[range])
+        }
+    }
+
+    // MARK: - Date Parsing
+
     static func parseDate(_ value: String) -> Date? {
 
-        let formats = [
-            "dd/MM/yyyy",
-            "dd-MM-yyyy",
-            "MM/dd/yyyy",
-            "MM-dd-yyyy",
-            "dd/MM/yy",
-            "dd-MM-yy"
-        ]
+        // Drop ordinal suffixes: "12th" → "12"
+        let normalized = value
+            .trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: #"(\d)(st|nd|rd|th)"#, with: "$1",
+                                  options: [.regularExpression, .caseInsensitive])
 
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+
+        // dd/MM first — Indian bills are day-first. (Genuinely ambiguous dates like
+        // 03/04/2026 are read as 3 April, the regional convention here.)
+        let formats = [
+            "dd/MM/yyyy", "dd-MM-yyyy", "dd.MM.yyyy", "dd/MM/yy", "dd-MM-yy", "dd.MM.yy",
+            "MM/dd/yyyy", "MM-dd-yyyy", "yyyy-MM-dd",
+            "dd MMM yyyy", "dd MMMM yyyy", "dd MMM yy",
+            "MMM dd yyyy", "MMMM dd yyyy", "MMM dd, yyyy", "MMMM dd, yyyy"
+        ]
 
         for format in formats {
             formatter.dateFormat = format
-            if let date = formatter.date(from: value) {
-                return date
-            }
+            if let date = formatter.date(from: normalized) { return date }
         }
 
         return nil

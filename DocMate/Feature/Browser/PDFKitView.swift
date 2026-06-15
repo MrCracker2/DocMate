@@ -19,7 +19,9 @@ struct PDFKitView: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: PDFView, context: Context) {
-        uiView.document = PDFDocument(url: url)
+        if uiView.document?.documentURL != url {
+            uiView.document = PDFDocument(url: url)
+        }
     }
 }
 

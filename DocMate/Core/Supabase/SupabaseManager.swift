@@ -13,8 +13,8 @@ class SupabaseManager {
     static let shared = SupabaseManager()
     
     let client = SupabaseClient(
-        supabaseURL: URL(string: "https://kypcyrorwmasbmlirqzh.supabase.co")!,
-        supabaseKey: "sb_publishable_BvBQx5udPXJaRUTLS9vwbw_JZiX1VdX"
+        supabaseURL: URL(string: "https://cvzsenyykycuzspnkihz.supabase.co")!,
+        supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2enNlbnl5a3ljdXpzcG5raWh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMDM4MzUsImV4cCI6MjA5NjY3OTgzNX0.BAE9UsDfBQZaPmx8zrFYzGb-BTxnPsLz28B1d23BYKM"
     )
     
     // MARK: - Auth
