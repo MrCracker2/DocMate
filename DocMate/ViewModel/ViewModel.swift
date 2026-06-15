@@ -252,12 +252,15 @@ class AppViewModel {
   
     // MARK: - Document Computed Properties
     var expiringDocuments: [Document] {
-        let now = Date()
-        let threshold = now.addingTimeInterval(Double(86400 * AppViewModel.expiryThresholdDays))
+        let cal = Calendar.current
+        let startOfToday = cal.startOfDay(for: Date())
+        let threshold = cal.date(byAdding: .day,
+                                 value: AppViewModel.expiryThresholdDays,
+                                 to: startOfToday)!
         return documents
             .filter {
                 guard let due = $0.dueDate else { return false }
-                return due >= now && due <= threshold
+                return due >= startOfToday && due <= threshold
             }
             .sorted { ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture) }
     }
