@@ -73,7 +73,7 @@ struct HomeView: View {
                     Text("Overdue")
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(.primary)
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         LazyHGrid(rows: rows, spacing: 16) {
@@ -97,10 +97,20 @@ struct HomeView: View {
                 }
 
                 // MARK: Due Soon
-                Text("Expiring Shortly")
-                    .font(.title3)
-                    .fontWeight(.bold)
-                
+                HStack {
+                    Text("Expiring Shortly")
+                        .font(.title3)
+                        .fontWeight(.bold)
+
+                    if viewModel.expiringDocuments.count > 3 {
+                        NavigationLink(destination: ExpiringShortlyView()) {
+                            Image(systemName: "chevron.right")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHGrid(rows: rows, spacing: 16) {
                         if viewModel.expiringDocuments.isEmpty {
