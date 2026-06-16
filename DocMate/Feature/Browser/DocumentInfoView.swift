@@ -17,13 +17,14 @@ struct DocumentInfoView: View {
         NavigationStack {
             List {
                 row("Name", document.name)
-                row("Pinned", document.isPinned ? "Yes" : "No")
-                row("Created", formatted(document.createdAt))
+                row("Category", viewModel.categories.first { $0.id == document.categoryId }?.name ?? "Unknown")
+                row("Added", formatted(document.createdAt))
 
                 if let due = document.dueDate {
-                    row("Expiry", formatted(due))
+                    row("Expires", formatted(due))
                 }
 
+                row("Pinned", document.isPinned ? "Yes" : "No")
                 row("Type", document.fileTypeEnum.rawValue.uppercased())
 
                 if let size = fileSizeText {

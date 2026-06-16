@@ -10,7 +10,7 @@ import UIKit
 struct PDFConverter {
     
     /// Converts an array of UIImages into PDF Data
-    static func makePDF(from images: [UIImage]) -> Data {
+    nonisolated static func makePDF(from images: [UIImage]) -> Data {
         let renderer = UIGraphicsPDFRenderer(bounds: .zero)
         
         return renderer.pdfData { context in

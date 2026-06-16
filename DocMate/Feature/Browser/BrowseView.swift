@@ -14,8 +14,13 @@ struct BrowseView: View {
     // MARK: - UI State
     @State private var searchText: String = ""
     @State private var isGridView: Bool = true
+    @State private var sortOption: CategorySort = .name
+    @State private var searchScope: SearchScope = .all
     @State private var showNewCategoryAlert = false
     @State private var categoryName = ""
+
+    enum CategorySort: Hashable { case name, size }
+    enum SearchScope: Hashable { case all, categories, documents }
 
     // MARK: - Category Context Menu State
     @State private var showRenameCategoryAlert = false
@@ -39,17 +44,25 @@ struct BrowseView: View {
     
     // MARK: - Filter Logic
     var filteredCategories: [Category] {
-        if searchText.isEmpty {
-            return viewModel.categories
-        }
-        return viewModel.categories.filter {
-            $0.name.localizedCaseInsensitiveContains(searchText)
+        // While searching, the "Documents" scope hides categories.
+        if !searchText.isEmpty && searchScope == .documents { return [] }
+
+        let base = searchText.isEmpty
+            ? viewModel.categories
+            : viewModel.categories.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+
+        switch sortOption {
+        case .name:
+            return base.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .size:
+            return base.sorted { viewModel.documentCount(for: $0) > viewModel.documentCount(for: $1) }
         }
     }
     //MARK: Gobal Serach
     var filteredDocuments: [Document] {
         guard !searchText.isEmpty else { return [] }
-        
+        if searchScope == .categories { return [] }   // scope hides documents
+
         return viewModel.documents.filter {
             $0.name.localizedCaseInsensitiveContains(searchText)
         }
@@ -75,11 +88,13 @@ struct BrowseView: View {
                 // MARK: ===================== CATEGORIES =====================
                 VStack(alignment: .leading, spacing: 12) {
                     
-                    Text("Categories")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .padding(.horizontal)
-                    
+                    if searchText.isEmpty || !filteredCategories.isEmpty {
+                        Text("Categories")
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .padding(.horizontal)
+                    }
+
                     // MARK: GRID VIEW
                     if isGridView {
                         
@@ -287,6 +302,12 @@ struct BrowseView: View {
                     }
                 }
                 
+                // MARK: No Results (native modern empty state)
+                if !searchText.isEmpty && filteredCategories.isEmpty && filteredDocuments.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
+                        .padding(.top, 40)
+                }
+
                 // MARK: ===================== TAGS =====================
                 /*
                 if searchText.isEmpty {
@@ -330,6 +351,11 @@ struct BrowseView: View {
             placement: .navigationBarDrawer(displayMode: .always),
             prompt: "Search documents or categories"
         )
+        .searchScopes($searchScope) {
+            Text("All").tag(SearchScope.all)
+            Text("Categories").tag(SearchScope.categories)
+            Text("Documents").tag(SearchScope.documents)
+        }
         
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -346,25 +372,17 @@ struct BrowseView: View {
                         }
 
                         Menu {
-                            Button {
-                                isGridView = true
-                            } label: {
-                                Label("Icons", systemImage: "square.grid.2x2")
+                            Picker("View", selection: $isGridView) {
+                                Label("Icons", systemImage: "square.grid.2x2").tag(true)
+                                Label("List", systemImage: "list.bullet").tag(false)
                             }
-                            
-                            Button {
-                                isGridView = false
-                            } label: {
-                                Label("List", systemImage: "list.bullet")
-                            }
-                            
+
                             Divider()
-                            
-                            Button {} label: { Label("Name", systemImage: "textformat") }
-                            Button {} label: { Label("Kind", systemImage: "doc") }
-                            Button {} label: { Label("Date", systemImage: "calendar") }
-                            Button {} label: { Label("Size", systemImage: "arrow.up.and.down") }
-                            
+
+                            Picker("Sort By", selection: $sortOption) {
+                                Label("Name", systemImage: "textformat").tag(CategorySort.name)
+                                Label("Size", systemImage: "arrow.up.and.down").tag(CategorySort.size)
+                            }
                         } label: {
                             Image(systemName: "line.3.horizontal.decrease")
                                 .font(.system(size: 18, weight: .semibold))
