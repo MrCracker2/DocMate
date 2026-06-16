@@ -1,0 +1,95 @@
+//
+//  NotificationManager.swift
+//  DocMate
+//
+//  Created by Shashwat kumar on 27/04/26.
+//
+
+//
+//  NotificationManager.swift
+//  DocMate
+//
+//  Created by Shashwat kumar on 27/04/26.
+//
+
+import Foundation
+import UserNotifications
+
+class NotificationManager {
+
+    static let shared = NotificationManager()
+
+    private init() {}
+
+    // MARK: - Ask Permission
+    func requestPermission() {
+        UNUserNotificationCenter.current()
+            .requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+
+                if granted {
+                    print("Notifications allowed")
+                } else {
+                    print("Notifications denied")
+                }
+
+                if let error = error {
+                    print("Notification error:", error)
+                }
+            }
+    }
+
+    // MARK: - Real Expiry Reminder
+    func scheduleExpiryReminder(for document: Document) {
+
+        guard let dueDate = document.dueDate else { return }
+
+        let calendar = Calendar.current
+        let now = Date()
+
+        // Reminder days before expiry
+        let reminderDays = [30, 7, 1]
+
+        for day in reminderDays {
+
+            guard let reminderDate = calendar.date(
+                byAdding: .day,
+                value: -day,
+                to: dueDate
+            ) else { continue }
+
+            // Skip old dates
+            if reminderDate <= now { continue }
+
+            let content = UNMutableNotificationContent()
+            content.title = "Document Expiring Soon"
+            content.body = "\(document.name) expires in \(day) day\(day == 1 ? "" : "s")."
+            content.sound = .default
+
+            let components = calendar.dateComponents(
+                [.year, .month, .day, .hour, .minute],
+                from: reminderDate
+            )
+
+            let trigger = UNCalendarNotificationTrigger(
+                dateMatching: components,
+                repeats: false
+            )
+
+            let request = UNNotificationRequest(
+                identifier: "\(document.id.uuidString)-\(day)",
+                content: content,
+                trigger: trigger
+            )
+
+            UNUserNotificationCenter.current().add(request)
+
+            print("Reminder scheduled:", document.name, "-", day, "days before")
+        }
+    }
+
+    // MARK: - Clear Pending Notifications
+    func removeAll() {
+        UNUserNotificationCenter.current()
+            .removeAllPendingNotificationRequests()
+    }
+}
