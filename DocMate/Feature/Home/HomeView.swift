@@ -68,6 +68,9 @@ struct HomeView: View {
                 else{
 
 
+                // MARK: Overview
+                OverviewSection()
+
                 // MARK: Overdue
                 if !viewModel.overdueDocuments.isEmpty {
                     Text("Overdue")
