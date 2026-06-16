@@ -331,43 +331,55 @@ struct BrowseView: View {
             prompt: "Search documents or categories"
         )
         
-        // MARK: Toolbar
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-
+                ToolbarHStack(spacing: 6) {
                     Button {
                         showNewCategoryAlert = true
                     } label: {
-                        Label("New Category", systemImage: "folder.badge.plus")
+                        Image(systemName: "plus")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .frame(width: 36, height: 36)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .overlay(Circle().stroke(Color.white.opacity(0.6), lineWidth: 0.5))
+                            .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
                     }
-                    
-                    Divider()
-                    
-                    Button {
-                        isGridView = true
+
+                    Menu {
+                        Button {
+                            isGridView = true
+                        } label: {
+                            Label("Icons", systemImage: "square.grid.2x2")
+                        }
+                        
+                        Button {
+                            isGridView = false
+                        } label: {
+                            Label("List", systemImage: "list.bullet")
+                        }
+                        
+                        Divider()
+                        
+                        Button {} label: { Label("Name", systemImage: "textformat") }
+                        Button {} label: { Label("Kind", systemImage: "doc") }
+                        Button {} label: { Label("Date", systemImage: "calendar") }
+                        Button {} label: { Label("Size", systemImage: "arrow.up.and.down") }
+                        
                     } label: {
-                        Label("Icons", systemImage: "square.grid.2x2")
+                        Image(systemName: "line.3.horizontal.decrease")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .frame(width: 36, height: 36)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .overlay(Circle().stroke(Color.white.opacity(0.6), lineWidth: 0.5))
+                            .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
                     }
-                    
-                    Button {
-                        isGridView = false
-                    } label: {
-                        Label("List", systemImage: "list.bullet")
-                    }
-                    
-                    Divider()
-                    
-                    Button {} label: { Label("Name", systemImage: "textformat") }
-                    Button {} label: { Label("Kind", systemImage: "doc") }
-                    Button {} label: { Label("Date", systemImage: "calendar") }
-                    Button {} label: { Label("Size", systemImage: "arrow.up.and.down") }
-                    
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.title3)
                 }
             }
+            .sharedBackgroundVisibility(.hidden)
         }
         .alert("New Category", isPresented: $showNewCategoryAlert) {
 
@@ -437,6 +449,23 @@ struct BrowseView: View {
             showDeleteCategoryAlert = true
         } label: {
             Label("Delete", systemImage: "trash")
+        }
+    }
+}
+
+// MARK: - Helper Layout View to Prevent Toolbar Decomposition
+private struct ToolbarHStack<Content: View>: View {
+    let spacing: CGFloat
+    let content: Content
+    
+    init(spacing: CGFloat = 6, @ViewBuilder content: () -> Content) {
+        self.spacing = spacing
+        self.content = content()
+    }
+    
+    var body: some View {
+        HStack(spacing: spacing) {
+            content
         }
     }
 }
