@@ -155,46 +155,12 @@ struct HomeView: View {
                     )
                 }
                 
-                // MARK: Recently Saved
-                HStack {
-                    Text("Recently Saved")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                    
-                    if viewModel.recentDocuments.count > 4 {
-                        NavigationLink(destination: RecentlySavedView()) {
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.gray)
-                        }
-                    }
-                }
-                
-                
-                LazyVGrid(columns: columns, spacing: 16) {
-                    ForEach(Array(viewModel.recentDocuments.prefix(4))) { doc in
-                        NavigationLink(destination: DocumentDetailView(document: doc)) {
-                            DocumentCard(
-                                icon: viewModel.icon(for: doc),
-                                title: doc.name,
-                                dateText: doc.createdAt.formatted(
-                                    date: .abbreviated,
-                                    time: .omitted
-                                ),
-                                dateLabel: "Added",
-                                isPendingSync: doc.filePath == nil
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                
-                
                 // MARK: Pinned Documents
                 HStack {
                     Text("Pinned Documents")
                         .font(.title3)
                         .fontWeight(.bold)
-                    
+
                     if viewModel.pinnedDocuments.count > 5 {
                         NavigationLink(destination: PinnedView()) {
                             Image(systemName: "chevron.right")
@@ -203,7 +169,7 @@ struct HomeView: View {
                         }
                     }
                 }
-                
+
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHGrid(rows: rows, spacing: 16) {
                         if viewModel.pinnedDocuments.isEmpty {
@@ -225,6 +191,40 @@ struct HomeView: View {
                                 .buttonStyle(.plain)
                             }
                         }
+                    }
+                }
+
+
+                // MARK: Recently Saved
+                HStack {
+                    Text("Recently Saved")
+                        .font(.title3)
+                        .fontWeight(.bold)
+
+                    if viewModel.recentDocuments.count > 4 {
+                        NavigationLink(destination: RecentlySavedView()) {
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+
+
+                LazyVGrid(columns: columns, spacing: 16) {
+                    ForEach(Array(viewModel.recentDocuments.prefix(4))) { doc in
+                        NavigationLink(destination: DocumentDetailView(document: doc)) {
+                            DocumentCard(
+                                icon: viewModel.icon(for: doc),
+                                title: doc.name,
+                                dateText: doc.createdAt.formatted(
+                                    date: .abbreviated,
+                                    time: .omitted
+                                ),
+                                dateLabel: "Added",
+                                isPendingSync: doc.filePath == nil
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }

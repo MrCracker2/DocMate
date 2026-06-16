@@ -98,13 +98,13 @@ struct OverviewSection: View {
                     icon: "exclamationmark.circle",
                     title: "Overdue",
                     count: viewModel.overdueDocuments.count,
-                    tint: .red
+                    tint: .blue
                 )
                 StatCard(
                     icon: "clock.badge.exclamationmark",
                     title: "Expiring Soon",
                     count: viewModel.expiringDocuments.count,
-                    tint: .orange
+                    tint: .blue
                 )
                 StatCard(
                     icon: "doc.on.doc",
@@ -116,7 +116,7 @@ struct OverviewSection: View {
                     icon: "pin.fill",
                     title: "Pinned",
                     count: viewModel.pinnedDocuments.count,
-                    tint: .green
+                    tint: .blue
                 )
             }
         }
