@@ -16,7 +16,7 @@ struct InfetchBillCard: View {
     
     var body: some View {
         
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 6) {
             
             HStack {
                 Text(doc.name)
@@ -45,13 +45,15 @@ struct InfetchBillCard: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             
+            Spacer()
+            
             Text("Due \(doc.dueDate, style: .date)")
                 .font(.caption)
                 .fontWeight(.semibold)
                 .foregroundColor(.blue.opacity(0.85))
         }
         .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 138, maxHeight: 138, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Color(.systemBackground))

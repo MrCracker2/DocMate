@@ -92,7 +92,7 @@ struct ProfileView: View {
                 }
                 
                 // MARK: Logout
-                Section("Sign In") {
+                Section("Sign Out") {
                     
                     Button {
                         Task { await logout() }

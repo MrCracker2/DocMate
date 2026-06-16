@@ -73,7 +73,7 @@ struct HomeView: View {
                     Text("Overdue")
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(.primary)
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         LazyHGrid(rows: rows, spacing: 16) {
@@ -97,10 +97,20 @@ struct HomeView: View {
                 }
 
                 // MARK: Due Soon
-                Text("Expiring Shortly")
-                    .font(.title3)
-                    .fontWeight(.bold)
-                
+                HStack {
+                    Text("Expiring Shortly")
+                        .font(.title3)
+                        .fontWeight(.bold)
+
+                    if viewModel.expiringDocuments.count > 3 {
+                        NavigationLink(destination: ExpiringShortlyView()) {
+                            Image(systemName: "chevron.right")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHGrid(rows: rows, spacing: 16) {
                         if viewModel.expiringDocuments.isEmpty {
@@ -220,35 +230,17 @@ struct HomeView: View {
         }
         .navigationTitle("Home")
         .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                Menu {
-
-                    //  Opens ScannerFlowView — owns entire scan experience
-                    Button {
-                        showScannerFlow = true
-                    } label: {
-                        Label("Scan Document", systemImage: "doc.viewfinder")
-                    }
-
-                    //  Opens photo picker
-                    Button {
-                        showPhotoPicker = true
-                    } label: {
-                        Label("Import Document", systemImage: "square.and.arrow.down")
-                    }
-
-                } label: {
-                    Image(systemName: "plus")
-                }
-
-                Button {
-                    showProfileView = true
-                } label: {
-                    Text(viewModel.user.initials)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.blue)
-                }
+            ToolbarItem(placement: .topBarTrailing) {
+                AnyView(
+                    HomeToolbarButtons(
+                        userInitials: viewModel.user.initials,
+                        showScannerFlow: $showScannerFlow,
+                        showPhotoPicker: $showPhotoPicker,
+                        showProfileView: $showProfileView
+                    )
+                )
             }
+            .sharedBackgroundVisibility(.hidden)
         }
         .onChange(of: selectedItem) { _, newItem in
             guard let newItem else { return }
@@ -317,5 +309,52 @@ struct HomeView: View {
         HomeView()
             .environment(AppViewModel())
             .environment(AuthViewModel())  
+    }
+}
+
+// MARK: - Home Toolbar Buttons
+private struct HomeToolbarButtons: View {
+    let userInitials: String
+    @Binding var showScannerFlow: Bool
+    @Binding var showPhotoPicker: Bool
+    @Binding var showProfileView: Bool
+    
+    var body: some View {
+        AnyView(
+            HStack(spacing: -6) {
+                Menu {
+                    //  Opens ScannerFlowView — owns entire scan experience
+                    Button {
+                        showScannerFlow = true
+                    } label: {
+                        Label("Scan Document", systemImage: "doc.viewfinder")
+                    }
+
+                    //  Opens photo picker
+                    Button {
+                        showPhotoPicker = true
+                    } label: {
+                        Label("Import Document", systemImage: "square.and.arrow.down")
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.blue)
+                        .frame(width: 40, height: 40)
+                        .glassEffect(in: Circle())
+                }
+
+                Button {
+                    showProfileView = true
+                } label: {
+                    Text(userInitials)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.blue)
+                        .frame(width: 40, height: 40)
+                        .glassEffect(in: Circle())
+                }
+            }
+            .frame(width: 86, height: 40)
+        )
     }
 }
