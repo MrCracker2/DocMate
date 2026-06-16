@@ -333,51 +333,48 @@ struct BrowseView: View {
         
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                ToolbarHStack(spacing: 6) {
-                    Button {
-                        showNewCategoryAlert = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.blue)
-                            .frame(width: 36, height: 36)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Circle())
-                            .overlay(Circle().stroke(Color.white.opacity(0.6), lineWidth: 0.5))
-                            .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
-                    }
+                AnyView(
+                    ToolbarHStack(spacing: 4) {
+                        Button {
+                            showNewCategoryAlert = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.blue)
+                                .frame(width: 40, height: 40)
+                                .glassEffect(in: Circle())
+                        }
 
-                    Menu {
-                        Button {
-                            isGridView = true
+                        Menu {
+                            Button {
+                                isGridView = true
+                            } label: {
+                                Label("Icons", systemImage: "square.grid.2x2")
+                            }
+                            
+                            Button {
+                                isGridView = false
+                            } label: {
+                                Label("List", systemImage: "list.bullet")
+                            }
+                            
+                            Divider()
+                            
+                            Button {} label: { Label("Name", systemImage: "textformat") }
+                            Button {} label: { Label("Kind", systemImage: "doc") }
+                            Button {} label: { Label("Date", systemImage: "calendar") }
+                            Button {} label: { Label("Size", systemImage: "arrow.up.and.down") }
+                            
                         } label: {
-                            Label("Icons", systemImage: "square.grid.2x2")
+                            Image(systemName: "line.3.horizontal.decrease")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.blue)
+                                .frame(width: 40, height: 40)
+                                .glassEffect(in: Circle())
                         }
-                        
-                        Button {
-                            isGridView = false
-                        } label: {
-                            Label("List", systemImage: "list.bullet")
-                        }
-                        
-                        Divider()
-                        
-                        Button {} label: { Label("Name", systemImage: "textformat") }
-                        Button {} label: { Label("Kind", systemImage: "doc") }
-                        Button {} label: { Label("Date", systemImage: "calendar") }
-                        Button {} label: { Label("Size", systemImage: "arrow.up.and.down") }
-                        
-                    } label: {
-                        Image(systemName: "line.3.horizontal.decrease")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.blue)
-                            .frame(width: 36, height: 36)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Circle())
-                            .overlay(Circle().stroke(Color.white.opacity(0.6), lineWidth: 0.5))
-                            .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
                     }
-                }
+                    .frame(width: 84, height: 40)
+                )
             }
             .sharedBackgroundVisibility(.hidden)
         }

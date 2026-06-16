@@ -16,7 +16,7 @@ struct InfetchBillCard: View {
     
     var body: some View {
         
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             
             HStack {
                 Text(doc.name)
@@ -45,7 +45,7 @@ struct InfetchBillCard: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             
-            Spacer(minLength: 0)
+            Spacer()
             
             Text("Due \(doc.dueDate, style: .date)")
                 .font(.caption)
