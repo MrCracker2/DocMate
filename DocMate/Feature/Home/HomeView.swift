@@ -68,9 +68,6 @@ struct HomeView: View {
                 else{
 
 
-                // MARK: Overview
-                OverviewSection()
-
                 // MARK: Overdue
                 if !viewModel.overdueDocuments.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
