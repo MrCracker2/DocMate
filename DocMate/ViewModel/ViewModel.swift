@@ -8,6 +8,8 @@
 import Foundation
 import UIKit
 import SwiftData
+import Supabase
+import Storage
 
 @Observable
 class AppViewModel {
@@ -779,4 +781,58 @@ class AppViewModel {
             print("Duplicate error: \(error)")
         }
     }
+    
+    // MARK: - Update Document File
+    @MainActor
+    func updateDocumentFile(document: Document, pdfData: Data, newThumbnail: UIImage?) async {
+        guard let userId = await supa.currentUserId else { return }
+        
+        let fileName = "\(document.id.uuidString.lowercased()).pdf"
+        let fileManager = FileManager.default
+        let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let cachedFileURL = cacheDir.appendingPathComponent(fileName)
+        
+        do {
+            try pdfData.write(to: cachedFileURL)
+        } catch {
+            print("Failed to save edited PDF locally: \(error)")
+        }
+        
+        if let newThumbnail {
+            imageStore[document.id] = [newThumbnail]
+        }
+        
+        if let storagePath = document.filePath, !storagePath.isEmpty {
+            do {
+                try await supa.client.storage
+                    .from("documents")
+                    .update(
+                        storagePath,
+                        data: pdfData,
+                        options: .init(contentType: "application/pdf")
+                    )
+                print("Uploaded updated PDF successfully to \(storagePath)")
+            } catch {
+                print("Failed to upload updated PDF: \(error). Trying delete and upload...")
+                try? await supa.deletePDF(path: storagePath)
+                _ = try? await supa.uploadPDF(data: pdfData, userId: userId, documentId: document.id)
+            }
+        } else {
+            do {
+                let storagePath = try await supa.uploadPDF(
+                    data: pdfData,
+                    userId: userId,
+                    documentId: document.id
+                )
+                var updatedDoc = document
+                updatedDoc.filePath = storagePath
+                try await supa.updateDocument(updatedDoc)
+            } catch {
+                print("Failed to save as new PDF: \(error)")
+            }
+        }
+        
+        await fetchAll()
+    }
 }
+

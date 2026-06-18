@@ -70,21 +70,111 @@ struct HomeView: View {
 
                 // MARK: Overdue
                 if !viewModel.overdueDocuments.isEmpty {
-                    Text("Overdue")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.primary)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Overdue")
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.primary)
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            LazyHGrid(rows: rows, spacing: 16) {
+                                ForEach(viewModel.overdueDocuments) { doc in
+                                    if let due = doc.dueDate {
+                                        NavigationLink(destination: DocumentDetailView(document: doc)) {
+                                            DocumentCard(
+                                                icon: viewModel.icon(for: doc),
+                                                title: doc.name,
+                                                dateText: formatDate(due),
+                                                dateLabel: "Was due",
+                                                isPendingSync: doc.filePath == nil
+                                            )
+                                            .frame(width: 160)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // MARK: Due Soon
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Expiring Shortly")
+                            .font(.title3)
+                            .fontWeight(.bold)
+
+                        if viewModel.expiringDocuments.count > 3 {
+                            NavigationLink(destination: ExpiringShortlyView()) {
+                                Image(systemName: "chevron.right")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    }
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         LazyHGrid(rows: rows, spacing: 16) {
-                            ForEach(viewModel.overdueDocuments) { doc in
-                                if let due = doc.dueDate {
+                            if viewModel.expiringDocuments.isEmpty {
+                                DocumentCard(
+                                    icon: "checkmark.shield",
+                                    title: "All Clear",
+                                    dateText: "No documents",
+                                    dateLabel: "Expiry"
+                                )
+                                .frame(width: 160)
+                            } else {
+                                ForEach(viewModel.expiringDocuments) { doc in
+                                    if let due = doc.dueDate {
+                                        NavigationLink(destination: DocumentDetailView(document: doc)) {
+                                            DocumentCard(
+                                                icon: viewModel.icon(for: doc),
+                                                title: doc.name,
+                                                dateText: formatDate(due),
+                                                dateLabel: "Due",
+                                                isPendingSync: doc.filePath == nil
+                                            )
+                                            .frame(width: 160)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // MARK: Pinned Documents
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Pinned Documents")
+                            .font(.title3)
+                            .fontWeight(.bold)
+
+                        if viewModel.pinnedDocuments.count > 5 {
+                            NavigationLink(destination: PinnedView()) {
+                                Image(systemName: "chevron.right")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    }
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHGrid(rows: rows, spacing: 16) {
+                            if viewModel.pinnedDocuments.isEmpty {
+                                DocumentCard(
+                                    icon: "pin.slash",
+                                    title: "No Pinned Docs"
+                                )
+                                .frame(width: 160)
+                            } else {
+                                ForEach(Array(viewModel.pinnedDocuments.prefix(5))) { doc in
                                     NavigationLink(destination: DocumentDetailView(document: doc)) {
                                         DocumentCard(
                                             icon: viewModel.icon(for: doc),
                                             title: doc.name,
-                                            dateText: formatDate(due),
-                                            dateLabel: "Was due",
                                             isPendingSync: doc.filePath == nil
                                         )
                                         .frame(width: 160)
@@ -96,131 +186,36 @@ struct HomeView: View {
                     }
                 }
 
-                // MARK: Due Soon
-                HStack {
-                    Text("Expiring Shortly")
-                        .font(.title3)
-                        .fontWeight(.bold)
-
-                    if viewModel.expiringDocuments.count > 3 {
-                        NavigationLink(destination: ExpiringShortlyView()) {
-                            Image(systemName: "chevron.right")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                        }
-                    }
-                }
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHGrid(rows: rows, spacing: 16) {
-                        if viewModel.expiringDocuments.isEmpty {
-                            DocumentCard(
-                                icon: "checkmark.shield",
-                                title: "All Clear",
-                                dateText: "No documents",
-                                dateLabel: "Expiry"
-                            )
-                            .frame(width: 160)
-                        } else {
-                            ForEach(viewModel.expiringDocuments) { doc in
-                                if let due = doc.dueDate {
-                                    NavigationLink(destination: DocumentDetailView(document: doc)) {
-                                        DocumentCard(
-                                            icon: viewModel.icon(for: doc),
-                                            title: doc.name,
-                                            dateText: formatDate(due),
-                                            dateLabel: "Due",
-                                            isPendingSync: doc.filePath == nil
-                                        )                                    .frame(width: 160)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // MARK: Your Bills
-                if !viewModel.inFetch.isEmpty {
-                    YourBillsSection(
-                        bills: Array(
-                            viewModel.inFetch
-                                .filter { $0.dueDate > Date() }        // sirf future due dates
-                                .sorted { $0.dueDate < $1.dueDate }     // sabse jaldi due pehle
-                                .prefix(4)                               // sirf top 4 cards
-                        )
-                    )
-                }
-                
                 // MARK: Recently Saved
-                HStack {
-                    Text("Recently Saved")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                    
-                    if viewModel.recentDocuments.count > 4 {
-                        NavigationLink(destination: RecentlySavedView()) {
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.gray)
-                        }
-                    }
-                }
-                
-                
-                LazyVGrid(columns: columns, spacing: 16) {
-                    ForEach(Array(viewModel.recentDocuments.prefix(4))) { doc in
-                        NavigationLink(destination: DocumentDetailView(document: doc)) {
-                            DocumentCard(
-                                icon: viewModel.icon(for: doc),
-                                title: doc.name,
-                                dateText: doc.createdAt.formatted(
-                                    date: .abbreviated,
-                                    time: .omitted
-                                ),
-                                dateLabel: "Added",
-                                isPendingSync: doc.filePath == nil
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                
-                
-                // MARK: Pinned Documents
-                HStack {
-                    Text("Pinned Documents")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                    
-                    if viewModel.pinnedDocuments.count > 5 {
-                        NavigationLink(destination: PinnedView()) {
-                            Image(systemName: "chevron.right")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                        }
-                    }
-                }
-                
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHGrid(rows: rows, spacing: 16) {
-                        if viewModel.pinnedDocuments.isEmpty {
-                            DocumentCard(
-                                icon: "pin.slash",
-                                title: "No Pinned Docs"
-                            )
-                            .frame(width: 160)
-                        } else {
-                            ForEach(Array(viewModel.pinnedDocuments.prefix(5))) { doc in
-                                NavigationLink(destination: DocumentDetailView(document: doc)) {
-                                    DocumentCard(
-                                        icon: viewModel.icon(for: doc),
-                                        title: doc.name,
-                                        isPendingSync: doc.filePath == nil
-                                    )
-                                    .frame(width: 160)
-                                }
-                                .buttonStyle(.plain)
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Recently Saved")
+                            .font(.title3)
+                            .fontWeight(.bold)
+
+                        if viewModel.recentDocuments.count > 4 {
+                            NavigationLink(destination: RecentlySavedView()) {
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.gray)
                             }
+                        }
+                    }
+
+                    LazyVGrid(columns: columns, spacing: 16) {
+                        ForEach(Array(viewModel.recentDocuments.prefix(4))) { doc in
+                            NavigationLink(destination: DocumentDetailView(document: doc)) {
+                                DocumentCard(
+                                    icon: viewModel.icon(for: doc),
+                                    title: doc.name,
+                                    dateText: doc.createdAt.formatted(
+                                        date: .abbreviated,
+                                        time: .omitted
+                                    ),
+                                    dateLabel: "Added",
+                                    isPendingSync: doc.filePath == nil
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -321,7 +316,7 @@ private struct HomeToolbarButtons: View {
     
     var body: some View {
         AnyView(
-            HStack(spacing: -6) {
+            HStack(spacing: 0) {
                 Menu {
                     //  Opens ScannerFlowView — owns entire scan experience
                     Button {
@@ -354,7 +349,7 @@ private struct HomeToolbarButtons: View {
                         .glassEffect(in: Circle())
                 }
             }
-            .frame(width: 86, height: 40)
+            .frame(width: 82, height: 40)
         )
     }
 }
