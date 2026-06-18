@@ -103,15 +103,33 @@ class AppViewModel {
  
     // MARK: - Supabase Helper
     private let supa = SupabaseManager.shared
+
+    // Coalescing guards so rapid duplicate refreshes (e.g. RootView + ContentView
+    // on launch, or one-per-doc sync callbacks) don't each re-download everything.
+    @ObservationIgnored private var isFetchingAll = false
+    @ObservationIgnored private var lastFetchAllAt: Date?
+
     // MARK: - Fetch All from Supabase
-    
+
     // Fetches all data from Supabase and populates local arrays.
-    // Call this once on login / app launch.
+    // Call this once on login / app launch. Pass `force: true` for an explicit
+    // user-initiated refresh (e.g. pull-to-refresh).
     @MainActor
-    func fetchAll() async {
+    func fetchAll(force: Bool = false) async {
+        // Skip if a fetch is already running, or one completed very recently.
+        if isFetchingAll { return }
+        if !force, let last = lastFetchAllAt, Date().timeIntervalSince(last) < 3 {
+            return
+        }
+        isFetchingAll = true
+        defer {
+            isFetchingAll = false
+            lastFetchAllAt = Date()
+        }
+
         isLoading = true
         errorMessage = nil
-        
+
         // Fetch each independently so one failure doesn't block the rest
         do {
             _user = try await supa.fetchProfile()
@@ -293,28 +311,29 @@ class AppViewModel {
     func addDocument(_ document: Document, images: [UIImage] = []) async {
         do {
             try await supa.insertDocument(document)
-            if !images.isEmpty {
-                imageStore[document.id] = images
-            }
-            await fetchAll()
+            registerSavedDocument(document, thumbnail: images.first)
         } catch {
             print("Add document error: \(error)")
             errorMessage = error.localizedDescription
         }
     }
-    
+
     @MainActor
     func deleteDocument(_ document: Document) async {
         do {
-            // Delete PDF from Supabase Storage if it exists
+            // Delete PDF + thumbnail from Supabase Storage if they exist
             if let path = document.filePath {
-                try? await supa.deletePDF(path: path)
+                try? await supa.deleteStoredFiles(pdfPath: path)
             }
-            
+
             // Delete from database
             try await supa.deleteDocument(id: document.id)
+
+            // Local cleanup — no full refetch needed.
             imageStore.removeValue(forKey: document.id)
-            await fetchAll()
+            documents.removeAll { $0.id == document.id }
+            removeLocalCachedFiles(for: document.id)
+            cacheDocumentsLocally()
         } catch {
             print("Delete document error: \(error)")
             errorMessage = error.localizedDescription
@@ -333,13 +352,15 @@ class AppViewModel {
             documents[index].isPinned = true
         }
         
+        let previousState = !documents[index].isPinned
         do {
             try await supa.updateDocument(documents[index])
+            cacheDocumentsLocally()
             return true
         } catch {
             print("Toggle pin error: \(error)")
-            // Revert on failure
-            await fetchAll()
+            // Revert locally on failure — no full refetch.
+            documents[index].isPinned = previousState
             return false
         }
     }
@@ -359,12 +380,14 @@ class AppViewModel {
     @MainActor
     func addScannedDocument(images: [UIImage], name: String, categoryId: UUID, dueDate: Date? = nil) async {
         guard let userId = await supa.currentUserId else { return }
-        
-        // 1. Convert images to PDF
-        let pdfData = PDFConverter.makePDF(from: images)
-        
+
+        // 1. Convert images to PDF off the main actor so the UI doesn't freeze.
+        let pdfData = await Task.detached(priority: .userInitiated) {
+            PDFConverter.makePDF(from: images)
+        }.value
+
         // 2. Create document
-        var doc = Document(
+        let doc = Document(
             name: name,
             dueDate: dueDate,
             isPinned: false,
@@ -372,42 +395,110 @@ class AppViewModel {
             categoryId: categoryId,
             fileType: .pdf
         )
-        
+
+        // 3. Show it immediately (optimistic insert) and let the caller dismiss
+        //    right away — no full server refetch, no waiting on the network.
+        registerSavedDocument(doc, thumbnail: images.first)
+
+        // 4. Upload + persist in the background. On failure it falls back to a
+        //    local offline save that SyncManager retries later.
+        Task {
+            await self.persistDocument(
+                doc,
+                pdfData: pdfData,
+                userId: userId,
+                categoryId: categoryId,
+                name: name,
+                dueDate: dueDate,
+                thumbnail: images.first
+            )
+        }
+    }
+
+    /// Optimistically inserts/updates a document in the in-memory list and
+    /// cache so it appears instantly, without a full `fetchAll()` round-trip.
+    @MainActor
+    private func registerSavedDocument(_ doc: Document, thumbnail: UIImage?) {
+        documents.removeAll { $0.id == doc.id }
+        documents.insert(doc, at: 0)
+        cacheDocumentsLocally()
+
+        if let thumbnail {
+            imageStore[doc.id] = [thumbnail]
+        }
+
+        if doc.dueDate != nil {
+            NotificationManager.shared.scheduleExpiryReminder(for: doc)
+        }
+    }
+
+    /// Persists the current `documents` list to the local cache.
+    @MainActor
+    private func cacheDocumentsLocally() {
+        if let data = try? JSONEncoder().encode(documents) {
+            UserDefaults.standard.set(data, forKey: "cached_documents")
+        }
+    }
+
+    /// Removes a document's locally cached PDF and durable thumbnail.
+    @MainActor
+    private func removeLocalCachedFiles(for id: UUID) {
+        let idStr = id.uuidString.lowercased()
+        let fileManager = FileManager.default
+
+        let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        try? fileManager.removeItem(at: cacheDir.appendingPathComponent("\(idStr).pdf"))
+
+        if let appSupport = try? fileManager.url(for: .applicationSupportDirectory,
+                                                 in: .userDomainMask,
+                                                 appropriateFor: nil,
+                                                 create: false) {
+            let thumb = appSupport
+                .appendingPathComponent("Thumbnails", isDirectory: true)
+                .appendingPathComponent("thumb_\(idStr).jpg")
+            try? fileManager.removeItem(at: thumb)
+        }
+    }
+
+    /// Uploads the PDF and inserts metadata. Runs in the background; on any
+    /// failure it saves locally for SyncManager to retry.
+    @MainActor
+    private func persistDocument(
+        _ doc: Document,
+        pdfData: Data,
+        userId: UUID,
+        categoryId: UUID,
+        name: String,
+        dueDate: Date?,
+        thumbnail: UIImage?
+    ) async {
+        var doc = doc
         do {
             // Check if online. If offline, fail immediately to trigger fallback.
             guard SyncManager.shared.isOnline else {
                 throw NSError(domain: "NSURLErrorDomain", code: -1009)
             }
-            
-            // 3. Upload PDF to Supabase Storage
+
             let storagePath = try await supa.uploadPDF(
                 data: pdfData,
                 userId: userId,
                 documentId: doc.id
             )
-            
-            // 4. Store the storage path
             doc.filePath = storagePath
-            
-            // 5. Insert document metadata into Supabase DB
+
             try await supa.insertDocument(doc)
-            
-            // 6. Keep thumbnail in memory for quick preview
-            if let first = images.first {
-                imageStore[doc.id] = [first]
+
+            // Upload a tiny thumbnail alongside the PDF so browsing never has to
+            // download the full file. Best-effort — don't fail the save on it.
+            if let thumbnail, let thumbData = PDFConverter.thumbnailJPEG(from: thumbnail) {
+                _ = try? await supa.uploadThumbnail(data: thumbData, userId: userId, documentId: doc.id)
             }
-            // for testing only
+
+            // Update the in-memory copy with its remote file path.
+            registerSavedDocument(doc, thumbnail: thumbnail)
             print(" Upload success:", storagePath)
-            print(" DB insert success:", doc.id)
-            print(" Category:", categoryId)
-            print(" User:", userId)
-            
-            // 7. Refresh
-            await fetchAll()
         } catch {
-            print("Add scanned document error: \(error). Falling back to offline local save.")
-            
-            // Fallback: save PDF to cache folder and store metadata in SwiftData
+            print("Persist document error: \(error). Falling back to offline local save.")
             saveOfflineFallback(
                 pdfData: pdfData,
                 id: doc.id,
@@ -415,10 +506,8 @@ class AppViewModel {
                 categoryId: categoryId,
                 name: name,
                 dueDate: dueDate,
-                thumbnail: images.first
+                thumbnail: thumbnail
             )
-            
-            await fetchAll()
         }
     }
     
@@ -474,48 +563,33 @@ class AppViewModel {
     @MainActor
     func addPhotoDocument(image: UIImage, name: String, categoryId: UUID) async {
         guard let userId = await supa.currentUserId else { return }
-        
-        let pdfData = PDFConverter.makePDF(from: [image])
-        
-        var doc = Document(
+
+        // Build the PDF off the main actor so the UI doesn't freeze.
+        let pdfData = await Task.detached(priority: .userInitiated) {
+            PDFConverter.makePDF(from: [image])
+        }.value
+
+        let doc = Document(
             name: name,
             isPinned: false,
             userId: userId,
             categoryId: categoryId,
             fileType: .pdf
         )
-        
-        do {
-            // Check if online. If offline, fail immediately to trigger fallback.
-            guard SyncManager.shared.isOnline else {
-                throw NSError(domain: "NSURLErrorDomain", code: -1009)
-            }
-            
-            let storagePath = try await supa.uploadPDF(
-                data: pdfData,
-                userId: userId,
-                documentId: doc.id
-            )
-            doc.filePath = storagePath
-            
-            try await supa.insertDocument(doc)
-            imageStore[doc.id] = [image]
-            await fetchAll()
-        } catch {
-            print("Add photo document error: \(error). Falling back to offline local save.")
-            
-            // Fallback: save PDF to cache folder and store metadata in SwiftData
-            saveOfflineFallback(
+
+        // Show immediately, upload in the background.
+        registerSavedDocument(doc, thumbnail: image)
+
+        Task {
+            await self.persistDocument(
+                doc,
                 pdfData: pdfData,
-                id: doc.id,
                 userId: userId,
                 categoryId: categoryId,
                 name: name,
                 dueDate: nil,
                 thumbnail: image
             )
-            
-            await fetchAll()
         }
     }
     
@@ -528,7 +602,8 @@ class AppViewModel {
         let cat = Category(name: name, sfSymbol: sfSymbol, userId: userId)
         do {
             try await supa.insertCategory(cat)
-            await fetchAll()
+            categories.append(cat)
+            cacheCategoriesLocally()
         } catch {
             print("Add category error: \(error)")
             errorMessage = error.localizedDescription
@@ -539,7 +614,10 @@ class AppViewModel {
     func renameCategory(_ category: Category, to newName: String) async {
         do {
             try await supa.updateCategoryName(id: category.id, newName: newName)
-            await fetchAll()
+            if let index = categories.firstIndex(where: { $0.id == category.id }) {
+                categories[index].name = newName
+            }
+            cacheCategoriesLocally()
         } catch {
             print("Rename category error: \(error)")
             errorMessage = error.localizedDescription
@@ -550,10 +628,18 @@ class AppViewModel {
     func deleteCategory(_ category: Category) async {
         do {
             try await supa.deleteCategory(id: category.id)
-            await fetchAll()
+            categories.removeAll { $0.id == category.id }
+            cacheCategoriesLocally()
         } catch {
             print("Delete category error: \(error)")
             errorMessage = error.localizedDescription
+        }
+    }
+
+    @MainActor
+    private func cacheCategoriesLocally() {
+        if let data = try? JSONEncoder().encode(categories) {
+            UserDefaults.standard.set(data, forKey: "cached_categories")
         }
     }
     
@@ -601,7 +687,9 @@ class AppViewModel {
                 try await supa.updateBill(allBills[index])
             } catch {
                 print("Toggle bill error:", error)
-                await fetchAll()
+                // Revert locally on failure — no full refetch.
+                allBills[index].isPaid.toggle()
+                allBills[index].paidAt = allBills[index].isPaid ? Date() : nil
             }
         }
 
@@ -671,94 +759,34 @@ class AppViewModel {
         isLoading = false
     }
     // =========================================================
-    // MARK: - Thumbnail Loader
+    // MARK: - Thumbnail Backfill
     // =========================================================
+
+    /// Uploads a small thumbnail for an existing remote document that doesn't
+    /// have one yet (legacy docs created before thumbnails existed). Best-effort
+    /// — this is what makes the migration self-healing and one-time per doc.
     @MainActor
-    private func loadThumbnails(for docs: [Document]) async {
-        await withTaskGroup(of: (UUID, UIImage?).self) { group in
-            for doc in docs {
-                guard imageStore[doc.id] == nil else { continue }
-                
-                if let path = doc.filePath {
-                    group.addTask {
-                        guard let data = try? await SupabaseManager.shared.downloadPDF(path: path),
-                              let provider = CGDataProvider(data: data as CFData),
-                              let pdf = CGPDFDocument(provider),
-                              let page = pdf.page(at: 1) else {
-                            return (doc.id, nil)
-                        }
-                        return (doc.id, Self.renderPDFPage(page))
-                    }
-                } else {
-                    let fileName = "\(doc.id.uuidString.lowercased()).pdf"
-                    group.addTask {
-                        let fileManager = FileManager.default
-                        let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
-                        let fileURL = cacheDir.appendingPathComponent(fileName)
-                        
-                        guard fileManager.fileExists(atPath: fileURL.path),
-                              let data = try? Data(contentsOf: fileURL),
-                              let provider = CGDataProvider(data: data as CFData),
-                              let pdf = CGPDFDocument(provider),
-                              let page = pdf.page(at: 1) else {
-                            return (doc.id, nil)
-                        }
-                        return (doc.id, Self.renderPDFPage(page))
-                    }
-                }
-            }
-            for await (id, img) in group {
-                if let img {
-                    imageStore[id] = [img]
-                }
-            }
-        }
-    }
-    
-    nonisolated private static func renderPDFPage(_ page: CGPDFPage) -> UIImage? {
-        let pageRect = page.getBoxRect(.mediaBox)
-        let scale: CGFloat = 0.4
-        let width = Int(pageRect.width * scale)
-        let height = Int(pageRect.height * scale)
-        
-        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
-              let context = CGContext(
-                  data: nil,
-                  width: width,
-                  height: height,
-                  bitsPerComponent: 8,
-                  bytesPerRow: 0,
-                  space: colorSpace,
-                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-              ) else {
-            return nil
-        }
-        
-        // Fill white background
-        context.setFillColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
-        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
-        
-        // Scale and translate context for PDF drawing
-        context.translateBy(x: 0, y: CGFloat(height))
-        context.scaleBy(x: scale, y: -scale)
-        
-        // Draw the PDF page
-        context.drawPDFPage(page)
-        
-        // Create CGImage and UIImage
-        guard let cgImage = context.makeImage() else { return nil }
-        return UIImage(cgImage: cgImage)
+    func backfillThumbnail(for document: Document, image: UIImage) async {
+        guard document.filePath != nil,
+              SyncManager.shared.isOnline,
+              let userId = await supa.currentUserId,
+              let data = PDFConverter.thumbnailJPEG(from: image) else { return }
+
+        _ = try? await supa.uploadThumbnail(data: data, userId: userId, documentId: document.id)
     }
     // MARK: - Rename Document
     @MainActor
     func renameDocument(_ document: Document, to newName: String) async {
         guard let index = documents.firstIndex(where: { $0.id == document.id }) else { return }
+        let previousName = documents[index].name
         documents[index].name = newName
         do {
             try await supa.updateDocument(documents[index])
+            cacheDocumentsLocally()
         } catch {
             print("Rename error: \(error)")
-            await fetchAll()
+            // Revert locally on failure — no full refetch.
+            documents[index].name = previousName
         }
     }
 
@@ -776,7 +804,7 @@ class AppViewModel {
         )
         do {
             try await supa.insertDocument(copy)
-            await fetchAll()
+            registerSavedDocument(copy, thumbnail: imageStore[document.id]?.first)
         } catch {
             print("Duplicate error: \(error)")
         }
@@ -827,12 +855,43 @@ class AppViewModel {
                 var updatedDoc = document
                 updatedDoc.filePath = storagePath
                 try await supa.updateDocument(updatedDoc)
+
+                // Reflect the new file path locally — no full refetch.
+                if let index = documents.firstIndex(where: { $0.id == document.id }) {
+                    documents[index].filePath = storagePath
+                    cacheDocumentsLocally()
+                }
             } catch {
                 print("Failed to save as new PDF: \(error)")
             }
         }
-        
-        await fetchAll()
+
+        // The file changed, so refresh the stored thumbnail too (best-effort).
+        if let newThumbnail, let thumbData = PDFConverter.thumbnailJPEG(from: newThumbnail) {
+            _ = try? await supa.uploadThumbnail(data: thumbData, userId: userId, documentId: document.id)
+            // Overwrite the durable on-disk thumbnail with the new one.
+            writeDurableThumbnail(thumbData, for: document.id)
+            imageStore[document.id] = [newThumbnail]
+        }
+    }
+
+    /// Durable thumbnail file location (Application Support/Thumbnails).
+    @MainActor
+    private func durableThumbnailURL(for id: UUID) -> URL {
+        let fileManager = FileManager.default
+        let base = (try? fileManager.url(for: .applicationSupportDirectory,
+                                         in: .userDomainMask,
+                                         appropriateFor: nil,
+                                         create: true))
+            ?? fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let dir = base.appendingPathComponent("Thumbnails", isDirectory: true)
+        try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("thumb_\(id.uuidString.lowercased()).jpg")
+    }
+
+    @MainActor
+    private func writeDurableThumbnail(_ data: Data, for id: UUID) {
+        try? data.write(to: durableThumbnailURL(for: id))
     }
 }
 

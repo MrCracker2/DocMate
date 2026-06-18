@@ -301,18 +301,54 @@ class SupabaseManager {
 
         return path
     }
-    /// Download a PDF from Supabase Storage
-    func downloadPDF(path: String) async throws -> Data {
+    /// Download any file from the documents bucket.
+    func downloadStorageFile(path: String) async throws -> Data {
         try await client.storage
             .from("documents")
             .download(path: path)
     }
-    
+
+    /// Download a PDF from Supabase Storage
+    func downloadPDF(path: String) async throws -> Data {
+        try await downloadStorageFile(path: path)
+    }
+
+    // MARK: - Thumbnails (tiny previews, to avoid downloading full PDFs)
+
+    /// Storage path of the small thumbnail that parallels a PDF's path.
+    /// "uid/<id>.pdf" → "uid/thumb_<id>.jpg"
+    nonisolated static func thumbnailPath(forPDFPath pdfPath: String) -> String {
+        let dir = (pdfPath as NSString).deletingLastPathComponent
+        let base = ((pdfPath as NSString).lastPathComponent as NSString).deletingPathExtension
+        let file = "thumb_\(base).jpg"
+        return dir.isEmpty ? file : "\(dir)/\(file)"
+    }
+
+    /// Uploads (or overwrites) a small JPEG thumbnail next to the PDF.
+    @discardableResult
+    func uploadThumbnail(data: Data, userId: UUID, documentId: UUID) async throws -> String {
+        let path = "\(userId.uuidString.lowercased())/thumb_\(documentId.uuidString.lowercased()).jpg"
+        try await client.storage
+            .from("documents")
+            .upload(path,
+                    data: data,
+                    options: .init(contentType: "image/jpeg", upsert: true))
+        return path
+    }
+
     /// Delete a PDF from Supabase Storage
     func deletePDF(path: String) async throws {
         try await client.storage
             .from("documents")
             .remove(paths: [path])
+    }
+
+    /// Delete a document's PDF and its thumbnail together.
+    func deleteStoredFiles(pdfPath: String) async throws {
+        let thumb = Self.thumbnailPath(forPDFPath: pdfPath)
+        try await client.storage
+            .from("documents")
+            .remove(paths: [pdfPath, thumb])
     }
     func deleteCurrentUserData() async throws {
         guard let userId = await currentUserId else { return }

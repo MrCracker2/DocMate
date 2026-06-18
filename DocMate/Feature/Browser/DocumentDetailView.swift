@@ -16,6 +16,7 @@ struct DocumentDetailView: View {
     @State private var showDeleteConfirm  = false
     @State private var showPinLimitAlert  = false   //  limit alert
     @State private var localPDFURL: URL?            // cached PDF from Supabase
+    @State private var previewVersion = 0           // bumped on edit → fresh PDFView
     @State private var isDownloadingPDF = false
     @State private var showInfoSheet = false
     @State private var showEditSheet = false
@@ -262,6 +263,10 @@ struct DocumentDetailView: View {
         // 1. PDF from Supabase (downloaded and cached locally)
         if let pdfURL = localPDFURL {
             PDFKitView(url: pdfURL)
+                // Rebuild the PDFView after each edit so autoScales re-fits the
+                // new page from scratch (an in-place document swap keeps the old
+                // zoom → edited page shows scaled wrong).
+                .id(previewVersion)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .ignoresSafeArea(edges: .bottom)
 
@@ -515,11 +520,10 @@ struct DocumentDetailView: View {
         let cachedURL = cacheDir.appendingPathComponent(fileName)
         try? pdfData.write(to: cachedURL)
 
-        // Drop then re-assign on the next runloop so the PDFKitView is recreated
-        // with the new file contents (same URL alone wouldn't trigger a reload).
-        localPDFURL = nil
-        DispatchQueue.main.async {
-            localPDFURL = cachedURL
-        }
+        // Bump the version so the PDFKitView (.id(previewVersion)) is rebuilt
+        // fresh with the new file — this both reloads the content and lets
+        // autoScales re-fit the (possibly different-sized) edited page.
+        localPDFURL = cachedURL
+        previewVersion += 1
     }
 }
