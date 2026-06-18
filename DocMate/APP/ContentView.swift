@@ -23,7 +23,15 @@ struct ContentView: View {
                     .environment(authVM)
             }
             .tabItem { Label("Home", systemImage: "house") }
-           
+
+            // MARK: - Bills
+            NavigationStack {
+                BillsView()
+                    .environment(viewModel)
+                    .environment(authVM)
+            }
+            .tabItem { Label("Bills", systemImage: "indianrupeesign.circle") }
+
             // MARK: - Browse
             NavigationStack {
                 BrowseView()

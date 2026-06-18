@@ -49,22 +49,6 @@ struct ProfileView: View {
                                value: viewModel.user.gender ?? "Not set")
                 }
                 
-                Section("Email"){
-                    NavigationLink {
-                        EmailSyncView()
-                    } label: {
-                        Label("Email Sync", systemImage: "envelope.badge")
-                    }
-                    NavigationLink {
-                        BillsHistoryView()
-                    } label: {
-                        Label("Your Bills History",
-                              systemImage: "clock.arrow.circlepath")
-                    }
-                    
-                    
-                }
-                
                 // MARK: Features
                 Section("Features") {
                     
