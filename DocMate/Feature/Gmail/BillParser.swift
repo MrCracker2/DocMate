@@ -344,8 +344,13 @@ struct BillParser {
 
     /// A number that accepts Western (`1,234,567`) and Indian (`12,34,567`) grouping,
     /// or a plain run of digits, with an optional 1–2 digit decimal part.
+    ///
+    /// The comma-grouped alternative requires **at least one** comma group (`+`),
+    /// so it only claims numbers that are actually grouped. Without this, a plain
+    /// number like `1500` would match the first alternative as just its leading
+    /// `\d{1,3}` (→ `150`) and never fall through to the plain-digits branch.
     private static let numberPattern =
-        #"(\d{1,3}(?:,\d{2,3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)"#
+        #"(\d{1,3}(?:,\d{2,3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)"#
 
     /// Lines containing these are promotional noise — "win ₹50,000", "flat 60% off",
     /// "₹500 cashback". Amounts on such lines must never be taken as the payable.
@@ -388,7 +393,10 @@ struct BillParser {
         var candidates: [Double] = []
         for line in lowered.split(whereSeparator: \.isNewline) {
             let lineStr = String(line)
-            if promoWords.contains(where: { lineStr.contains($0) }) { continue }
+            // Word-boundary match (not substring) so promo terms like "off"/"win"/
+            // "save"/"earn" don't drop legitimate lines via *office*, *window*,
+            // *saved*, *earnings*, etc. — mirrors the vendor keyword matching.
+            if promoWords.contains(where: { containsWord($0, in: lineStr) }) { continue }
             for pattern in currencyPatterns {
                 candidates.append(contentsOf: allMatches(pattern: pattern, in: lineStr).compactMap(parseAmount))
             }

@@ -258,6 +258,13 @@ class GmailService: NSObject {
         return emails
     }
 
+    /// Fetches a single email by its Gmail message id, refreshing the access
+    /// token if needed. Used to show a bill's source email inside the app.
+    func fetchEmail(id: String) async throws -> GmailEmail {
+        let token = try await validAccessToken()
+        return try await fetchMessage(id: id, token: token)
+    }
+
     private func fetchMessage(id: String, token: String) async throws -> GmailEmail {
         let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/\(id)?format=full")!
         var req = URLRequest(url: url)

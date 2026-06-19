@@ -8,9 +8,10 @@
 import SwiftUI
 
 struct BillSheetView: View {
-    
+
     let doc: Infetch
-    
+    @State private var showEmail = false
+
     var body: some View {
         
         VStack(spacing: 20) {
@@ -85,6 +86,26 @@ struct BillSheetView: View {
                         .foregroundStyle(.gray)
                 }
             }
+
+            // Shows the bill's source email inside the app (fetched on demand
+            // via GmailService). Only available for Gmail-imported bills.
+            if let id = doc.gmailMessageId {
+                Button {
+                    showEmail = true
+                } label: {
+                    Label("View Original Email", systemImage: "envelope")
+                        .font(.system(size: 16, weight: .medium))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(.blue.opacity(0.15))
+                        .cornerRadius(8)
+                }
+                .padding(.top, 8)
+                .sheet(isPresented: $showEmail) {
+                    EmailViewerView(messageId: id)
+                }
+            }
+
             Spacer()
         }
         .padding()

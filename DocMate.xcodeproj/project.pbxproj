@@ -15,8 +15,19 @@
 		96A04E1F2FA0013E00F11275 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 96A04E1E2FA0013E00F11275 /* GoogleSignInSwift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		ABCDEF0000000000000000B1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 96873A9F2F6C5DE100B0A57E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 96873AA62F6C5DE100B0A57E;
+			remoteInfo = DocMate;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		96873AA72F6C5DE100B0A57E /* DocMate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DocMate.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABCDEF0000000000000000A2 /* DocMateTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DocMateTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -38,6 +49,11 @@
 			path = DocMate;
 			sourceTree = "<group>";
 		};
+		ABCDEF0000000000000000A3 /* DocMateTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DocMateTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +70,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		ABCDEF0000000000000000A5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -61,6 +84,7 @@
 			isa = PBXGroup;
 			children = (
 				96873AA92F6C5DE100B0A57E /* DocMate */,
+				ABCDEF0000000000000000A3 /* DocMateTests */,
 				96873AA82F6C5DE100B0A57E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -69,6 +93,7 @@
 			isa = PBXGroup;
 			children = (
 				96873AA72F6C5DE100B0A57E /* DocMate.app */,
+				ABCDEF0000000000000000A2 /* DocMateTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -104,6 +129,29 @@
 			productReference = 96873AA72F6C5DE100B0A57E /* DocMate.app */;
 			productType = "com.apple.product-type.application";
 		};
+		ABCDEF0000000000000000A1 /* DocMateTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ABCDEF0000000000000000A7 /* Build configuration list for PBXNativeTarget "DocMateTests" */;
+			buildPhases = (
+				ABCDEF0000000000000000A4 /* Sources */,
+				ABCDEF0000000000000000A5 /* Frameworks */,
+				ABCDEF0000000000000000A6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				ABCDEF0000000000000000B0 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				ABCDEF0000000000000000A3 /* DocMateTests */,
+			);
+			name = DocMateTests;
+			packageProductDependencies = (
+			);
+			productName = DocMateTests;
+			productReference = ABCDEF0000000000000000A2 /* DocMateTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -116,6 +164,10 @@
 				TargetAttributes = {
 					96873AA62F6C5DE100B0A57E = {
 						CreatedOnToolsVersion = 26.3;
+					};
+					ABCDEF0000000000000000A1 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = 96873AA62F6C5DE100B0A57E;
 					};
 				};
 			};
@@ -138,12 +190,20 @@
 			projectRoot = "";
 			targets = (
 				96873AA62F6C5DE100B0A57E /* DocMate */,
+				ABCDEF0000000000000000A1 /* DocMateTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		96873AA52F6C5DE100B0A57E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ABCDEF0000000000000000A6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -160,7 +220,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		ABCDEF0000000000000000A4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		ABCDEF0000000000000000B0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 96873AA62F6C5DE100B0A57E /* DocMate */;
+			targetProxy = ABCDEF0000000000000000B1 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		96873AB02F6C5DE100B0A57E /* Debug */ = {
@@ -309,7 +384,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.shashwat.docmate13;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shashwat.docmate1234;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -356,6 +431,46 @@
 			};
 			name = Release;
 		};
+		ABCDEF0000000000000000A8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DTYQ6B3X3R;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shashwat.docmateTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DocMate.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DocMate";
+			};
+			name = Debug;
+		};
+		ABCDEF0000000000000000A9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5K564767SA;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shashwat.docmateTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DocMate.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DocMate";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -373,6 +488,15 @@
 			buildConfigurations = (
 				96873AB32F6C5DE100B0A57E /* Debug */,
 				96873AB42F6C5DE100B0A57E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		ABCDEF0000000000000000A7 /* Build configuration list for PBXNativeTarget "DocMateTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ABCDEF0000000000000000A8 /* Debug */,
+				ABCDEF0000000000000000A9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
