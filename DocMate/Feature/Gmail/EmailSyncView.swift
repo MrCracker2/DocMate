@@ -32,12 +32,18 @@ struct EmailSyncView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Gmail Sync")
                             .fontWeight(.semibold)
-                        
-                        Text(syncVM.isGmailConnected ? "Connected" : "Not Connected")
-                            .font(.caption)
-                            .foregroundStyle(
-                                syncVM.isGmailConnected ? .green : .secondary
-                            )
+
+                        if syncVM.isGmailConnected, !syncVM.connectedEmail.isEmpty {
+                            Text(syncVM.connectedEmail)
+                                .font(.caption)
+                                .foregroundStyle(.green)
+                        } else {
+                            Text(syncVM.isGmailConnected ? "Connected" : "Not Connected")
+                                .font(.caption)
+                                .foregroundStyle(
+                                    syncVM.isGmailConnected ? .green : .secondary
+                                )
+                        }
                     }
                     
                     Spacer()

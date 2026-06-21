@@ -51,6 +51,14 @@ class GmailService: NSObject {
         static let accessToken  = "gmail_access_token"
         static let refreshToken = "gmail_refresh_token"
         static let expiry       = "gmail_token_expiry"   // epoch seconds, as String
+        static let email        = "gmail_connected_email"
+    }
+
+    /// The Gmail address of the currently connected account, if any. Shown in
+    /// the UI so the user can see which mailbox is linked.
+    var connectedEmail: String? {
+        get { KeychainStore.read(Key.email) }
+        set { KeychainStore.set(newValue, for: Key.email) }
     }
 
     private var accessToken: String? {
@@ -77,6 +85,7 @@ class GmailService: NSObject {
         KeychainStore.delete(Key.accessToken)
         KeychainStore.delete(Key.refreshToken)
         KeychainStore.delete(Key.expiry)
+        KeychainStore.delete(Key.email)
     }
 
     // MARK: - Sign In (PKCE flow)
@@ -136,6 +145,26 @@ class GmailService: NSObject {
 
         // 3. Exchange the authorization code for access + refresh tokens.
         try await exchangeCode(code, verifier: verifier)
+
+        // 4. Record which mailbox is now connected so the UI can display it.
+        try? await fetchProfileEmail()
+    }
+
+    // MARK: - Connected Account
+
+    /// Looks up the signed-in account's email via the Gmail profile endpoint
+    /// (works with the `gmail.readonly` scope) and caches it in the Keychain.
+    @discardableResult
+    func fetchProfileEmail() async throws -> String {
+        let token = try await validAccessToken()
+        let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/profile")!
+        var req = URLRequest(url: url)
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, _) = try await URLSession.shared.data(for: req)
+        let profile = try JSONDecoder().decode(GmailProfile.self, from: data)
+        connectedEmail = profile.emailAddress
+        return profile.emailAddress
     }
 
     // MARK: - Token Exchange
@@ -412,6 +441,7 @@ private struct TokenResponse: Codable {
         case expiresIn = "expires_in"
     }
 }
+private struct GmailProfile: Codable { let emailAddress: String }
 private struct MessageListResponse: Codable { let messages: [MessageRef]? }
 private struct MessageRef: Codable { let id: String }
 private struct MessageDetail: Codable { let payload: MessagePayload }
