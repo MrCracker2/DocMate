@@ -78,28 +78,26 @@ struct DocumentCard: View {
         .padding(14)
         .frame(maxWidth: .infinity, minHeight: 126, alignment: .topLeading)
         .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color(.systemBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [tintPair.0.opacity(0.08), Color.clear],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+            ZStack {
+                Color(.systemBackground)
+                LinearGradient(
+                    colors: [tintPair.0.opacity(0.16), tintPair.0.opacity(0.04)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
+            }
         )
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: tintPair.0.opacity(0.08), radius: 8, x: 0, y: 4)
         .overlay(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(
                     LinearGradient(
-                        colors: [tintPair.0.opacity(0.2), tintPair.1.opacity(0.1)],
+                        colors: [tintPair.0.opacity(0.28), tintPair.1.opacity(0.14)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    lineWidth: 1
+                    lineWidth: 1.5
                 )
         )
     }
