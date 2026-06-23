@@ -27,29 +27,35 @@ struct BillsCarouselView: View {
     var body: some View {
         
         if !bills.isEmpty {
+<<<<<<< HEAD
             
             ZStack(alignment: .bottom) {
                 
+=======
+
+            VStack(spacing: 8) {
+
+>>>>>>> Developer
                 TabView(selection: $currentIndex) {
-                    
+
                     ForEach(loopBills.indices, id: \.self) { index in
                         InfetchBillCard(doc: loopBills[index])
                             .tag(index)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .frame(height: 160)
+                .frame(height: 138)
                 .onChange(of: currentIndex) { _, newValue in
-                    
+
                     guard bills.count > 1 else { return }
-                    
+
                     // Last fake card -> jump to first real
                     if newValue == loopBills.count - 1 {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                             currentIndex = 1
                         }
                     }
-                    
+
                     // First fake card -> jump to last real
                     if newValue == 0 {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -57,11 +63,14 @@ struct BillsCarouselView: View {
                         }
                     }
                 }
-                
+
                 // Dots
                 HStack(spacing: 6) {
                     ForEach(0..<bills.count, id: \.self) { index in
+<<<<<<< HEAD
                         
+=======
+>>>>>>> Developer
                         Circle()
                             .fill(
                                 realIndex == index

@@ -109,91 +109,126 @@ struct DocumentThumbnailView: View {
             thumbnail = cached
             return
         }
-        
+
         let docIdStr = document.id.uuidString.lowercased()
         let fileManager = FileManager.default
         let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
         let pdfURL = cacheDir.appendingPathComponent("\(docIdStr).pdf")
-        let thumbURL = cacheDir.appendingPathComponent("thumb_\(docIdStr).png")
-        
-        // 1. Try to load from disk cache synchronously
+        let thumbURL = Self.durableThumbnailURL(for: docIdStr)
+
+        // 1. Durable on-disk thumbnail (survives Caches eviction → no re-download).
         if fileManager.fileExists(atPath: thumbURL.path),
            let img = UIImage(contentsOfFile: thumbURL.path) {
             self.thumbnail = img
             viewModel.imageStore[document.id] = [img]
             return
         }
-        
+
         guard !isLoading else { return }
         isLoading = true
-        
+
         Task {
             defer {
                 Task { @MainActor in
                     self.isLoading = false
                 }
             }
-            
-            var pdfData: Data? = nil
-            
-            // 2. Resolve PDF data (from local cache or remote download)
-            if fileManager.fileExists(atPath: pdfURL.path) {
-                pdfData = try? Data(contentsOf: pdfURL)
-            } else if let path = document.filePath {
-                if SyncManager.shared.isOnline {
-                    if let downloadedData = try? await SupabaseManager.shared.downloadPDF(path: path) {
-                        pdfData = downloadedData
-                        try? downloadedData.write(to: pdfURL)
+
+            // 2. Preferred path: download the tiny stored thumbnail (a few KB)
+            //    instead of the full PDF.
+            if let path = document.filePath, SyncManager.shared.isOnline {
+                let thumbPath = SupabaseManager.thumbnailPath(forPDFPath: path)
+                if let data = try? await SupabaseManager.shared.downloadStorageFile(path: thumbPath),
+                   let img = UIImage(data: data) {
+                    try? data.write(to: thumbURL)
+                    await MainActor.run {
+                        self.thumbnail = img
+                        viewModel.imageStore[document.id] = [img]
                     }
+                    return
                 }
             }
-            
-            // 3. Render thumbnail using Core Graphics (nonisolated background thread)
-            guard let data = pdfData,
-                  let provider = CGDataProvider(data: data as CFData),
-                  let pdfDoc = CGPDFDocument(provider),
-                  let page = pdfDoc.page(at: 1) else {
-                return
+
+            // 3. Fallback for legacy/local-only docs without a stored thumbnail:
+            //    render from the PDF, cache durably, and self-heal by uploading a
+            //    thumbnail so subsequent loads are cheap.
+            var pdfData: Data? = nil
+            if fileManager.fileExists(atPath: pdfURL.path) {
+                pdfData = try? Data(contentsOf: pdfURL)
+            } else if let path = document.filePath, SyncManager.shared.isOnline {
+                if let downloadedData = try? await SupabaseManager.shared.downloadPDF(path: path) {
+                    pdfData = downloadedData
+                    try? downloadedData.write(to: pdfURL)
+                }
             }
-            
-            let pageRect = page.getBoxRect(.mediaBox)
-            let scale: CGFloat = 0.3
-            let width = Int(pageRect.width * scale)
-            let height = Int(pageRect.height * scale)
-            
-            guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
-                  let context = CGContext(
-                      data: nil,
-                      width: width,
-                      height: height,
-                      bitsPerComponent: 8,
-                      bytesPerRow: 0,
-                      space: colorSpace,
-                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-                  ) else {
-                return
+
+            guard let data = pdfData, let img = Self.renderFirstPage(from: data) else { return }
+
+            if let jpeg = img.jpegData(compressionQuality: 0.7) {
+                try? jpeg.write(to: thumbURL)
             }
-            
-            context.setFillColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
-            context.fill(CGRect(x: 0, y: 0, width: width, height: height))
-            context.translateBy(x: 0, y: CGFloat(height))
-            context.scaleBy(x: scale, y: -scale)
-            context.drawPDFPage(page)
-            
-            guard let cgImage = context.makeImage() else { return }
-            let img = UIImage(cgImage: cgImage)
-            
-            // 4. Save to disk cache
-            if let pngData = img.pngData() {
-                try? pngData.write(to: thumbURL)
-            }
-            
-            // 5. Update UI on MainActor
+
             await MainActor.run {
                 self.thumbnail = img
                 viewModel.imageStore[document.id] = [img]
             }
+
+            // Self-heal: store a thumbnail remotely so we never re-download this
+            // PDF for a preview again.
+            if document.filePath != nil {
+                await viewModel.backfillThumbnail(for: document, image: img)
+            }
         }
+    }
+
+    /// Durable thumbnail location (Application Support), so previews aren't lost
+    /// when iOS purges the Caches directory.
+    private static func durableThumbnailURL(for id: String) -> URL {
+        let fileManager = FileManager.default
+        let base = (try? fileManager.url(for: .applicationSupportDirectory,
+                                         in: .userDomainMask,
+                                         appropriateFor: nil,
+                                         create: true))
+            ?? fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let dir = base.appendingPathComponent("Thumbnails", isDirectory: true)
+        try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("thumb_\(id).jpg")
+    }
+
+    /// Renders page 1 of a PDF into a small preview image.
+    private nonisolated static func renderFirstPage(from data: Data) -> UIImage? {
+        guard let provider = CGDataProvider(data: data as CFData),
+              let pdfDoc = CGPDFDocument(provider),
+              let page = pdfDoc.page(at: 1) else {
+            return nil
+        }
+
+        let pageRect = page.getBoxRect(.mediaBox)
+        let scale: CGFloat = 0.3
+        let width = max(1, Int(pageRect.width * scale))
+        let height = max(1, Int(pageRect.height * scale))
+
+        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(
+                  data: nil,
+                  width: width,
+                  height: height,
+                  bitsPerComponent: 8,
+                  bytesPerRow: 0,
+                  space: colorSpace,
+                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+              ) else {
+            return nil
+        }
+
+        context.setFillColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        context.translateBy(x: 0, y: CGFloat(height))
+        context.scaleBy(x: scale, y: -scale)
+        context.drawPDFPage(page)
+
+        guard let cgImage = context.makeImage() else { return nil }
+        return UIImage(cgImage: cgImage)
     }
 }
 // MARK: - ShareSheet

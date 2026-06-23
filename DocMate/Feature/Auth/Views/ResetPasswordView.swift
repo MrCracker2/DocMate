@@ -13,6 +13,7 @@ import Supabase
 struct ResetPasswordView: View {
 
     @Environment(\.dismiss) var dismiss
+    @Environment(AuthViewModel.self) var authVM
 
     @State private var password = ""
     @State private var confirmPassword = ""
@@ -168,6 +169,16 @@ struct ResetPasswordView: View {
             )
 
             successMessage = "Password updated successfully."
+            isLoading = false
+
+            // Let the user see the confirmation, then sign out and
+            // return to the Login screen to re-authenticate with the
+            // new password. This also clears the reset-flow flag so we
+            // don't get stuck on this screen.
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            await authVM.logout()
+            authVM.showResetPassword = false
+            return
 
         } catch {
             errorMessage = error.localizedDescription
@@ -179,4 +190,5 @@ struct ResetPasswordView: View {
 
 #Preview {
     ResetPasswordView()
+        .environment(AuthViewModel())
 }

@@ -16,9 +16,15 @@ struct DocumentDetailView: View {
     @State private var showDeleteConfirm  = false
     @State private var showPinLimitAlert  = false   //  limit alert
     @State private var localPDFURL: URL?            // cached PDF from Supabase
+    @State private var previewVersion = 0           // bumped on edit → fresh PDFView
     @State private var isDownloadingPDF = false
     @State private var showInfoSheet = false
     @State private var showEditSheet = false
+    @State private var showQLPreview = false
+    @State private var markupMode: MarkupMode?      // PencilKit editor
+    @State private var showRenameAlert = false
+    @State private var renameText = ""
+    @State private var showExportSheet = false
     @Environment(\.dismiss) var dismiss
     @State private var isDeleting = false
 
@@ -42,31 +48,15 @@ struct DocumentDetailView: View {
     }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 16) {
-
-                inlinePreview
-                    .padding(.top)
-                    .onAppear { downloadPDFIfNeeded() }
-
-                VStack(alignment: .leading, spacing: 12) {
-                    infoRow("Category", categoryName)
-                    infoRow("Added", formatted(document.createdAt))
-
-                    if let due = document.dueDate {
-                        infoRow("Expires", formatted(due))
-                    }
-
-                    infoRow("Pinned", liveDocument.isPinned ? "Yes" : "No")
+        inlinePreview
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear { downloadPDFIfNeeded() }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if getPreviewURL() != nil {
+                    showQLPreview = true
                 }
-                .padding()
-                .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .padding(.horizontal)
-
-                Spacer(minLength: 80)
             }
-        }
         .navigationTitle(liveDocument.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
@@ -76,23 +66,36 @@ struct DocumentDetailView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Button {
-                        showShareSheet = true
+                        rotateDocument(clockwise: false)
                     } label: {
-                        Label("Share", systemImage: "square.and.arrow.up")
+                        Label("Rotate Left", systemImage: "rotate.left")
                     }
 
                     Button {
-                        handleTogglePin()
+                        rotateDocument(clockwise: true)
                     } label: {
-                        Label(
-                            liveDocument.isPinned ? "Unpin" : "Pin",
-                            systemImage: liveDocument.isPinned ? "pin.slash" : "pin"
-                        )
+                        Label("Rotate Right", systemImage: "rotate.right")
                     }
+
                     Button {
-                        showEditSheet = true
+                        renameText = liveDocument.name
+                        showRenameAlert = true
                     } label: {
-                        Label("Edit", systemImage: "pencil")
+                        Label("Rename", systemImage: "character.cursor.ibeam")
+                    }
+
+                    Divider()
+
+                    Button {
+                        showExportSheet = true
+                    } label: {
+                        Label("Export", systemImage: "square.and.arrow.up.on.square")
+                    }
+
+                    Button {
+                        printDocument()
+                    } label: {
+                        Label("Print", systemImage: "printer")
                     }
 
                     Divider()
@@ -108,61 +111,27 @@ struct DocumentDetailView: View {
             }
         }
 
-        // MARK: Bottom Bar
-        .safeAreaInset(edge: .bottom) {
-            HStack {
-                Spacer()
+        // MARK: Floating Glass Toolbars (Apple Preview style — two groups)
+        .overlay(alignment: .bottom) {
+            HStack(spacing: 12) {
 
-                Button { showShareSheet = true } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.title2)
-                        .foregroundStyle(.blue)
+                // Group 1 — Editing tools
+                glassGroup {
+                    toolButton("pencil.tip.crop.circle") { markupMode = .markup }    // Markup
+                    toolButton("signature")              { markupMode = .signature } // Signature
+                    toolButton("crop")                   { markupMode = .crop }      // Crop
                 }
 
-                Spacer()
-
-                Button { handleTogglePin() } label: {
-                    Image(systemName: liveDocument.isPinned ? "pin.fill" : "pin.slash")
-                        .font(.title2)
-                        .foregroundStyle(.blue)
+                // Group 2 — Document actions
+                glassGroup {
+                    toolButton("info.circle")            { showInfoSheet = true }   // Info
+                    toolButton("square.and.arrow.up")    { showShareSheet = true }  // Share
+                    toolButton(liveDocument.isPinned ? "pin.slash" : "pin") {       // Pin
+                        handleTogglePin()
+                    }
                 }
-
-                Spacer()
-
-                Button {
-                    showEditSheet = true
-                } label: {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.title2)
-                        .foregroundStyle(.blue)
-                }
-
-                Spacer()
-
-                Button {
-                    showInfoSheet = true
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(.title2)
-                        .foregroundStyle(.blue)
-                }
-
-                Spacer()
-
-                Button {
-                    showDeleteConfirm = true
-                } label: {
-                    Image(systemName: "trash")
-                        .font(.title2)
-                        .foregroundStyle(.red)
-                }
-                .disabled(isDeleting)
-               
-
-                Spacer()
             }
-            .padding()
-            .background(.regularMaterial)
+            .padding(.bottom, 16)
         }
 
         .sheet(isPresented: $showShareSheet) {
@@ -180,6 +149,43 @@ struct DocumentDetailView: View {
         }
         .sheet(isPresented: $showInfoSheet) {
             DocumentInfoView(document: liveDocument)
+        }
+        .fullScreenCover(isPresented: $showQLPreview) {
+            if let previewURL = getPreviewURL() {
+                QuickLookPreviewView(url: previewURL) { editedURL in
+                    handlePreviewSave(editedURL: editedURL)
+                } onDismiss: {
+                    showQLPreview = false
+                }
+                .ignoresSafeArea()
+            }
+        }
+        .fullScreenCover(item: $markupMode) { mode in
+            if let previewURL = getPreviewURL() {
+                MarkupEditorView(url: previewURL, mode: mode) { editedURL in
+                    handlePreviewSave(editedURL: editedURL)
+                    markupMode = nil
+                } onCancel: {
+                    markupMode = nil
+                }
+                .ignoresSafeArea()
+            }
+        }
+        .sheet(isPresented: $showExportSheet) {
+            if let image = currentDocumentImage() {
+                ExportDocumentView(image: image, fileName: liveDocument.name)
+            } else {
+                Text("Nothing to export").padding()
+            }
+        }
+        .alert("Rename Document", isPresented: $showRenameAlert) {
+            TextField("Name", text: $renameText)
+            Button("Cancel", role: .cancel) { }
+            Button("Save") {
+                let name = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !name.isEmpty else { return }
+                Task { await viewModel.renameDocument(document, to: name) }
+            }
         }
         .overlay {
             if isDeleting {
@@ -221,15 +227,48 @@ struct DocumentDetailView: View {
         }
     }
 
+    // MARK: - Glass Toolbar Helpers
+
+    /// A frosted-glass capsule that wraps a group of tool buttons.
+    @ViewBuilder
+    private func glassGroup<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        HStack(spacing: 22) {
+            content()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .background(.ultraThinMaterial)
+        .clipShape(Capsule())
+        .overlay(
+            Capsule()
+                .stroke(Color.primary.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+    }
+
+    /// A single icon button used inside a glass group.
+    private func toolButton(_ systemName: String,
+                            tint: Color = .primary,
+                            action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.title2)
+                .foregroundStyle(tint)
+        }
+    }
+
     // MARK: DOCUMENT PREVIEW (PDF + Image)
     @ViewBuilder
     private var inlinePreview: some View {
         // 1. PDF from Supabase (downloaded and cached locally)
         if let pdfURL = localPDFURL {
             PDFKitView(url: pdfURL)
-                .frame(height: 500)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .padding(.horizontal)
+                // Rebuild the PDFView after each edit so autoScales re-fits the
+                // new page from scratch (an in-place document swap keeps the old
+                // zoom → edited page shows scaled wrong).
+                .id(previewVersion)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea(edges: .bottom)
 
         // 2. Downloading PDF
         } else if isDownloadingPDF {
@@ -238,16 +277,14 @@ struct DocumentDetailView: View {
                 Text("Loading PDF...")
                     .foregroundStyle(.secondary)
             }
-            .frame(height: 300)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         // 3. In-memory image (thumbnail / old scans)
         } else if let firstImage = viewModel.images(for: document).first {
             Image(uiImage: firstImage)
                 .resizable()
                 .scaledToFit()
-                .frame(height: 460)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .padding(.horizontal)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         // 4. Bundled asset image (seed data)
         } else if let assetName = document.assetName,
@@ -255,13 +292,12 @@ struct DocumentDetailView: View {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .padding(.horizontal)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         // 5. No preview
         } else {
             previewPlaceholder
-                .padding(.horizontal)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
@@ -320,19 +356,174 @@ struct DocumentDetailView: View {
         }
     }
 
-    private func infoRow(_ title: String, _ value: String) -> some View {
-        HStack {
-            Text(title)
-                .foregroundStyle(.secondary)
-                .frame(width: 90, alignment: .leading)
-            Text(value)
-            Spacer()
-        }
-    }
-
     private func formatted(_ date: Date) -> String {
         let f = DateFormatter()
         f.dateStyle = .medium
         return f.string(from: date)
+    }
+
+    // MARK: - Quick Look Helpers
+    private func getPreviewURL() -> URL? {
+        if let pdfURL = localPDFURL {
+            return pdfURL
+        }
+        
+        if let image = viewModel.images(for: document).first {
+            let fileName = "\(document.id.uuidString.lowercased()).jpg"
+            let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+            let fileURL = cacheDir.appendingPathComponent(fileName)
+            if let data = image.jpegData(compressionQuality: 1.0) {
+                try? data.write(to: fileURL)
+                return fileURL
+            }
+        }
+        
+        if let assetName = document.assetName, let image = UIImage(named: assetName) {
+            let fileName = "\(document.id.uuidString.lowercased()).jpg"
+            let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+            let fileURL = cacheDir.appendingPathComponent(fileName)
+            if let data = image.jpegData(compressionQuality: 1.0) {
+                try? data.write(to: fileURL)
+                return fileURL
+            }
+        }
+        
+        return nil
+    }
+
+    private func generateThumbnail(from pdfURL: URL) -> UIImage? {
+        guard let provider = CGDataProvider(url: pdfURL as CFURL),
+              let pdf = CGPDFDocument(provider),
+              let page = pdf.page(at: 1) else {
+            return nil
+        }
+        
+        let pageRect = page.getBoxRect(.mediaBox)
+        let scale: CGFloat = 0.4
+        let width = Int(pageRect.width * scale)
+        let height = Int(pageRect.height * scale)
+        
+        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(
+                  data: nil,
+                  width: width,
+                  height: height,
+                  bitsPerComponent: 8,
+                  bytesPerRow: 0,
+                  space: colorSpace,
+                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+              ) else {
+            return nil
+        }
+        
+        context.setFillColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        
+        context.translateBy(x: 0, y: CGFloat(height))
+        context.scaleBy(x: scale, y: -scale)
+        
+        context.drawPDFPage(page)
+        
+        guard let cgImage = context.makeImage() else { return nil }
+        return UIImage(cgImage: cgImage)
+    }
+
+    // MARK: - Menu Actions (rotate / print / export source)
+
+    /// The current document rendered as an image, capped to keep memory bounded.
+    private func currentDocumentImage() -> UIImage? {
+        let maxDim: CGFloat = 2200
+        if let url = localPDFURL, let doc = PDFDocument(url: url), let page = doc.page(at: 0) {
+            let b = page.bounds(for: .mediaBox)
+            let longest = max(b.width, b.height)
+            let factor = min(2.0, maxDim / max(longest, 1))
+            let target = CGSize(width: b.width * factor, height: b.height * factor)
+            return page.thumbnail(of: target, for: .mediaBox)
+        }
+        if let image = viewModel.images(for: document).first { return cappedImage(image, maxDim: maxDim) }
+        if let name = document.assetName, let image = UIImage(named: name) {
+            return cappedImage(image, maxDim: maxDim)
+        }
+        return nil
+    }
+
+    private func cappedImage(_ image: UIImage, maxDim: CGFloat) -> UIImage {
+        let longest = max(image.size.width, image.size.height)
+        guard longest > maxDim else { return image }
+        let factor = maxDim / longest
+        let newSize = CGSize(width: image.size.width * factor, height: image.size.height * factor)
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: newSize, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+    }
+
+    private func rotateDocument(clockwise: Bool) {
+        guard let image = currentDocumentImage(),
+              let rotated = image.rotated(clockwise: clockwise) else { return }
+        let pdfData = PDFConverter.makePDF(from: [rotated])
+        refreshInlinePreview(with: pdfData)
+        Task {
+            await viewModel.updateDocumentFile(document: document, pdfData: pdfData, newThumbnail: rotated)
+        }
+    }
+
+    private func printDocument() {
+        guard let url = getPreviewURL() else { return }
+        let controller = UIPrintInteractionController.shared
+        let info = UIPrintInfo(dictionary: nil)
+        info.outputType = .general
+        info.jobName = liveDocument.name
+        controller.printInfo = info
+        if let data = try? Data(contentsOf: url) {
+            controller.printingItem = data
+        } else {
+            controller.printingItem = url
+        }
+        controller.present(animated: true)
+    }
+
+    private func handlePreviewSave(editedURL: URL) {
+        do {
+            let data = try Data(contentsOf: editedURL)
+            let pdfData: Data
+            let thumbnail: UIImage?
+
+            if document.fileTypeEnum == .pdf || editedURL.pathExtension.lowercased() == "pdf" {
+                pdfData = data
+                thumbnail = generateThumbnail(from: editedURL)
+            } else if let image = UIImage(contentsOfFile: editedURL.path) {
+                pdfData = PDFConverter.makePDF(from: [image])
+                thumbnail = image
+            } else {
+                return
+            }
+
+            // 1. Update the local cache + on-screen preview immediately.
+            refreshInlinePreview(with: pdfData)
+
+            // 2. Then push to the backend in the background.
+            Task {
+                await viewModel.updateDocumentFile(document: document, pdfData: pdfData, newThumbnail: thumbnail)
+            }
+        } catch {
+            print("Failed to save edited contents: \(error)")
+        }
+    }
+
+    /// Writes the edited PDF to the local cache and forces the inline preview to
+    /// rebuild, so the change is visible immediately (not only after reopening).
+    private func refreshInlinePreview(with pdfData: Data) {
+        let fileName = "\(document.id.uuidString.lowercased()).pdf"
+        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let cachedURL = cacheDir.appendingPathComponent(fileName)
+        try? pdfData.write(to: cachedURL)
+
+        // Bump the version so the PDFKitView (.id(previewVersion)) is rebuilt
+        // fresh with the new file — this both reloads the content and lets
+        // autoScales re-fit the (possibly different-sized) edited page.
+        localPDFURL = cachedURL
+        previewVersion += 1
     }
 }

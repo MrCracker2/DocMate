@@ -16,6 +16,7 @@ class EmailSyncViewModel {
 
     var isSyncing = false
     var isGmailConnected = false
+    var connectedEmail = ""
 
     var currentStep = ""
 
@@ -33,6 +34,7 @@ class EmailSyncViewModel {
 
     func refreshState() {
         isGmailConnected = GmailService.shared.isSignedIn
+        connectedEmail = GmailService.shared.connectedEmail ?? ""
     }
 
     // MARK: - Main Sync Action
@@ -69,6 +71,7 @@ class EmailSyncViewModel {
             }
 
             isGmailConnected = true
+            connectedEmail = GmailService.shared.connectedEmail ?? ""
 
             // MARK: Start Import
 

@@ -187,12 +187,17 @@ struct ReviewDocumentView: View {
         case .noDateFound:
             VStack(spacing: 16) {
 
-                Text("Couldn't detect expiry date")
+                Text(viewModel.ocrFoundNoText
+                     ? "Couldn't read the document"
+                     : "Couldn't detect expiry date")
                     .font(.headline)
 
-                Text("Please select it manually to continue")
+                Text(viewModel.ocrFoundNoText
+                     ? "Try retaking a clearer, well-lit photo — or select the date manually."
+                     : "Please select it manually to continue")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
 
                 // STEP 1: Button first
                 if manualDate == nil {

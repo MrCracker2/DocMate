@@ -24,8 +24,23 @@ struct GmailEmail: Identifiable {
     let id: String
     let subject: String
     let from: String
+    /// Plain-text body, used by the heuristic parser.
     let body: String
+    /// Raw HTML body (un-stripped). Carries the machine-readable schema.org
+    /// `Invoice` markup that gives exact amount / due date, so it must be kept
+    /// separately from `body` (which has the HTML — and the markup — removed).
+    let html: String
     let receivedAt: Date
+
+    init(id: String, subject: String, from: String,
+         body: String, html: String = "", receivedAt: Date) {
+        self.id = id
+        self.subject = subject
+        self.from = from
+        self.body = body
+        self.html = html
+        self.receivedAt = receivedAt
+    }
 }
 
 // MARK: - GmailService
@@ -51,6 +66,14 @@ class GmailService: NSObject {
         static let accessToken  = "gmail_access_token"
         static let refreshToken = "gmail_refresh_token"
         static let expiry       = "gmail_token_expiry"   // epoch seconds, as String
+        static let email        = "gmail_connected_email"
+    }
+
+    /// The Gmail address of the currently connected account, if any. Shown in
+    /// the UI so the user can see which mailbox is linked.
+    var connectedEmail: String? {
+        get { KeychainStore.read(Key.email) }
+        set { KeychainStore.set(newValue, for: Key.email) }
     }
 
     private var accessToken: String? {
@@ -77,6 +100,7 @@ class GmailService: NSObject {
         KeychainStore.delete(Key.accessToken)
         KeychainStore.delete(Key.refreshToken)
         KeychainStore.delete(Key.expiry)
+        KeychainStore.delete(Key.email)
     }
 
     // MARK: - Sign In (PKCE flow)
@@ -136,6 +160,26 @@ class GmailService: NSObject {
 
         // 3. Exchange the authorization code for access + refresh tokens.
         try await exchangeCode(code, verifier: verifier)
+
+        // 4. Record which mailbox is now connected so the UI can display it.
+        try? await fetchProfileEmail()
+    }
+
+    // MARK: - Connected Account
+
+    /// Looks up the signed-in account's email via the Gmail profile endpoint
+    /// (works with the `gmail.readonly` scope) and caches it in the Keychain.
+    @discardableResult
+    func fetchProfileEmail() async throws -> String {
+        let token = try await validAccessToken()
+        let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/profile")!
+        var req = URLRequest(url: url)
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, _) = try await URLSession.shared.data(for: req)
+        let profile = try JSONDecoder().decode(GmailProfile.self, from: data)
+        connectedEmail = profile.emailAddress
+        return profile.emailAddress
     }
 
     // MARK: - Token Exchange
@@ -239,8 +283,18 @@ class GmailService: NSObject {
     func fetchBillEmails() async throws -> [GmailEmail] {
         let accessToken = try await validAccessToken()
 
-        let query = "subject:(bill OR invoice OR payment OR due OR EMI OR recharge OR order OR receipt OR statement OR premium OR subscription) newer_than:30d"
-        let listURL = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages?q=\(query.urlEncoded)&maxResults=15")!
+        // Three OR'd signals, far wider than a subject-keyword scan:
+        //   1. category:purchases — Gmail's own ML already tags receipts/bills,
+        //      catching them even when the subject has no obvious keyword.
+        //   2. from:(known biller senders) — bills almost always arrive from
+        //      billing/noreply/statements@... addresses.
+        //   3. subject keywords — the original fallback for everything else.
+        let senderHints = "from:(billing OR noreply OR no-reply OR statements OR " +
+                          "estatement OR alerts OR payments OR invoice OR accounts)"
+        let subjectHints = "subject:(bill OR invoice OR payment OR due OR EMI OR " +
+                           "recharge OR statement OR premium OR policy)"
+        let query = "(category:purchases OR \(senderHints) OR \(subjectHints)) newer_than:45d"
+        let listURL = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages?q=\(query.urlEncoded)&maxResults=25")!
 
         var listReq = URLRequest(url: listURL)
         listReq.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
@@ -258,6 +312,13 @@ class GmailService: NSObject {
         return emails
     }
 
+    /// Fetches a single email by its Gmail message id, refreshing the access
+    /// token if needed. Used to show a bill's source email inside the app.
+    func fetchEmail(id: String) async throws -> GmailEmail {
+        let token = try await validAccessToken()
+        return try await fetchMessage(id: id, token: token)
+    }
+
     private func fetchMessage(id: String, token: String) async throws -> GmailEmail {
         let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/\(id)?format=full")!
         var req = URLRequest(url: url)
@@ -270,26 +331,35 @@ class GmailService: NSObject {
         let from    = msg.payload.headers.first(where: { $0.name == "From" })?.value ?? ""
         let dateStr = msg.payload.headers.first(where: { $0.name == "Date" })?.value ?? ""
 
-        return GmailEmail(id: id, subject: subject, from: from, body: extractBody(from: msg.payload), receivedAt: parseDate(dateStr))
+        let (text, html) = extractBodies(from: msg.payload)
+        return GmailEmail(id: id, subject: subject, from: from,
+                          body: text, html: html, receivedAt: parseDate(dateStr))
     }
 
-    /// Extracts a usable plain-text body, walking the full MIME tree.
-    /// Real bill emails are commonly `multipart/mixed` → `multipart/alternative`
-    /// nested several levels deep, so a single-level scan misses the content.
-    private func extractBody(from payload: MessagePayload) -> String {
-        // Prefer text/plain anywhere in the tree, then fall back to text/html.
+    /// Extracts both a plain-text body and the raw HTML body, walking the full
+    /// MIME tree. Real bill emails are commonly `multipart/mixed` →
+    /// `multipart/alternative` nested several levels deep, so a single-level scan
+    /// misses the content. The raw HTML is returned untouched so the schema.org
+    /// `Invoice` markup inside it survives for `BillParser` to read.
+    private func extractBodies(from payload: MessagePayload) -> (text: String, html: String) {
+        // Raw HTML — kept verbatim (markup lives inside <script> tags).
+        var html = firstBody(mimeType: "text/html", parts: payload.parts) ?? ""
+        if html.isEmpty, payload.mimeType == "text/html", let d = payload.body.data {
+            html = decodeBase64URL(d)
+        }
+
+        // Plain text — prefer a real text/plain part, else strip the HTML.
         if let plain = firstBody(mimeType: "text/plain", parts: payload.parts), !plain.isEmpty {
-            return plain
+            return (plain, html)
         }
-        if let html = firstBody(mimeType: "text/html", parts: payload.parts), !html.isEmpty {
-            return html.strippingHTML()
+        if !html.isEmpty {
+            return (html.strippingHTML(), html)
         }
-        // Single-part message: the body sits directly on the payload.
+        // Single-part, non-HTML message: the body sits directly on the payload.
         if let d = payload.body.data, !d.isEmpty {
-            let decoded = decodeBase64URL(d)
-            return payload.mimeType == "text/html" ? decoded.strippingHTML() : decoded
+            return (decodeBase64URL(d), html)
         }
-        return ""
+        return ("", html)
     }
 
     /// Depth-first search for the first non-empty part of the given MIME type.
@@ -405,6 +475,7 @@ private struct TokenResponse: Codable {
         case expiresIn = "expires_in"
     }
 }
+private struct GmailProfile: Codable { let emailAddress: String }
 private struct MessageListResponse: Codable { let messages: [MessageRef]? }
 private struct MessageRef: Codable { let id: String }
 private struct MessageDetail: Codable { let payload: MessagePayload }
