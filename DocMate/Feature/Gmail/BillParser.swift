@@ -31,8 +31,16 @@ struct BillParser {
 
         let haystack = email.subject + "\n" + email.body
 
-        // Skip anything that's already been paid — receipts / confirmations.
-        guard !isAlreadyPaid(text: haystack) else { return nil }
+        // ── Best signal: machine-readable schema.org Invoice markup ──────────
+        // Gmail-supported bill emails embed an `Invoice` object (exact
+        // `totalPaymentDue` / `paymentDueDate` / `paymentStatus`). When present
+        // it is authoritative — no guessing from prose required.
+        let markup = parseInvoiceMarkup(fromHTML: email.html)
+
+        // Skip anything already paid. The markup's payment status wins; only when
+        // it is absent do we fall back to scanning the text for "paid" phrases.
+        if markup?.isPaid == true { return nil }
+        if markup?.isPaid == nil, isAlreadyPaid(text: haystack) { return nil }
 
         let match = detect(subject: email.subject, body: email.body, sender: email.from)
 
@@ -40,14 +48,21 @@ struct BillParser {
         // want recurring entertainment subscriptions tracked as bills.
         guard !match.isSubscription else { return nil }
 
-        let amount = extractAmount(from: haystack)
-        let dueDate = resolvedDueDate(from: haystack, billDate: email.receivedAt)
+        // Prefer exact markup values; fall back to heuristics field-by-field.
+        let amount = markup?.amount ?? extractAmount(from: haystack)
+        let dueDate: Date = {
+            if let d = markup?.dueDate, isPlausibleDueDate(d, billDate: email.receivedAt) { return d }
+            return resolvedDueDate(from: haystack, billDate: email.receivedAt)
+        }()
+        // Domain-verified vendor stays authoritative; otherwise the markup's
+        // declared biller name beats a name guessed from the domain.
+        let vendor = match.verified ? match.vendor : (markup?.vendor ?? match.vendor)
 
         return Infetch(
-            name: match.vendor,
+            name: vendor,
             dueDate: dueDate,
             billDate: email.receivedAt,
-            SubjectName: match.vendor,
+            SubjectName: vendor,
             amount: amount,
             customerName: "",
             phoneNumber: nil,
@@ -58,6 +73,145 @@ struct BillParser {
             inFetchCategory: match.category,
             userId: userId
         )
+    }
+
+    // MARK: - Schema.org Invoice Markup (highest-confidence signal)
+
+    /// The exact fields a biller declares in machine-readable email markup.
+    /// Every field is optional — a partial `Invoice` (e.g. amount but no date)
+    /// still lets us improve on the text heuristics for the fields it does carry.
+    struct InvoiceMarkup {
+        var vendor: String?
+        var amount: Double?
+        var dueDate: Date?
+        /// `true` = settled, `false` = explicitly due, `nil` = not stated.
+        var isPaid: Bool?
+    }
+
+    /// Pulls a schema.org `Invoice` out of an email's raw HTML. Gmail bill emails
+    /// embed it as JSON-LD inside `<script type="application/ld+json">…</script>`.
+    /// Returns `nil` when no parseable invoice object is present.
+    static func parseInvoiceMarkup(fromHTML html: String) -> InvoiceMarkup? {
+        guard !html.isEmpty else { return nil }
+
+        for block in jsonLDBlocks(in: html) {
+            guard let data = block.data(using: .utf8),
+                  let object = try? JSONSerialization.jsonObject(with: data),
+                  let invoice = firstInvoice(in: object) else { continue }
+            return makeMarkup(from: invoice)
+        }
+        return nil
+    }
+
+    /// Extracts the inner text of every `<script type="application/ld+json">`.
+    private static func jsonLDBlocks(in html: String) -> [String] {
+        let pattern = #"<script[^>]*type=["']application/ld\+json["'][^>]*>([\s\S]*?)</script>"#
+        return allMatches(pattern: pattern, in: html)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    /// Recursively searches a decoded JSON-LD value for the first object whose
+    /// `@type` is (or contains) `Invoice`. Handles `@graph` wrappers and arrays.
+    private static func firstInvoice(in json: Any) -> [String: Any]? {
+        if let dict = json as? [String: Any] {
+            if typeContains(dict["@type"], "invoice") { return dict }
+            for value in dict.values {
+                if let found = firstInvoice(in: value) { return found }
+            }
+        } else if let array = json as? [Any] {
+            for value in array {
+                if let found = firstInvoice(in: value) { return found }
+            }
+        }
+        return nil
+    }
+
+    /// `@type` may be a String or an array of Strings (and carry a schema.org URL
+    /// prefix), so compare on a lowercased suffix.
+    private static func typeContains(_ type: Any?, _ needle: String) -> Bool {
+        let types: [String]
+        if let s = type as? String { types = [s] }
+        else if let a = type as? [String] { types = a }
+        else { return false }
+        return types.contains { $0.lowercased().hasSuffix(needle) }
+    }
+
+    /// Maps a raw `Invoice` dictionary onto our `InvoiceMarkup`.
+    private static func makeMarkup(from invoice: [String: Any]) -> InvoiceMarkup {
+        var markup = InvoiceMarkup()
+
+        // Amount: prefer totalPaymentDue, else fall back to minimumPaymentDue
+        // (credit-card statements often carry both). Each is a PriceSpecification
+        // { price, priceCurrency } but can also be a bare value.
+        markup.amount = priceField(invoice["totalPaymentDue"])
+            ?? priceField(invoice["minimumPaymentDue"])
+
+        // Due date: an ISO-8601 date or datetime string.
+        if let due = invoice["paymentDueDate"] as? String ?? invoice["paymentDue"] as? String {
+            markup.dueDate = parseISODate(due)
+        }
+
+        // Biller name: provider / seller / broker, else the invoice's own name.
+        markup.vendor = organizationName(invoice["provider"])
+            ?? organizationName(invoice["seller"])
+            ?? organizationName(invoice["broker"])
+            ?? (invoice["name"] as? String)
+
+        // Payment status (schema.org PaymentStatusType). Settled values include
+        // PaymentComplete and PaymentAutomaticallyApplied (autopay already ran);
+        // outstanding ones are PaymentDue / PaymentPastDue / PaymentDeclined.
+        if let status = (invoice["paymentStatus"] as? String)?.lowercased() {
+            if status.contains("complete") || status.contains("paid")
+                || status.contains("applied") { markup.isPaid = true }
+            else if status.contains("due") || status.contains("pending")
+                || status.contains("declined") { markup.isPaid = false }
+        }
+
+        return markup
+    }
+
+    /// Reads a price out of a PriceSpecification object `{ "price": … }` or a
+    /// bare price value.
+    private static func priceField(_ raw: Any?) -> Double? {
+        if let spec = raw as? [String: Any] { return priceValue(spec["price"]) }
+        return priceValue(raw)
+    }
+
+    /// A schema.org price may be a number or a string like "₹1,250.00" / "$70.00".
+    private static func priceValue(_ raw: Any?) -> Double? {
+        if let n = raw as? Double { return n > 0 ? n : nil }
+        if let n = raw as? Int { return n > 0 ? Double(n) : nil }
+        guard let s = raw as? String else { return nil }
+        // Keep only digits, separators; reuse the heuristic number cleaner.
+        let stripped = s.filter { $0.isNumber || $0 == "," || $0 == "." }
+        return parseAmount(stripped)
+    }
+
+    /// An Organization field may be a `{ "name": … }` object or a bare string.
+    private static func organizationName(_ raw: Any?) -> String? {
+        if let dict = raw as? [String: Any], let name = dict["name"] as? String {
+            return name.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if let s = raw as? String { return s.trimmingCharacters(in: .whitespacesAndNewlines) }
+        return nil
+    }
+
+    /// Parses the ISO-8601 dates schema.org uses (`2026-07-15` or full datetime).
+    private static func parseISODate(_ value: String) -> Date? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime]
+        if let d = iso.date(from: trimmed) { return d }
+
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")
+        for format in ["yyyy-MM-dd", "yyyy-MM-dd'T'HH:mm:ssZ", "yyyy-MM-dd'T'HH:mm:ss"] {
+            f.dateFormat = format
+            if let d = f.date(from: trimmed) { return d }
+        }
+        return nil
     }
 
     // MARK: - Already-Paid Detection

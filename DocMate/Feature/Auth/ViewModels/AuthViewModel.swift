@@ -33,6 +33,10 @@ class AuthViewModel {
 
     func logout() async {
         try? await SupabaseManager.shared.signOut()
+        // Gmail tokens live in the Keychain under global keys, so they would
+        // otherwise survive a logout and leak into the next account that signs
+        // in. Disconnect Gmail here so each DocMate user starts clean.
+        GmailService.shared.signOut()
         isLoggedIn = false
     }
 }
