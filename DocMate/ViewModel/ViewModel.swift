@@ -790,6 +790,38 @@ class AppViewModel {
         }
     }
 
+    // MARK: - Update Document Category
+    @MainActor
+    func updateDocumentCategory(_ document: Document, to categoryId: UUID) async {
+        guard let index = documents.firstIndex(where: { $0.id == document.id }) else { return }
+        let previousCategory = documents[index].categoryId
+        documents[index].categoryId = categoryId
+        do {
+            try await supa.updateDocument(documents[index])
+            cacheDocumentsLocally()
+        } catch {
+            print("Update category error: \(error)")
+            // Revert locally on failure
+            documents[index].categoryId = previousCategory
+        }
+    }
+
+    // MARK: - Update Document Expiry Date
+    @MainActor
+    func updateDocumentExpiryDate(_ document: Document, to dueDate: Date?) async {
+        guard let index = documents.firstIndex(where: { $0.id == document.id }) else { return }
+        let previousDueDate = documents[index].dueDate
+        documents[index].dueDate = dueDate
+        do {
+            try await supa.updateDocument(documents[index])
+            cacheDocumentsLocally()
+        } catch {
+            print("Update expiry date error: \(error)")
+            // Revert locally on failure
+            documents[index].dueDate = previousDueDate
+        }
+    }
+
     // MARK: - Duplicate Document
     @MainActor
     func duplicateDocument(_ document: Document) async {

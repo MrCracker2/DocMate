@@ -22,9 +22,13 @@ struct DocumentDetailView: View {
     @State private var showEditSheet = false
     @State private var showQLPreview = false
     @State private var markupMode: MarkupMode?      // PencilKit editor
-    @State private var showRenameAlert = false
     @State private var renameText = ""
+    @State private var isRenaming = false
+    @State private var isTextFieldFocused = false
     @State private var showExportSheet = false
+    @State private var showExpiryDatePicker = false
+    @State private var tempDueDate = Date()
+    @State private var hasExpiryDate = false
     @Environment(\.dismiss) var dismiss
     @State private var isDeleting = false
 
@@ -57,57 +61,17 @@ struct DocumentDetailView: View {
                     showQLPreview = true
                 }
             }
-        .navigationTitle(liveDocument.name)
+        .navigationTitle(isRenaming ? "" : liveDocument.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
 
-        // MARK: 3 Dot Menu
+        // MARK: Navigation & Title Customization
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                renameTextField
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Menu {
-                    Button {
-                        rotateDocument(clockwise: false)
-                    } label: {
-                        Label("Rotate Left", systemImage: "rotate.left")
-                    }
-
-                    Button {
-                        rotateDocument(clockwise: true)
-                    } label: {
-                        Label("Rotate Right", systemImage: "rotate.right")
-                    }
-
-                    Button {
-                        renameText = liveDocument.name
-                        showRenameAlert = true
-                    } label: {
-                        Label("Rename", systemImage: "character.cursor.ibeam")
-                    }
-
-                    Divider()
-
-                    Button {
-                        showExportSheet = true
-                    } label: {
-                        Label("Export", systemImage: "square.and.arrow.up.on.square")
-                    }
-
-                    Button {
-                        printDocument()
-                    } label: {
-                        Label("Print", systemImage: "printer")
-                    }
-
-                    Divider()
-
-                    Button(role: .destructive) {
-                        showDeleteConfirm = true
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                }
+                trailingMenu
             }
         }
 
@@ -178,13 +142,55 @@ struct DocumentDetailView: View {
                 Text("Nothing to export").padding()
             }
         }
-        .alert("Rename Document", isPresented: $showRenameAlert) {
-            TextField("Name", text: $renameText)
-            Button("Cancel", role: .cancel) { }
-            Button("Save") {
-                let name = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !name.isEmpty else { return }
-                Task { await viewModel.renameDocument(document, to: name) }
+        .sheet(isPresented: $showExpiryDatePicker) {
+            NavigationStack {
+                Form {
+                    Toggle("Has Expiry Date", isOn: $hasExpiryDate)
+                    
+                    if hasExpiryDate {
+                        DatePicker(
+                            "Expiry Date",
+                            selection: $tempDueDate,
+                            displayedComponents: .date
+                        )
+                        .datePickerStyle(.graphical)
+                    }
+                }
+                .navigationTitle("Change Expiry Date")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            showExpiryDatePicker = false
+                        }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            Task {
+                                await viewModel.updateDocumentExpiryDate(liveDocument, to: hasExpiryDate ? tempDueDate : nil)
+                                showExpiryDatePicker = false
+                            }
+                        }
+                        .fontWeight(.semibold)
+                    }
+                }
+            }
+            .presentationDetents([.medium, .large])
+            .onAppear {
+                if let due = liveDocument.dueDate {
+                    tempDueDate = due
+                    hasExpiryDate = true
+                } else {
+                    tempDueDate = Date()
+                    hasExpiryDate = false
+                }
+            }
+        }
+        .onChange(of: isTextFieldFocused) { oldValue, newValue in
+            if oldValue == true && newValue == false {
+                if isRenaming {
+                    submitRename()
+                }
             }
         }
         .overlay {
@@ -525,5 +531,231 @@ struct DocumentDetailView: View {
         // autoScales re-fit the (possibly different-sized) edited page.
         localPDFURL = cachedURL
         previewVersion += 1
+    }
+
+    private func submitRename() {
+        let name = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !name.isEmpty {
+            if name != liveDocument.name {
+                Task {
+                    await viewModel.renameDocument(document, to: name)
+                }
+            }
+        }
+        isRenaming = false
+        isTextFieldFocused = false
+    }
+
+    // MARK: - Toolbar View Builders
+
+    @ViewBuilder
+    private var renameTextField: some View {
+        if isRenaming {
+            HStack(spacing: 8) {
+                CustomTextField(
+                    text: $renameText,
+                    placeholder: "",
+                    isFocused: Binding(
+                        get: { isTextFieldFocused },
+                        set: { isTextFieldFocused = $0 }
+                    ),
+                    onCommit: {
+                        submitRename()
+                    }
+                )
+                .frame(height: 30)
+                
+                if !renameText.isEmpty {
+                    Button {
+                        renameText = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                            .font(.subheadline)
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color(.systemGray6))
+            .clipShape(Capsule())
+            .frame(width: 240)
+        }
+    }
+
+    @ViewBuilder
+    private var trailingMenu: some View {
+        if !isRenaming {
+            Menu {
+                Button {
+                    rotateDocument(clockwise: false)
+                } label: {
+                    Label("Rotate Left", systemImage: "rotate.left")
+                }
+
+                Button {
+                    rotateDocument(clockwise: true)
+                } label: {
+                    Label("Rotate Right", systemImage: "rotate.right")
+                }
+
+                Menu {
+                    Button {
+                        renameText = liveDocument.name
+                        isRenaming = true
+                        Task {
+                            try? await Task.sleep(nanoseconds: 100_000_000)
+                            isTextFieldFocused = true
+                        }
+                    } label: {
+                        Label("Change Name", systemImage: "pencil")
+                    }
+
+                    Menu {
+                        ForEach(viewModel.categories) { category in
+                            Button {
+                                Task {
+                                    await viewModel.updateDocumentCategory(liveDocument, to: category.id)
+                                }
+                            } label: {
+                                if category.id == liveDocument.categoryId {
+                                    Label(category.name, systemImage: "checkmark")
+                                } else {
+                                    Text(category.name)
+                                }
+                            }
+                        }
+                    } label: {
+                        Label("Change Category", systemImage: "folder")
+                    }
+
+                    Button {
+                        if let due = liveDocument.dueDate {
+                            tempDueDate = due
+                            hasExpiryDate = true
+                        } else {
+                            tempDueDate = Date()
+                            hasExpiryDate = false
+                        }
+                        showExpiryDatePicker = true
+                    } label: {
+                        Label("Change Expiry Date", systemImage: "calendar")
+                    }
+                } label: {
+                    Label("Edit", systemImage: "pencil")
+                }
+
+                Divider()
+
+                Button {
+                    showExportSheet = true
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.up.on.square")
+                }
+
+                Button {
+                    printDocument()
+                } label: {
+                    Label("Print", systemImage: "printer")
+                }
+
+                Divider()
+
+                Button(role: .destructive) {
+                    showDeleteConfirm = true
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+            }
+        }
+    }
+}
+
+// MARK: - CustomTextField (Selects All Text on Focus)
+struct CustomTextField: UIViewRepresentable {
+    @Binding var text: String
+    var placeholder: String
+    var isFocused: Binding<Bool>
+    var onCommit: () -> Void
+
+    class Coordinator: NSObject, UITextFieldDelegate {
+        var parent: CustomTextField
+        var didFocusAndSelect = false
+
+        init(_ parent: CustomTextField) {
+            self.parent = parent
+        }
+
+        @objc func textFieldDidChange(_ textField: UITextField) {
+            parent.text = textField.text ?? ""
+        }
+
+        func textFieldDidBeginEditing(_ textField: UITextField) {
+            DispatchQueue.main.async {
+                textField.selectAll(nil)
+            }
+            parent.isFocused.wrappedValue = true
+            didFocusAndSelect = true
+        }
+
+        func textFieldDidEndEditing(_ textField: UITextField) {
+            parent.isFocused.wrappedValue = false
+            didFocusAndSelect = false
+        }
+
+        func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+            textField.resignFirstResponder()
+            parent.onCommit()
+            return true
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    func makeUIView(context: Context) -> UITextField {
+        let textField = UITextField()
+        textField.placeholder = placeholder
+        textField.text = text
+        textField.delegate = context.coordinator
+        textField.textAlignment = .center
+        textField.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        textField.textColor = .label
+        textField.borderStyle = .none
+        textField.autocorrectionType = .no
+        textField.autocapitalizationType = .none
+        textField.returnKeyType = .done
+        
+        textField.addTarget(context.coordinator, action: #selector(Coordinator.textFieldDidChange(_:)), for: .editingChanged)
+        
+        return textField
+    }
+
+    func updateUIView(_ uiView: UITextField, context: Context) {
+        if uiView.text != text {
+            uiView.text = text
+        }
+        
+        if isFocused.wrappedValue {
+            if !context.coordinator.didFocusAndSelect {
+                context.coordinator.didFocusAndSelect = true
+                DispatchQueue.main.async {
+                    if !uiView.isFirstResponder {
+                        uiView.becomeFirstResponder()
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        uiView.selectAll(nil)
+                    }
+                }
+            }
+        } else {
+            context.coordinator.didFocusAndSelect = false
+            if uiView.isFirstResponder {
+                uiView.resignFirstResponder()
+            }
+        }
     }
 }

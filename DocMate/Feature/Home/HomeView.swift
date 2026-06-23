@@ -169,32 +169,32 @@ struct HomeView: View {
                                                     HStack(spacing: 14) {
                                                         // White rounded squircle icon container
                                                         ZStack {
-                                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                            RoundedRectangle(cornerRadius: 15, style: .continuous)
                                                                 .fill(Color.white)
-                                                                .frame(width: 44, height: 44)
+                                                                .frame(width: 48, height: 48)
                                                                 .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                                                             
                                                             Image(systemName: viewModel.icon(for: doc))
-                                                                .font(.system(size: 20, weight: .bold))
+                                                                .font(.system(size: 22, weight: .bold))
                                                                 .foregroundColor(Color(red: 0.05, green: 0.38, blue: 0.95))
                                                         }
                                                         
                                                         VStack(alignment: .leading, spacing: 6) {
                                                             Text(doc.name)
-                                                                .font(.system(size: 16, weight: .bold))
+                                                                .font(.system(size: 18, weight: .bold))
                                                                 .foregroundColor(.white)
                                                                 .lineLimit(1)
                                                             
                                                             HStack(spacing: 4) {
                                                                 Text("Expired On · \(formatDueDate(due))")
-                                                                    .font(.system(size: 8, weight: .bold))
+                                                                    .font(.system(size: 11, weight: .bold))
                                                                     .tracking(0.5)
                                                                     .lineLimit(1)
                                                                     .minimumScaleFactor(0.7)
                                                             }
                                                             .foregroundColor(.white)
-                                                            .padding(.horizontal, 8)
-                                                            .padding(.vertical, 4)
+                                                            .padding(.horizontal, 10)
+                                                            .padding(.vertical, 5)
                                                             .background(Color.white.opacity(0.16))
                                                             .clipShape(Capsule())
                                                         }
@@ -203,7 +203,7 @@ struct HomeView: View {
                                                     }
                                                     .padding(.horizontal, 16)
                                                     .padding(.vertical, 16)
-                                                    .frame(width: 300)
+                                                    .frame(width: 300, height: 80)
                                                     .background(
                                                         LinearGradient(
                                                             colors: [
@@ -215,7 +215,6 @@ struct HomeView: View {
                                                         )
                                                     )
                                                     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                                                    .shadow(color: Color.blue.opacity(0.18), radius: 12, x: 0, y: 6)
                                                     .overlay(
                                                         RoundedRectangle(cornerRadius: 24, style: .continuous)
                                                             .stroke(
@@ -301,69 +300,66 @@ struct HomeView: View {
                                                 let progress = calculateProgress(from: doc.createdAt, to: due)
                                                 
                                                 NavigationLink(destination: DocumentDetailView(document: doc)) {
-                                                    VStack(alignment: .leading, spacing: 12) {
-                                                        HStack(spacing: 12) {
-                                                            // Category Icon
-                                                            ZStack {
-                                                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                                                    .fill(
-                                                                        LinearGradient(
-                                                                            colors: [Color.blue, Color(red: 0.15, green: 0.45, blue: 0.9)],
-                                                                            startPoint: .topLeading,
-                                                                            endPoint: .bottomTrailing
-                                                                        )
-                                                                    )
-                                                                    .frame(width: 44, height: 44)
-                                                                Image(systemName: viewModel.icon(for: doc))
-                                                                    .font(.system(size: 20, weight: .bold))
-                                                                    .foregroundColor(.white)
-                                                            }
-                                                            
-                                                            VStack(alignment: .leading, spacing: 3) {
-                                                                Text(doc.name)
-                                                                    .font(.system(size: 16, weight: .bold))
-                                                                    .foregroundColor(.primary)
-                                                                    .lineLimit(1)
-                                                                
-                                                                Text("Added \(Self.shortDateFormatter.string(from: doc.createdAt))")
-                                                                    .font(.system(size: 12))
-                                                                    .foregroundColor(.secondary)
-                                                            }
-                                                            
-                                                            Spacer()
-                                                        }
-                                                        
-                                                        HStack {
-                                                            HStack(spacing: 4) {
-                                                                Image(systemName: "calendar")
-                                                                    .font(.system(size: 11))
-                                                                    .foregroundColor(.blue)
-                                                                Text("Due \(Self.fullDueDateFormatter.string(from: due))")
-                                                                    .font(.system(size: 12, weight: .bold))
-                                                                    .foregroundColor(.secondary)
-                                                            }
-                                                            
-                                                            Spacer()
-                                                            
-                                                            // Badge count
-                                                            Text("\(daysLeft)d left")
-                                                                .font(.system(size: 10, weight: .bold))
-                                                                .foregroundColor(.white)
-                                                                .padding(.horizontal, 8)
-                                                                .padding(.vertical, 4)
-                                                                .background(
+                                                    HStack(spacing: 12) {
+                                                        // Category Icon
+                                                        ZStack {
+                                                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                                                .fill(
                                                                     LinearGradient(
                                                                         colors: [Color.blue, Color(red: 0.15, green: 0.45, blue: 0.9)],
                                                                         startPoint: .topLeading,
                                                                         endPoint: .bottomTrailing
                                                                     )
                                                                 )
-                                                                .clipShape(Capsule())
+                                                                .frame(width: 48, height: 48)
+                                                            Image(systemName: viewModel.icon(for: doc))
+                                                                .font(.system(size: 22, weight: .bold))
+                                                                .foregroundColor(.white)
                                                         }
-                                                        .padding(.top, 4)
+                                                        
+                                                        VStack(alignment: .leading, spacing: 6) {
+                                                            Text(doc.name)
+                                                                .font(.system(size: 18, weight: .bold))
+                                                                .foregroundColor(.primary)
+                                                                .lineLimit(1)
+                                                            
+                                                            HStack(spacing: 4) {
+                                                                Image(systemName: "calendar")
+                                                                    .font(.system(size: 13))
+                                                                    .foregroundColor(.blue)
+                                                                 (
+                                                                     Text("Due ")
+                                                                         .foregroundColor(.secondary)
+                                                                     +
+                                                                     Text(Self.fullDueDateFormatter.string(from: due))
+                                                                         .foregroundColor(.primary)
+                                                                 )
+                                                                .font(.system(size: 13, weight: .semibold))
+                                                                .lineLimit(1)
+                                                                .minimumScaleFactor(0.8)
+                                                            }
+                                                        }
+                                                        
+                                                        Spacer()
+                                                        
+                                                        // Badge count
+                                                        Text("\(daysLeft)d left")
+                                                            .font(.system(size: 11, weight: .bold))
+                                                            .foregroundColor(.white)
+                                                            .padding(.horizontal, 10)
+                                                            .padding(.vertical, 5)
+                                                            .background(
+                                                                LinearGradient(
+                                                                    colors: [Color.blue, Color(red: 0.15, green: 0.45, blue: 0.9)],
+                                                                    startPoint: .topLeading,
+                                                                    endPoint: .bottomTrailing
+                                                                )
+                                                            )
+                                                            .clipShape(Capsule())
                                                     }
-                                                    .padding(14)
-                                                    .frame(width: 300)
+                                                    .padding(.horizontal, 16)
+                                                    .padding(.vertical, 16)
+                                                    .frame(width: 300, height: 80)
                                                     .background(
                                                         ZStack {
                                                             Color(.secondarySystemGroupedBackground)
