@@ -52,6 +52,35 @@ class SupabaseManager {
             .execute()
     }
     
+    /// Sign in via Apple using the identity token. rawNonce is optional.
+    func signInWithApple(idToken: String, rawNonce: String?) async throws {
+        try await client.auth.signInWithIdToken(
+            credentials: .init(
+                provider: .apple,
+                idToken: idToken,
+                nonce: rawNonce
+            )
+        )
+    }
+
+    /// Upsert a profile row for an Apple Sign-In user.
+    /// Apple only supplies the user's name on the very first sign-in; on subsequent
+    /// sign-ins `fullName` will be nil, in which case we just make sure the row exists.
+    func upsertAppleUserProfile(fullName: String?) async throws {
+        guard let userId = await currentUserId else { return }
+
+        if let name = fullName, !name.isEmpty {
+            let profile = User(id: userId, name: name)
+            try await client
+                .from("profiles")
+                .upsert(profile)
+                .execute()
+        } else {
+            // Ensure the row exists (fetchProfile creates it if missing).
+            _ = try? await fetchProfile()
+        }
+    }
+
     func signOut() async throws {
         try await client.auth.signOut()
     }

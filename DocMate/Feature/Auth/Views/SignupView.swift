@@ -61,7 +61,7 @@ struct SignupView: View {
                                 .frame(width: 90, height: 90)
                             
                             Text("DocMate")
-                                .font(.system(size: 32, weight: .bold))
+                                .font(.largeTitle.weight(.bold))
                                 .foregroundStyle(.blue)
                             
                             Text("Create your secure account")
@@ -71,7 +71,7 @@ struct SignupView: View {
                         
                         // MARK: Title
                         Text("Sign Up")
-                            .font(.system(size: 30, weight: .bold))
+                            .font(.title.weight(.bold))
                         
                         // MARK: Fields
                         VStack(spacing: 16) {

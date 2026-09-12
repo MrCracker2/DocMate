@@ -36,7 +36,10 @@ struct ContentView: View {
             NavigationStack {
                 BrowseView()
             }
+            .environment(viewModel)
+            .environment(authVM)
             .tabItem { Label("Browse", systemImage: "folder") }
+
 
         }
         .alert(

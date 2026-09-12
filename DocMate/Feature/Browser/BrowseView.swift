@@ -128,7 +128,7 @@ struct BrowseView: View {
                                                     lineWidth: 2
                                                 )
                                         )
-                                        .cornerRadius(12)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                                     }
                                     .buttonStyle(.plain)
                                     
@@ -359,40 +359,38 @@ struct BrowseView: View {
         
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                AnyView(
-                    ToolbarHStack(spacing: 4) {
-                        Button {
-                            showNewCategoryAlert = true
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.blue)
-                                .frame(width: 40, height: 40)
-                                .glassEffect(in: Circle())
-                        }
-
-                        Menu {
-                            Picker("View", selection: $isGridView) {
-                                Label("Icons", systemImage: "square.grid.2x2").tag(true)
-                                Label("List", systemImage: "list.bullet").tag(false)
-                            }
-
-                            Divider()
-
-                            Picker("Sort By", selection: $sortOption) {
-                                Label("Name", systemImage: "textformat").tag(CategorySort.name)
-                                Label("Size", systemImage: "arrow.up.and.down").tag(CategorySort.size)
-                            }
-                        } label: {
-                            Image(systemName: "line.3.horizontal.decrease")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.blue)
-                                .frame(width: 40, height: 40)
-                                .glassEffect(in: Circle())
-                        }
+                ToolbarHStack(spacing: 4) {
+                    Button {
+                        showNewCategoryAlert = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .frame(width: 40, height: 40)
+                            .glassEffect(in: Circle())
                     }
-                    .frame(width: 84, height: 40)
-                )
+
+                    Menu {
+                        Picker("View", selection: $isGridView) {
+                            Label("Icons", systemImage: "square.grid.2x2").tag(true)
+                            Label("List", systemImage: "list.bullet").tag(false)
+                        }
+
+                        Divider()
+
+                        Picker("Sort By", selection: $sortOption) {
+                            Label("Name", systemImage: "textformat").tag(CategorySort.name)
+                            Label("Size", systemImage: "arrow.up.and.down").tag(CategorySort.size)
+                        }
+                    } label: {
+                        Image(systemName: "line.3.horizontal.decrease")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .frame(width: 40, height: 40)
+                            .glassEffect(in: Circle())
+                    }
+                }
+                .frame(width: 84, height: 40)
             }
             .sharedBackgroundVisibility(.hidden)
         }

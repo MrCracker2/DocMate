@@ -39,4 +39,31 @@ class AuthViewModel {
         GmailService.shared.signOut()
         isLoggedIn = false
     }
+
+    /// Sign in (or sign up) via Apple ID.
+    /// - Parameters:
+    ///   - idToken: The raw JWT string from ASAuthorizationAppleIDCredential.
+    ///   - rawNonce: The un-hashed nonce that was sent to Apple during the request.
+    ///   - fullName: The user's name – Apple only provides this on the VERY FIRST sign-in.
+    ///   - viewModel: The app-level view model that holds documents/bills state.
+    func signInWithApple(
+        idToken: String,
+        rawNonce: String?,
+        fullName: String?,
+        viewModel: AppViewModel
+    ) async throws {
+        // 1. Exchange the Apple identity token for a Supabase session.
+        try await SupabaseManager.shared.signInWithApple(
+            idToken: idToken,
+            rawNonce: rawNonce
+        )
+
+        // 2. Ensure a profile row exists; update name if Apple provided one.
+        try? await SupabaseManager.shared.upsertAppleUserProfile(fullName: fullName)
+
+        // 3. Refresh app data and mark as logged in.
+        viewModel.reset()
+        isLoggedIn = true
+        await viewModel.fetchAll()
+    }
 }

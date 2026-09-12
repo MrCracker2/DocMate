@@ -12,6 +12,7 @@ struct ProfileView: View {
     @Environment(\.dismiss) var dismiss
     
     @State private var showEditSheet = false
+    @State private var showLogoutAlert = false
     
     var body: some View {
         NavigationStack {
@@ -21,16 +22,14 @@ struct ProfileView: View {
                 Section {
                     HStack {
                         Spacer()
-                        
                         ZStack {
                             Circle()
-                                .fill(Color.gray.opacity(0.25))
+                                .fill(Color.blue.opacity(0.12))
                                 .frame(width: 110, height: 110)
-                            
-                            Text(viewModel.user.initials)
-                                .font(.system(size: 38, weight: .semibold))
+                            Text(viewModel.user.initials.isEmpty ? "?" : viewModel.user.initials)
+                                .font(.largeTitle.weight(.semibold))
+                                .foregroundStyle(.blue)
                         }
-                        
                         Spacer()
                     }
                     .padding(.vertical, 6)
@@ -39,8 +38,8 @@ struct ProfileView: View {
                 
                 // MARK: Profile Info
                 Section("Personal Info") {
-                    
-                    profileRow(title: "Name", value: viewModel.user.name)
+                    profileRow(title: "Name",
+                               value: viewModel.user.name.isEmpty ? "Not set" : viewModel.user.name)
                     profileRow(title: "Date of Birth",
                                value: viewModel.user.dateOfBirth ?? "Not set")
                     profileRow(title: "Gender",
@@ -49,88 +48,79 @@ struct ProfileView: View {
                 
                 // MARK: App Settings
                 Section("App Settings") {
-                    
-                    NavigationLink("Notification") {
-                        Text("Notification Screen")
+                    NavigationLink("Notifications") {
+                        NotificationSettingsView()
                     }
-                    
                     NavigationLink("Account Management") {
                         AccountManagementView()
+                            .environment(viewModel)
+                            .environment(authVM)
                     }
                 }
                 
-                // MARK: Support
-                Section("Support") {
-                    
+                // MARK: Support & Legal
+                Section("Support & Legal") {
                     NavigationLink("Terms & Conditions") {
-                        Text("Terms Screen")
+                        TermsView()
                     }
-                    
                     NavigationLink("Privacy Policy") {
-                        Text("Privacy Screen")
+                        PrivacyPolicyView()
                     }
-                    
                     NavigationLink("Contact Support") {
-                        Text("Support Screen")
+                        SupportView()
                     }
                 }
                 
-                // MARK: Bottom Sign Out Button
+                // MARK: Sign Out Button
                 Section {
                     HStack {
                         Spacer()
-                        
                         Button {
-                            Task { await logout() }
+                            showLogoutAlert = true
                         } label: {
                             HStack(spacing: 8) {
-                               
-                                
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
                                 Text("Sign Out")
                                     .font(.system(size: 15, weight: .semibold))
                             }
                             .foregroundStyle(.red)
                             .padding(.vertical, 12)
                             .padding(.horizontal, 16)
-                            .background(Color.red.opacity(0.12))
+                            .background(Color.red.opacity(0.10))
                             .clipShape(Capsule())
-                            .overlay(
-                                Capsule()
-                                    .stroke(Color.red.opacity(0.25), lineWidth: 1)
-                            )
+                            .overlay(Capsule().stroke(Color.red.opacity(0.25), lineWidth: 1))
                         }
                         .buttonStyle(.plain)
-                        
                         Spacer()
                     }
                     .padding(.vertical, 8)
                 }
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
-                
             }
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                
                 ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .fontWeight(.semibold)
-                    }
+                    Button("Done") { dismiss() }
+                        .fontWeight(.semibold)
                 }
-                
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Edit") {
-                        showEditSheet = true
-                    }
+                    Button("Edit") { showEditSheet = true }
                 }
             }
         }
         .sheet(isPresented: $showEditSheet) {
             EditProfileView()
+                .environment(viewModel)
+        }
+        .alert("Sign Out?", isPresented: $showLogoutAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Sign Out", role: .destructive) {
+                Task { await logout() }
+            }
+        } message: {
+            Text("You will be signed out of your account.")
         }
     }
 }
@@ -144,12 +134,14 @@ extension ProfileView {
             Text(title)
             Spacer()
             Text(value)
-                .foregroundStyle(.gray)
+                .foregroundStyle(.secondary)
         }
     }
     
     func logout() async {
         do {
+            // Cancel all pending notifications on logout for privacy
+            NotificationManager.shared.removeAll()
             try await SupabaseManager.shared.signOut()
             GmailService.shared.signOut()
             viewModel.reset()

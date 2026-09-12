@@ -43,10 +43,10 @@ struct ResetPasswordView: View {
                     .frame(height: 20)
 
                 Text("Reset Password")
-                    .font(.system(size: 36, weight: .bold))
+                    .font(.title.weight(.bold))
 
                 Text("Enter your new password below.")
-                    .font(.title3)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
 
                 VStack(alignment: .leading, spacing: 8) {

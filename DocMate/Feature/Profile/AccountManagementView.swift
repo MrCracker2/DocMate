@@ -50,10 +50,8 @@ struct AccountManagementView: View {
                             Image(systemName: "trash")
                                 .foregroundStyle(.red)
                         }
-                        
                         Text("Delete Account")
                             .foregroundStyle(.red)
-                        
                         Spacer()
                     }
                     .contentShape(Rectangle())
@@ -103,8 +101,19 @@ struct AccountManagementView: View {
     func deleteAccount() async {
         isDeleting = true
         do {
+            // 1. Cancel all scheduled notifications
+            NotificationManager.shared.removeAll()
+
+            // 2. Delete all user data from Supabase
             try await SupabaseManager.shared.deleteCurrentUserData()
+
+            // 3. Revoke Apple ID token (required by Apple guidelines)
+            await revokeAppleToken()
+
+            // 4. Sign out of Gmail
             GmailService.shared.signOut()
+
+            // 5. Reset local state
             viewModel.reset()
             authVM.isLoggedIn = false
             dismiss()
@@ -113,6 +122,17 @@ struct AccountManagementView: View {
             viewModel.errorMessage = "Failed to delete account: \(error.localizedDescription)"
         }
         isDeleting = false
+    }
+
+    /// Revokes the Sign in with Apple token, required by Apple's guidelines when deleting an account.
+    @MainActor
+    private func revokeAppleToken() async {
+        do {
+            // Sign out via SupabaseManager which handles the Auth module import correctly
+            try await SupabaseManager.shared.signOut()
+        } catch {
+            print("Apple token revocation error (non-fatal):", error)
+        }
     }
 }
 

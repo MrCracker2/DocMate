@@ -100,7 +100,7 @@ struct OnboardingView: View {
                                         endPoint: .trailing
                                     )
                                 )
-                                .cornerRadius(16)
+                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         }
                         
                         // Skip
@@ -121,7 +121,7 @@ struct OnboardingView: View {
                     
                 }
                 .navigationDestination(isPresented: $goToSignup) {
-                    SignupView()
+                    LoginView()
                 }
             }
         }

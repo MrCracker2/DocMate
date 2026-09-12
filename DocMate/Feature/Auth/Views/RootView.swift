@@ -16,20 +16,31 @@ struct RootView: View {
     
     var body: some View {
         Group {
-            
             if !hasSeenOnboarding {
                 OnboardingView()
                 
             } else {
-                
                 if authVM.isLoading {
-                    ProgressView()
+                    // MARK: - Splash / Loading State
+                    ZStack {
+                        Color(.systemGroupedBackground)
+                            .ignoresSafeArea()
+                        VStack(spacing: 20) {
+                            Image(systemName: "doc.text.viewfinder")
+                                .font(.system(size: 64, weight: .thin))
+                                .foregroundStyle(.blue)
+                            Text("DocMate")
+                                .font(.largeTitle.weight(.bold))
+                                .foregroundStyle(.primary)
+                            ProgressView()
+                                .padding(.top, 8)
+                        }
+                    }
                     
-                }else if authVM.showResetPassword {
+                } else if authVM.showResetPassword {
                     ResetPasswordView()
-
-                }
-                else if authVM.isLoggedIn {
+                    
+                } else if authVM.isLoggedIn {
                     ContentView()
                     
                 } else {
