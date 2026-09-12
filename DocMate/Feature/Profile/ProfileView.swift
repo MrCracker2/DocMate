@@ -12,8 +12,6 @@ struct ProfileView: View {
     @Environment(\.dismiss) var dismiss
     
     @State private var showEditSheet = false
-    @State private var showDeleteAlert = false
-    @State private var isDeleting = false
     
     var body: some View {
         NavigationStack {
@@ -49,15 +47,17 @@ struct ProfileView: View {
                                value: viewModel.user.gender ?? "Not set")
                 }
                 
-                // MARK: Features
-                Section("Features") {
+                // MARK: App Settings
+                Section("App Settings") {
                     
                     NavigationLink("Notification") {
                         Text("Notification Screen")
                     }
                     
+                    NavigationLink("Account Management") {
+                        AccountManagementView()
+                    }
                 }
-                
                 
                 // MARK: Support
                 Section("Support") {
@@ -75,48 +75,38 @@ struct ProfileView: View {
                     }
                 }
                 
-                // MARK: Logout
-                Section("Sign Out") {
-                    
-                    Button {
-                        Task { await logout() }
-                    } label: {
-                        HStack {
-                            Label(
-                                "Logout",
-                                systemImage: "rectangle.portrait.and.arrow.right"
-                            )
-                            
-                            Spacer()
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .foregroundStyle(.red)
-                    
-                    
-                    Button(role: .destructive) {
-                        showDeleteAlert = true
-                    } label: {
+                // MARK: Bottom Sign Out Button
+                Section {
+                    HStack {
+                        Spacer()
                         
-                        HStack(spacing: 10) {
-                            
-                            if isDeleting {
-                                ProgressView()
-                            } else {
-                                Image(systemName: "trash")
-                                    .foregroundStyle(.red)
+                        Button {
+                            Task { await logout() }
+                        } label: {
+                            HStack(spacing: 8) {
+                               
+                                
+                                Text("Sign Out")
+                                    .font(.system(size: 15, weight: .semibold))
                             }
-                            
-                            Text("Delete Account")
-                                .foregroundStyle(.red)
-                            
-                            Spacer()
+                            .foregroundStyle(.red)
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 16)
+                            .background(Color.red.opacity(0.12))
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.red.opacity(0.25), lineWidth: 1)
+                            )
                         }
-                        .contentShape(Rectangle())
+                        .buttonStyle(.plain)
+                        
+                        Spacer()
                     }
-                    .disabled(isDeleting)
+                    .padding(.vertical, 8)
                 }
-                
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
                 
             }
             .navigationTitle("Profile")
@@ -137,17 +127,6 @@ struct ProfileView: View {
                         showEditSheet = true
                     }
                 }
-            }
-            .alert("Delete Account?", isPresented: $showDeleteAlert) {
-                
-                Button("Cancel", role: .cancel) { }
-                
-                Button("Delete", role: .destructive) {
-                    Task { await deleteAccount() }
-                }
-                
-            } message: {
-                Text("All your documents, bills and account data will be permanently removed.")
             }
         }
         .sheet(isPresented: $showEditSheet) {
@@ -172,31 +151,13 @@ extension ProfileView {
     func logout() async {
         do {
             try await SupabaseManager.shared.signOut()
-            viewModel.reset()
-            authVM.isLoggedIn = false
-            dismiss()
-        } catch {
-            print(error.localizedDescription)
-        }
-    }
-    
-    func deleteAccount() async {
-        isDeleting = true
-        
-        do {
-            try await SupabaseManager.shared.deleteCurrentUserData()
-            
             GmailService.shared.signOut()
-            
             viewModel.reset()
             authVM.isLoggedIn = false
             dismiss()
-            
         } catch {
             print(error.localizedDescription)
         }
-        
-        isDeleting = false
     }
 }
 

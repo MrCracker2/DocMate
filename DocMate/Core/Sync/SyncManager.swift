@@ -84,6 +84,8 @@ final class SyncManager {
         
         let supa = SupabaseManager.shared
         
+        var didSyncAny = false
+
         for localDoc in pendingDocs {
             print("SyncManager: Syncing document: \(localDoc.name)")
             
@@ -131,17 +133,20 @@ final class SyncManager {
                 // 5. Update sync state
                 localDoc.isSynced = true
                 try context.save()
+                didSyncAny = true
                 
                 print("SyncManager: Successfully synced \(localDoc.name)")
-                
-                // 6. Notify ViewModel to fetch fresh Supabase data
-                NotificationCenter.default.post(name: .docMateDidSyncDocument, object: nil)
                 
             } catch {
                 print("SyncManager Error: Failed to sync \(localDoc.name) with error: \(error)")
                 // Stop syncing subsequent files if we hit a network issue
                 break
             }
+        }
+
+        // 6. Notify ViewModel once after batch finishes to fetch fresh Supabase data
+        if didSyncAny {
+            NotificationCenter.default.post(name: .docMateDidSyncDocument, object: nil)
         }
     }
 }

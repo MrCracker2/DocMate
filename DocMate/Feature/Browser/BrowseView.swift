@@ -469,7 +469,7 @@ struct BrowseView: View {
 }
 
 // MARK: - Helper Layout View to Prevent Toolbar Decomposition
-private struct ToolbarHStack<Content: View>: View {
+struct ToolbarHStack<Content: View>: View {
     let spacing: CGFloat
     let content: Content
     

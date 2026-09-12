@@ -87,6 +87,14 @@ class NotificationManager {
         }
     }
 
+    // MARK: - Remove Reminders for a Document
+    func removeReminders(for documentId: UUID) {
+        let reminderDays = [30, 7, 1]
+        let identifiers = reminderDays.map { "\(documentId.uuidString)-\($0)" }
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: identifiers)
+    }
+
     // MARK: - Clear Pending Notifications
     func removeAll() {
         UNUserNotificationCenter.current()

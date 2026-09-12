@@ -659,41 +659,39 @@ private struct HomeToolbarButtons: View {
     @Binding var showProfileView: Bool
     
     var body: some View {
-        AnyView(
-            HStack(spacing: 0) {
-                Menu {
-                    //  Opens ScannerFlowView — owns entire scan experience
-                    Button {
-                        showScannerFlow = true
-                    } label: {
-                        Label("Scan Document", systemImage: "doc.viewfinder")
-                    }
-
-                    //  Opens photo picker
-                    Button {
-                        showPhotoPicker = true
-                    } label: {
-                        Label("Import Document", systemImage: "square.and.arrow.down")
-                    }
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.blue)
-                        .frame(width: 40, height: 40)
-                        .glassEffect(in: Circle())
-                }
-
+        ToolbarHStack(spacing: 4) {
+            Menu {
+                //  Opens ScannerFlowView — owns entire scan experience
                 Button {
-                    showProfileView = true
+                    showScannerFlow = true
                 } label: {
-                    Text(userInitials)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.blue)
-                        .frame(width: 40, height: 40)
-                        .glassEffect(in: Circle())
+                    Label("Scan Document", systemImage: "doc.viewfinder")
                 }
+
+                //  Opens photo picker
+                Button {
+                    showPhotoPicker = true
+                } label: {
+                    Label("Import Document", systemImage: "square.and.arrow.down")
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.blue)
+                    .frame(width: 40, height: 40)
+                    .glassEffect(in: Circle())
             }
-            .frame(width: 82, height: 40)
-        )
+
+            Button {
+                showProfileView = true
+            } label: {
+                Text(userInitials.isEmpty ? " " : userInitials)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.blue)
+                    .frame(width: 40, height: 40)
+                    .glassEffect(in: Circle())
+            }
+        }
+        .frame(width: 84, height: 40)
     }
 }

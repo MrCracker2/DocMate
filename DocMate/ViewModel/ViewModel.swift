@@ -334,6 +334,23 @@ class AppViewModel {
             documents.removeAll { $0.id == document.id }
             removeLocalCachedFiles(for: document.id)
             cacheDocumentsLocally()
+
+            // Remove matching LocalDocument from SwiftData context if present
+            if let context = localContext {
+                let docId = document.id
+                let descriptor = FetchDescriptor<LocalDocument>(
+                    predicate: #Predicate<LocalDocument> { $0.id == docId }
+                )
+                if let localDocs = try? context.fetch(descriptor) {
+                    for localDoc in localDocs {
+                        context.delete(localDoc)
+                    }
+                    try? context.save()
+                }
+            }
+
+            // Remove pending scheduled expiry reminders
+            NotificationManager.shared.removeReminders(for: document.id)
         } catch {
             print("Delete document error: \(error)")
             errorMessage = error.localizedDescription
@@ -717,8 +734,17 @@ class AppViewModel {
             errorMessage = nil
 
             let emails = try await GmailService.shared.fetchBillEmails()
+            guard !emails.isEmpty else { return }
+
+            // 1. In-memory check: skip emails we already have without any database calls
+            var existingMessageIds = Set(allBills.compactMap(\.gmailMessageId))
+            var newBillsToInsert: [Infetch] = []
 
             for email in emails {
+                // If we already know about this email, skip immediately
+                if existingMessageIds.contains(email.id) {
+                    continue
+                }
 
                 // Only import unpaid bills that are still due (future payments).
                 // Paid receipts / past-due emails return nil and are skipped.
@@ -729,17 +755,26 @@ class AppViewModel {
                     continue
                 }
 
+                // Double check with Supabase (scoped by user_id and limit 1)
                 let exists = try await supa.billExists(
-                    messageId: email.id
+                    messageId: email.id,
+                    userId: userId
                 )
                 if exists {
+                    existingMessageIds.insert(email.id)
                     continue
                 }
 
                 try await supa.insertBill(bill)
+                existingMessageIds.insert(email.id)
+                newBillsToInsert.append(bill)
             }
 
-            await fetchAll()
+            // Append new bills directly to allBills so UI updates instantly
+            // and EmailSyncViewModel gets an accurate count without an expensive fetchAll()
+            if !newBillsToInsert.isEmpty {
+                allBills.append(contentsOf: newBillsToInsert)
+            }
 
         } catch {
             print("Gmail Sync Error:", error)
@@ -750,13 +785,49 @@ class AppViewModel {
  
     @MainActor
     func reset() {
+        // 1. In-memory state cleanup
         _user = nil
         categories = []
         documents = []
         tags = []
         allBills = []
+        imageStore.removeAll()
         errorMessage = nil
         isLoading = false
+
+        // 2. Clear UserDefaults caches
+        UserDefaults.standard.removeObject(forKey: "cached_categories")
+        UserDefaults.standard.removeObject(forKey: "cached_documents")
+
+        // 3. Clear all local cached PDF files and thumbnail images from disk
+        let fileManager = FileManager.default
+        if let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first {
+            if let files = try? fileManager.contentsOfDirectory(at: cacheDir, includingPropertiesForKeys: nil) {
+                for file in files where file.pathExtension == "pdf" {
+                    try? fileManager.removeItem(at: file)
+                }
+            }
+        }
+        if let appSupport = try? fileManager.url(for: .applicationSupportDirectory,
+                                                 in: .userDomainMask,
+                                                 appropriateFor: nil,
+                                                 create: false) {
+            let thumbDir = appSupport.appendingPathComponent("Thumbnails", isDirectory: true)
+            try? fileManager.removeItem(at: thumbDir)
+        }
+
+        // 4. Delete all local documents in SwiftData
+        if let context = localContext {
+            if let allLocal = try? context.fetch(FetchDescriptor<LocalDocument>()) {
+                for doc in allLocal {
+                    context.delete(doc)
+                }
+                try? context.save()
+            }
+        }
+
+        // 5. Cancel all scheduled local notifications
+        NotificationManager.shared.removeAll()
     }
     // =========================================================
     // MARK: - Thumbnail Backfill
