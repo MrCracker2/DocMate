@@ -49,17 +49,17 @@ struct LoginView: View {
                                 .frame(width: 90, height: 90)
                             
                             Text("DocMate")
-                                .font(.system(size: 34, weight: .bold))
+                                .font(.largeTitle.weight(.bold))
                                 .foregroundStyle(.blue)
                             
                             Text("Securely manage your documents")
-                                .font(.footnote)
+                                .font(.subheadline)
                                 .foregroundStyle(.secondary.opacity(0.85))
                         }
                         
                         // MARK: Heading
                         Text("Sign In")
-                            .font(.system(size: 32, weight: .bold))
+                            .font(.title.weight(.bold))
                             .padding(.top, 10)
                         
                         // MARK: Fields Card
@@ -72,7 +72,7 @@ struct LoginView: View {
                                 
                                 HStack {
                                     Image(systemName: "envelope")
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(.black)
                                     
                                     TextField("Enter your email", text: $email)
                                         .keyboardType(.emailAddress)
@@ -95,7 +95,7 @@ struct LoginView: View {
                                 
                                 HStack {
                                     Image(systemName: "lock")
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(.black)
                                     
                                     Group {
                                         if showPassword {
@@ -142,17 +142,13 @@ struct LoginView: View {
                         
                         // MARK: Login Button
                         Button {
-                            Task {
-                                await login()
-                            }
+                            Task { await login() }
                         } label: {
                             Group {
                                 if isLoading {
-                                    ProgressView()
-                                        .tint(.white)
+                                    ProgressView().tint(.white)
                                 } else {
-                                    Text("Sign In")
-                                        .fontWeight(.semibold)
+                                    Text("Sign In").fontWeight(.semibold)
                                 }
                             }
                             .frame(maxWidth: .infinity)
@@ -161,39 +157,27 @@ struct LoginView: View {
                         .background(Color.blue)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 18))
-                        
-                        // MARK: Apple Sign In
-                        AppleLoginButton()
-                            .frame(height: 56)
-                        
+
                         // Divider
                         HStack {
-                            Rectangle()
-                                .fill(.gray.opacity(0.25))
-                                .frame(height: 1)
-                            
-                            Text("or")
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 8)
-                            
-                            Rectangle()
-                                .fill(.gray.opacity(0.25))
-                                .frame(height: 1)
+                            Rectangle().fill(.gray.opacity(0.25)).frame(height: 1)
+                            Text("or").foregroundStyle(.secondary).padding(.horizontal, 8)
+                            Rectangle().fill(.gray.opacity(0.25)).frame(height: 1)
                         }
-                        
-                        
-                        // Signup
+
+                        // MARK: Apple Sign In (below divider per HIG)
+                        AppleLoginButton()
+
+                        // Sign Up link
                         HStack(spacing: 4) {
                             Text("Don't have an account?")
                                 .foregroundStyle(.secondary)
-                            
-                            NavigationLink("Sign Up") {
-                                SignupView()
-                            }
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.blue)
+                            NavigationLink("Sign Up") { SignupView() }
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.blue)
                         }
                         .padding(.bottom, 30)
+
                     }
                     .padding(.horizontal, 24)
                 }

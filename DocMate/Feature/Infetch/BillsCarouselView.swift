@@ -3,7 +3,7 @@
 //  BillsCarouselView.swift
 //  DocMateDummy
 //
-//  Created by SHASHWAT KUMAR on 25/03/26.
+//  Created by SHASHWAT KUMAR₹₹₹₹₹₹ on 25/03/26.
 //
 
 
@@ -39,7 +39,7 @@ struct BillsCarouselView: View {
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .frame(height: 138)
+                .frame(height: 124)
                 .onChange(of: currentIndex) { _, newValue in
 
                     guard bills.count > 1 else { return }

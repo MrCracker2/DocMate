@@ -109,8 +109,8 @@ struct BillsView: View {
 
             HStack {
                 Label("This Month", systemImage: "calendar")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.9))
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.85))
                 Spacer()
                 Image(systemName: "indianrupeesign.circle.fill")
                     .font(.title2)
@@ -118,53 +118,61 @@ struct BillsView: View {
             }
 
             Text("₹\(Int(spentThisMonth))")
-                .font(.system(size: 42, weight: .bold, design: .rounded))
+                .font(.system(size: 44, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
 
             HStack(spacing: 0) {
-                heroStat(value: "₹\(Int(upcomingTotal))", label: "Upcoming")
-                heroDivider
                 heroStat(value: "\(unpaidCount)", label: "Unpaid")
                 heroDivider
                 heroStat(value: "\(overdueCount)", label: "Overdue")
             }
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity)
-            .background(.white.opacity(0.15))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.white.opacity(0.1))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
+            )
         }
         .padding(22)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             LinearGradient(
-                colors: [Color.blue, Color.indigo],
+                colors: [
+                    Color(red: 0.15, green: 0.35, blue: 0.95), // Deep rich blue
+                    Color(red: 0.35, green: 0.20, blue: 0.85), // Indigo
+                    Color(red: 0.50, green: 0.15, blue: 0.80)  // Purple
+                ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         )
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .shadow(color: Color.blue.opacity(0.25), radius: 14, y: 8)
+        .shadow(color: Color(red: 0.15, green: 0.35, blue: 0.95).opacity(0.24), radius: 14, x: 0, y: 8)
     }
 
     private func heroStat(value: String, label: String) -> some View {
         VStack(spacing: 4) {
             Text(value)
-                .font(.headline.weight(.bold))
+                .font(.system(size: 16, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
             Text(label)
-                .font(.caption2)
-                .foregroundStyle(.white.opacity(0.85))
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.75))
         }
         .frame(maxWidth: .infinity)
     }
 
     private var heroDivider: some View {
         Rectangle()
-            .fill(.white.opacity(0.25))
+            .fill(.white.opacity(0.15))
             .frame(width: 1, height: 28)
     }
 
@@ -178,8 +186,14 @@ struct BillsView: View {
                         x: .value("Month", item.month, unit: .month),
                         y: .value("Spent", item.total)
                     )
-                    .foregroundStyle(Color.blue.gradient)
-                    .cornerRadius(8)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.blue, Color.blue.opacity(0.48)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .cornerRadius(6)
                 }
                 .chartXAxis {
                     AxisMarks(values: .stride(by: .month)) { _ in
@@ -203,13 +217,38 @@ struct BillsView: View {
                 Chart(categorySpending) { item in
                     SectorMark(
                         angle: .value("Spent", item.total),
-                        innerRadius: .ratio(0.62),
-                        angularInset: 2
+                        innerRadius: .ratio(0.72),
+                        angularInset: 2.0
                     )
-                    .cornerRadius(6)
+                    .cornerRadius(5)
                     .foregroundStyle(by: .value("Category", item.category.rawValue))
                 }
-                .frame(height: 220)
+                .frame(height: 200)
+                .chartForegroundStyleScale([
+                    InfetchCategory.bill.rawValue: InfetchCategory.bill.themeColor,
+                    InfetchCategory.finance.rawValue: InfetchCategory.finance.themeColor,
+                    InfetchCategory.insurance.rawValue: InfetchCategory.insurance.themeColor,
+                    InfetchCategory.policy.rawValue: InfetchCategory.policy.themeColor,
+                    InfetchCategory.other.rawValue: InfetchCategory.other.themeColor
+                ])
+                .chartBackground { chartProxy in
+                    GeometryReader { geometry in
+                        if let anchor = chartProxy.plotFrame {
+                            let frame = geometry[anchor]
+                            VStack(spacing: 2) {
+                                Text("Total Spent")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.secondary)
+                                    .textCase(.uppercase)
+                                    .tracking(0.6)
+                                Text("₹\(Int(spentThisMonth))")
+                                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                                    .foregroundColor(.primary)
+                            }
+                            .position(x: frame.midX, y: frame.midY)
+                        }
+                    }
+                }
                 .chartLegend(position: .bottom, spacing: 14)
             }
         }
@@ -246,6 +285,11 @@ struct BillsView: View {
             }
             .background(Color(.secondarySystemGroupedBackground))
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(Color.primary.opacity(0.04), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.02), radius: 6, x: 0, y: 3)
         }
     }
 
@@ -265,7 +309,11 @@ struct BillsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.primary.opacity(0.04), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.02), radius: 8, x: 0, y: 4)
     }
 
     private func sectionHeader(title: String, subtitle: String?) -> some View {

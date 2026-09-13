@@ -38,10 +38,10 @@ struct ForgotPasswordView: View {
                     
                     // MARK: Title
                     Text("Forgot Password")
-                        .font(.system(size: 36, weight: .bold))
+                        .font(.title.weight(.bold))
                     
                     Text("Enter your email address and we'll send you a reset link to recover your password.")
-                        .font(.title3)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                     
                     // MARK: Email Field

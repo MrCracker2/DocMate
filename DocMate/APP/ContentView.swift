@@ -36,11 +36,11 @@ struct ContentView: View {
             NavigationStack {
                 BrowseView()
             }
+            .environment(viewModel)
+            .environment(authVM)
             .tabItem { Label("Browse", systemImage: "folder") }
 
-        }
-        .task {
-            await viewModel.fetchAll()
+
         }
         .alert(
             "Something went wrong",

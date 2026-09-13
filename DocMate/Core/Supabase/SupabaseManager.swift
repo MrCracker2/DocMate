@@ -52,6 +52,35 @@ class SupabaseManager {
             .execute()
     }
     
+    /// Sign in via Apple using the identity token. rawNonce is optional.
+    func signInWithApple(idToken: String, rawNonce: String?) async throws {
+        try await client.auth.signInWithIdToken(
+            credentials: .init(
+                provider: .apple,
+                idToken: idToken,
+                nonce: rawNonce
+            )
+        )
+    }
+
+    /// Upsert a profile row for an Apple Sign-In user.
+    /// Apple only supplies the user's name on the very first sign-in; on subsequent
+    /// sign-ins `fullName` will be nil, in which case we just make sure the row exists.
+    func upsertAppleUserProfile(fullName: String?) async throws {
+        guard let userId = await currentUserId else { return }
+
+        if let name = fullName, !name.isEmpty {
+            let profile = User(id: userId, name: name)
+            try await client
+                .from("profiles")
+                .upsert(profile)
+                .execute()
+        } else {
+            // Ensure the row exists (fetchProfile creates it if missing).
+            _ = try? await fetchProfile()
+        }
+    }
+
     func signOut() async throws {
         try await client.auth.signOut()
     }
@@ -67,6 +96,13 @@ class SupabaseManager {
         }
     }
     
+    /// Get the currently logged-in user's email
+    var currentUserEmail: String? {
+        get async {
+            try? await client.auth.session.user.email
+        }
+    }
+    
     // MARK: - Profile (profiles table)
     
     func fetchProfile() async throws -> User {
@@ -78,6 +114,7 @@ class SupabaseManager {
             .from("profiles")
             .select()
             .eq("id", value: userId)
+            .limit(1)
             .execute()
             .value
 
@@ -138,9 +175,12 @@ class SupabaseManager {
     // MARK: - Documents
     
     func fetchDocuments() async throws -> [Document] {
-        try await client
+        guard let userId = await currentUserId else { return [] }
+
+        return try await client
             .from("documents")
             .select()
+            .eq("user_id", value: userId)
             .order("created_at", ascending: false)
             .execute()
             .value
@@ -197,10 +237,12 @@ class SupabaseManager {
     // MARK: - Bills
     
     func fetchBills() async throws -> [Infetch] {
+        guard let userId = await currentUserId else { return [] }
 
         let response = try await client
             .from("bills")
             .select()
+            .eq("user_id", value: userId)
             .execute()
 
         let decoder = JSONDecoder()
@@ -242,11 +284,22 @@ class SupabaseManager {
         return try decoder.decode([Infetch].self, from: response.data)
     }
     
-    func billExists(messageId: String) async throws -> Bool {
-        let rows: [Infetch] = try await client
+    func billExists(messageId: String, userId: UUID? = nil) async throws -> Bool {
+        struct BillIDCheck: Decodable {
+            let id: UUID
+        }
+
+        var query = client
             .from("bills")
-            .select()
+            .select("id")
             .eq("gmail_message_id", value: messageId)
+
+        if let userId = userId {
+            query = query.eq("user_id", value: userId)
+        }
+
+        let rows: [BillIDCheck] = try await query
+            .limit(1)
             .execute()
             .value
 
@@ -353,22 +406,44 @@ class SupabaseManager {
     func deleteCurrentUserData() async throws {
         guard let userId = await currentUserId else { return }
 
+        // 1. Delete all user files from Supabase Storage (PDFs & thumbnails)
+        let userFolder = userId.uuidString.lowercased()
+        if let files = try? await client.storage.from("documents").list(path: userFolder) {
+            let paths = files.compactMap { file -> String? in
+                guard !file.name.isEmpty else { return nil }
+                return "\(userFolder)/\(file.name)"
+            }
+            if !paths.isEmpty {
+                _ = try? await client.storage.from("documents").remove(paths: paths)
+            }
+        }
+
+        // 2. Delete user data across all tables
         try await client.from("bills")
             .delete()
-            .eq("user_id", value: userId.uuidString)
+            .eq("user_id", value: userId)
             .execute()
 
         try await client.from("documents")
             .delete()
-            .eq("user_id", value: userId.uuidString)
+            .eq("user_id", value: userId)
             .execute()
 
         try await client.from("categories")
             .delete()
-            .eq("user_id", value: userId.uuidString)
+            .eq("user_id", value: userId)
+            .execute()
+
+        try await client.from("tags")
+            .delete()
+            .eq("user_id", value: userId)
+            .execute()
+
+        try await client.from("profiles")
+            .delete()
+            .eq("id", value: userId)
             .execute()
 
         try await signOut()
     }
-
 }

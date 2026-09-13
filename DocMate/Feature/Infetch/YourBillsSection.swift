@@ -18,21 +18,26 @@ struct YourBillsSection: View {
             .map { $0 }
     }
 
-    
     var body: some View {
-        
-        VStack(alignment: .leading, spacing: 12) {
-
-            HStack {
-                Text("Your Bills")
-                    .font(.title3)
-                    .fontWeight(.bold)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Bills")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
                 
                 NavigationLink(destination: AllBillsView()) {
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.gray)
+                    HStack(spacing: 4) {
+                        Text("See All")
+                            .font(.system(size: 14, weight: .semibold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundColor(.blue)
                 }
             }
+            .padding(.horizontal, 4)
             
             if !upcomingBills.isEmpty {
                 BillsCarouselView(bills: upcomingBills)

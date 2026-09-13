@@ -102,11 +102,11 @@ struct HomeView: View {
                             .padding(.bottom, 10)
                             
                             Text("Welcome to DocMate")
-                                .font(.system(size: 26, weight: .bold))
+                                .font(.title.weight(.bold))
                                 .foregroundColor(.primary)
                             
                             Text("Scan and organize all your important bills, expiries, and documents securely in one place.")
-                                .font(.system(size: 15, weight: .medium))
+                                .font(.subheadline.weight(.medium))
                                 .multilineTextAlignment(.center)
                                 .foregroundColor(.secondary)
                                 .padding(.horizontal, 32)
@@ -116,7 +116,7 @@ struct HomeView: View {
                                 showScannerFlow = true
                             }) {
                                 Text("Scan First Document")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(.callout.weight(.semibold))
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 28)
                                     .padding(.vertical, 14)
@@ -157,7 +157,7 @@ struct HomeView: View {
                             VStack(alignment: .leading, spacing: 14) {
                                 // Header
                                 Text("Overdue")
-                                    .font(.system(size: 24, weight: .bold))
+                                    .font(.title2.weight(.bold))
                                     .foregroundColor(.primary)
                                     .padding(.horizontal, 4)
                                 
@@ -181,16 +181,16 @@ struct HomeView: View {
                                                         
                                                         VStack(alignment: .leading, spacing: 6) {
                                                             Text(doc.name)
-                                                                .font(.system(size: 18, weight: .bold))
+                                                                .font(.headline)
                                                                 .foregroundColor(.white)
                                                                 .lineLimit(1)
                                                             
                                                             HStack(spacing: 4) {
                                                                 Text("Expired On · \(formatDueDate(due))")
-                                                                    .font(.system(size: 11, weight: .bold))
+                                                                    .font(.caption2.weight(.bold))
                                                                     .tracking(0.5)
                                                                     .lineLimit(1)
-                                                                    .minimumScaleFactor(0.7)
+                                                                    .minimumScaleFactor(0.85)
                                                             }
                                                             .foregroundColor(.white)
                                                             .padding(.horizontal, 10)
@@ -245,7 +245,7 @@ struct HomeView: View {
                                     NavigationLink(destination: ExpiringShortlyView()) {
                                         HStack(spacing: 6) {
                                             Text("Expiring Shortly")
-                                                .font(.system(size: 24, weight: .bold))
+                                                .font(.title2.weight(.bold))
                                                 .foregroundColor(.primary)
                                             Image(systemName: "chevron.right")
                                                 .font(.system(size: 16, weight: .semibold))
@@ -255,7 +255,7 @@ struct HomeView: View {
                                     .buttonStyle(.plain)
                                 } else {
                                     Text("Expiring Shortly")
-                                        .font(.system(size: 24, weight: .bold))
+                                        .font(.title2.weight(.bold))
                                         .foregroundColor(.primary)
                                 }
                             }
@@ -274,10 +274,10 @@ struct HomeView: View {
                                     
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("All Clear")
-                                            .font(.system(size: 16, weight: .bold))
+                                            .font(.headline)
                                             .foregroundColor(.primary)
                                         Text("No upcoming document expiries.")
-                                            .font(.system(size: 13, weight: .medium))
+                                            .font(.subheadline)
                                             .foregroundColor(.secondary)
                                     }
                                     
@@ -300,11 +300,57 @@ struct HomeView: View {
                                                 let progress = calculateProgress(from: doc.createdAt, to: due)
                                                 
                                                 NavigationLink(destination: DocumentDetailView(document: doc)) {
-                                                    HStack(spacing: 12) {
-                                                        // Category Icon
-                                                        ZStack {
-                                                            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                                                .fill(
+                                                    VStack(alignment: .leading, spacing: 12) {
+                                                        HStack(spacing: 12) {
+                                                            // Category Icon
+                                                            ZStack {
+                                                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                                    .fill(
+                                                                        LinearGradient(
+                                                                            colors: [Color.blue, Color(red: 0.15, green: 0.45, blue: 0.9)],
+                                                                            startPoint: .topLeading,
+                                                                            endPoint: .bottomTrailing
+                                                                        )
+                                                                    )
+                                                                    .frame(width: 44, height: 44)
+                                                                Image(systemName: viewModel.icon(for: doc))
+                                                                    .font(.system(size: 20, weight: .bold))
+                                                                    .foregroundColor(.white)
+                                                            }
+                                                            
+                                                            VStack(alignment: .leading, spacing: 3) {
+                                                                Text(doc.name)
+                                                                    .font(.headline)
+                                                                    .foregroundColor(.primary)
+                                                                    .lineLimit(1)
+                                                                
+                                                                Text("Added \(Self.shortDateFormatter.string(from: doc.createdAt))")
+                                                                    .font(.subheadline)
+                                                                    .foregroundColor(.secondary)
+                                                            }
+                                                            
+                                                            Spacer()
+                                                        }
+                                                        
+                                                        HStack {
+                                                            HStack(spacing: 4) {
+                                                                Image(systemName: "calendar")
+                                                                    .font(.system(size: 12))
+                                                                    .foregroundColor(.blue)
+                                                                Text("Due \(Self.fullDueDateFormatter.string(from: due))")
+                                                                    .font(.subheadline.weight(.semibold))
+                                                                    .foregroundColor(.secondary)
+                                                            }
+                                                            
+                                                            Spacer()
+                                                            
+                                                            // Badge count
+                                                            Text("\(daysLeft)d left")
+                                                                .font(.caption2.weight(.bold))
+                                                                .foregroundColor(.white)
+                                                                .padding(.horizontal, 8)
+                                                                .padding(.vertical, 4)
+                                                                .background(
                                                                     LinearGradient(
                                                                         colors: [Color.blue, Color(red: 0.15, green: 0.45, blue: 0.9)],
                                                                         startPoint: .topLeading,
@@ -395,7 +441,7 @@ struct HomeView: View {
                                     NavigationLink(destination: PinnedView()) {
                                         HStack(spacing: 6) {
                                             Text("Pinned")
-                                                .font(.system(size: 24, weight: .bold))
+                                                .font(.title2.weight(.bold))
                                                 .foregroundColor(.primary)
                                             Image(systemName: "chevron.right")
                                                 .font(.system(size: 16, weight: .semibold))
@@ -405,7 +451,7 @@ struct HomeView: View {
                                     .buttonStyle(.plain)
                                 } else {
                                     Text("Pinned")
-                                        .font(.system(size: 24, weight: .bold))
+                                        .font(.title2.weight(.bold))
                                         .foregroundColor(.primary)
                                 }
                             }
@@ -419,7 +465,7 @@ struct HomeView: View {
                                             .font(.system(size: 28))
                                             .foregroundColor(.secondary.opacity(0.6))
                                         Text("No Pinned Documents")
-                                            .font(.system(size: 14, weight: .bold))
+                                            .font(.subheadline.weight(.semibold))
                                             .foregroundColor(.secondary)
                                     }
                                     .padding(.vertical, 24)
@@ -455,7 +501,7 @@ struct HomeView: View {
                                                     }
                                                     
                                                     Text(doc.name)
-                                                        .font(.system(size: 12, weight: .bold))
+                                                        .font(.subheadline.weight(.medium))
                                                         .foregroundColor(.primary)
                                                         .lineLimit(1)
                                                         .frame(width: 76)
@@ -478,7 +524,7 @@ struct HomeView: View {
                                     NavigationLink(destination: RecentlySavedView()) {
                                         HStack(spacing: 6) {
                                             Text("Recently Saved")
-                                                .font(.system(size: 24, weight: .bold))
+                                                .font(.title2.weight(.bold))
                                                 .foregroundColor(.primary)
                                             Image(systemName: "chevron.right")
                                                 .font(.system(size: 16, weight: .semibold))
@@ -488,7 +534,7 @@ struct HomeView: View {
                                     .buttonStyle(.plain)
                                 } else {
                                     Text("Recently Saved")
-                                        .font(.system(size: 24, weight: .bold))
+                                        .font(.title2.weight(.bold))
                                         .foregroundColor(.primary)
                                 }
                             }
@@ -516,11 +562,11 @@ struct HomeView: View {
                                             
                                             VStack(alignment: .leading, spacing: 4) {
                                                 Text(doc.name)
-                                                    .font(.system(size: 16, weight: .bold))
+                                                    .font(.headline)
                                                     .foregroundColor(.primary)
                                                     .lineLimit(1)
                                                 Text("Added \(Self.shortDateFormatter.string(from: doc.createdAt))")
-                                                    .font(.system(size: 11, weight: .medium))
+                                                    .font(.subheadline)
                                                     .foregroundColor(.secondary)
                                             }
                                             
@@ -566,13 +612,11 @@ struct HomeView: View {
         .navigationTitle("Home")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                AnyView(
-                    HomeToolbarButtons(
-                        userInitials: viewModel.user.initials,
-                        showScannerFlow: $showScannerFlow,
-                        showPhotoPicker: $showPhotoPicker,
-                        showProfileView: $showProfileView
-                    )
+                HomeToolbarButtons(
+                    userInitials: viewModel.user.initials,
+                    showScannerFlow: $showScannerFlow,
+                    showPhotoPicker: $showPhotoPicker,
+                    showProfileView: $showProfileView
                 )
             }
             .sharedBackgroundVisibility(.hidden)
@@ -609,15 +653,6 @@ struct HomeView: View {
             selection: $selectedItem,
             matching: .images
         )
-//        .sheet(isPresented: $showPhotoPicker) {
-//            PhotoPickerView { image in
-//                pendingImages = [image]
-//                showPhotoPicker = false
-//                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-//                    showPhotoSaveSheet = true
-//                }
-//            }
-//        }
 
         // MARK: - Save Sheet for photo import
         .sheet(isPresented: $showPhotoSaveSheet) {
@@ -655,41 +690,39 @@ private struct HomeToolbarButtons: View {
     @Binding var showProfileView: Bool
     
     var body: some View {
-        AnyView(
-            HStack(spacing: 0) {
-                Menu {
-                    //  Opens ScannerFlowView — owns entire scan experience
-                    Button {
-                        showScannerFlow = true
-                    } label: {
-                        Label("Scan Document", systemImage: "doc.viewfinder")
-                    }
-
-                    //  Opens photo picker
-                    Button {
-                        showPhotoPicker = true
-                    } label: {
-                        Label("Import Document", systemImage: "square.and.arrow.down")
-                    }
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.blue)
-                        .frame(width: 40, height: 40)
-                        .glassEffect(in: Circle())
-                }
-
+        ToolbarHStack(spacing: 4) {
+            Menu {
+                //  Opens ScannerFlowView — owns entire scan experience
                 Button {
-                    showProfileView = true
+                    showScannerFlow = true
                 } label: {
-                    Text(userInitials)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.blue)
-                        .frame(width: 40, height: 40)
-                        .glassEffect(in: Circle())
+                    Label("Scan Document", systemImage: "doc.viewfinder")
                 }
+
+                //  Opens photo picker
+                Button {
+                    showPhotoPicker = true
+                } label: {
+                    Label("Import Document", systemImage: "square.and.arrow.down")
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.blue)
+                    .frame(width: 40, height: 40)
+                    .glassEffect(in: Circle())
             }
-            .frame(width: 82, height: 40)
-        )
+
+            Button {
+                showProfileView = true
+            } label: {
+                Text(userInitials.isEmpty ? " " : userInitials)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.blue)
+                    .frame(width: 40, height: 40)
+                    .glassEffect(in: Circle())
+            }
+        }
+        .frame(width: 84, height: 40)
     }
 }
