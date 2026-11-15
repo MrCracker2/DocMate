@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - DocMate</title>
+    <style>
+        :root {
+            --primary: #007AFF;
+            --text: #1d1d1f;
+            --secondary: #6e6e73;
+            --bg: #f5f5f7;
+            --card-bg: #ffffff;
+            --border: #d2d2d7;
+            --callout-bg: #e8f2ff;
+            --callout-border: #007AFF;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #0A84FF;
+                --text: #f5f5f7;
+                --secondary: #86868b;
+                --bg: #000000;
+                --card-bg: #1c1c1e;
+                --border: #38383a;
+                --callout-bg: #122840;
+                --callout-border: #0A84FF;
+            }
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 24px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        header {
+            padding: 32px 0 24px;
+        }
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-block;
+            margin-bottom: 16px;
+        }
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .date {
+            color: var(--secondary);
+            font-size: 0.95rem;
+            margin-bottom: 24px;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        }
+        h2 {
+            font-size: 1.35rem;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+        h2:first-of-type {
+            margin-top: 0;
+        }
+        p {
+            margin-bottom: 14px;
+            color: var(--text);
+        }
+        ul {
+            margin-left: 24px;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .callout {
+            background-color: var(--callout-bg);
+            border-left: 4px solid var(--callout-border);
+            padding: 18px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .callout h3 {
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        footer {
+            text-align: center;
+            padding: 32px 0;
+            color: var(--secondary);
+            font-size: 0.875rem;
+        }
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">&larr; Back to DocMate</a>
+            <h1>Privacy Policy</h1>
+            <div class="date">Last updated: November 2026</div>
+        </header>
+
+        <div class="card">
+            <p>Welcome to <strong>DocMate</strong> ("we", "our", or "us"). We are committed to protecting your personal privacy. This Privacy Policy outlines what information we collect, how it is used, and how your data is protected when using the DocMate mobile application.</p>
+
+            <h2>1. Information We Collect</h2>
+            <p>DocMate collects only the information necessary to provide and operate its features:</p>
+            <ul>
+                <li><strong>Account Information:</strong> Name, email address, date of birth, and gender (provided during sign-up).</li>
+                <li><strong>Documents & Files:</strong> Documents, receipts, and photos that you explicitly choose to scan, photograph, or upload to the app.</li>
+                <li><strong>Bill Data:</strong> Bill metadata (e.g. invoice amounts, merchants, and payment due dates) extracted locally from Gmail emails only when you choose to connect your Gmail account.</li>
+                <li><strong>Notification Preferences:</strong> Expiry and reminder alert configurations stored locally on your device.</li>
+            </ul>
+
+            <h2>2. How We Use Your Information</h2>
+            <p>We use your information strictly for the core functionality of the DocMate app:</p>
+            <ul>
+                <li>To securely store and sync your documents across your devices.</li>
+                <li>To schedule and deliver expiry reminders and due-date notifications on your device.</li>
+                <li>To detect and organize bills and subscriptions from your connected mailbox.</li>
+                <li>To display your profile and account information within the app.</li>
+            </ul>
+
+            <div class="callout">
+                <h3>Google API Limited Use Disclosure</h3>
+                <p><strong>DocMate's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements.</strong></p>
+            </div>
+
+            <h2>3. Gmail Data & Access</h2>
+            <p>If you optionally choose to connect your Google / Gmail account:</p>
+            <ul>
+                <li><strong>Read-Only Scope:</strong> We request read-only access (<code>https://www.googleapis.com/auth/gmail.readonly</code>) strictly to detect invoices and bill emails.</li>
+                <li><strong>Time Range:</strong> We only inspect email metadata and headers from the last 30 days.</li>
+                <li><strong>Bill Extraction Only:</strong> We extract only relevant billing fields (biller name, due date, amount). We do not read, store, or transmit unrelated personal correspondence.</li>
+                <li><strong>No Third-Party Sharing or Advertising:</strong> Your Google user data is never sold, transferred to third parties, used for serving advertisements, or used to train artificial intelligence models.</li>
+                <li><strong>Revocable Anytime:</strong> You can disconnect your Gmail account at any time within the app (Profile &rarr; Email Sync), which immediately wipes cached tokens from the device Keychain.</li>
+            </ul>
+
+            <h2>4. Data Storage & Security</h2>
+            <ul>
+                <li><strong>Keychain Storage:</strong> OAuth access and refresh tokens are securely stored in the iOS Keychain (encrypted at rest by Apple's Secure Enclave).</li>
+                <li><strong>Encrypted Transport:</strong> All network communication uses HTTPS/TLS encryption.</li>
+                <li><strong>Database Security:</strong> Account records and documents are stored on Supabase infrastructure protected by Row-Level Security (RLS), ensuring that only authenticated owners can access their data.</li>
+            </ul>
+
+            <h2>5. Data Retention & Deletion</h2>
+            <p>You retain full ownership of your data at all times. You can permanently delete your account and all associated documents, bills, and profile data at any time directly in the app via <strong>Profile &rarr; Account Management &rarr; Delete Account</strong>.</p>
+
+            <h2>6. Contact Us</h2>
+            <p>If you have any questions or concerns regarding this Privacy Policy or your data, please contact us at:</p>
+            <p><strong>Email:</strong> <a href="mailto:kumarshashwat890@gmail.com" style="color: var(--primary);">kumarshashwat890@gmail.com</a></p>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 DocMate. All rights reserved.</p>
+            <p style="margin-top: 8px;">
+                <a href="index.html">Home</a> &bull; 
+                <a href="privacy.html">Privacy Policy</a> &bull; 
+                <a href="terms.html">Terms of Service</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
