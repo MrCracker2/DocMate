@@ -9,18 +9,20 @@
     <link rel="icon" type="image/png" href="logo.png">
     <style>
         :root {
-            --primary: #FF6B00;
-            --primary-hover: #E55F00;
-            --primary-glow: rgba(255, 107, 0, 0.18);
-            --primary-light: #FFF4EC;
-            --blue-accent: #007AFF;
-            --blue-light: #EBF5FF;
+            --primary: #007AFF;
+            --primary-hover: #0062CC;
+            --primary-glow: rgba(0, 122, 255, 0.18);
+            --primary-light: #EFF6FF;
+            --primary-subtle: #F4F8FF;
+            --accent-cyan: #00C6FF;
+            --accent-indigo: #6366F1;
+            --accent-green: #10B981;
             --text-dark: #111827;
             --text-muted: #5B6270;
             --bg-page: #FFFFFF;
             --card-bg: #FFFFFF;
-            --border-glass: rgba(255, 255, 255, 0.85);
-            --glass-bg: rgba(255, 255, 255, 0.82);
+            --border-glass: rgba(255, 255, 255, 0.9);
+            --glass-bg: rgba(255, 255, 255, 0.85);
         }
 
         * {
@@ -40,15 +42,15 @@
             position: relative;
         }
 
-        /* Ambient Glow Effect */
+        /* Ambient Glow Effect (DocMate Royal Blue) */
         .ambient-glow {
             position: absolute;
             top: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 900px;
-            height: 480px;
-            background: radial-gradient(circle at 50% 25%, rgba(255, 120, 60, 0.16) 0%, rgba(255, 180, 140, 0.08) 40%, rgba(255, 255, 255, 0) 75%);
+            width: 950px;
+            height: 500px;
+            background: radial-gradient(circle at 50% 25%, rgba(0, 122, 255, 0.14) 0%, rgba(99, 102, 241, 0.06) 40%, rgba(255, 255, 255, 0) 75%);
             pointer-events: none;
             z-index: 0;
         }
@@ -57,9 +59,9 @@
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
-            width: 800px;
-            height: 420px;
-            background: radial-gradient(circle at 50% 40%, rgba(255, 110, 40, 0.14) 0%, rgba(255, 180, 140, 0.06) 45%, rgba(255, 255, 255, 0) 75%);
+            width: 850px;
+            height: 440px;
+            background: radial-gradient(circle at 50% 40%, rgba(0, 122, 255, 0.12) 0%, rgba(0, 198, 255, 0.05) 45%, rgba(255, 255, 255, 0) 75%);
             pointer-events: none;
             z-index: 0;
         }
@@ -84,14 +86,14 @@
             padding: 9px 18px 9px 14px;
             border-radius: 9999px;
             box-shadow: 0 14px 40px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--border-glass);
             max-width: 920px;
             width: 100%;
             transition: all 0.3s ease;
         }
 
         .navbar:hover {
-            box-shadow: 0 18px 45px rgba(255, 107, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 18px 45px rgba(0, 122, 255, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
         }
 
         .nav-brand {
@@ -110,13 +112,13 @@
             height: 32px;
             border-radius: 8px;
             object-fit: cover;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 6px rgba(0, 122, 255, 0.2);
         }
 
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
             list-style: none;
         }
 
@@ -149,7 +151,7 @@
 
         .btn-download:hover {
             background-color: var(--primary);
-            box-shadow: 0 6px 18px rgba(255, 107, 0, 0.35);
+            box-shadow: 0 6px 18px rgba(0, 122, 255, 0.35);
             transform: translateY(-1px);
         }
 
@@ -174,11 +176,6 @@
             padding: 5px 14px;
             border-radius: 9999px;
             margin-bottom: 16px;
-        }
-
-        .category-pill.blue {
-            color: var(--blue-accent);
-            background: var(--blue-light);
         }
 
         .section-header {
@@ -226,11 +223,6 @@
             margin-bottom: 18px;
         }
 
-        .feature-badge.blue {
-            background: var(--blue-light);
-            color: var(--blue-accent);
-        }
-
         .feature-heading {
             font-size: 2.2rem;
             font-weight: 800;
@@ -270,11 +262,7 @@
             line-height: 1.25;
         }
 
-        .point-icon.blue {
-            color: var(--blue-accent);
-        }
-
-        /* iPhone Mockup */
+        /* iPhone Mockup (Glassmorphism & Depth) */
         .mockup-container {
             display: flex;
             justify-content: center;
@@ -286,15 +274,11 @@
             width: 340px;
             height: 340px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(255, 107, 0, 0.14) 0%, rgba(255, 255, 255, 0) 70%);
+            background: radial-gradient(circle, rgba(0, 122, 255, 0.16) 0%, rgba(255, 255, 255, 0) 70%);
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 0;
-        }
-
-        .glow-circle.blue {
-            background: radial-gradient(circle, rgba(0, 122, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
         }
 
         .iphone {
@@ -358,19 +342,20 @@
             font-size: 1.35rem;
             font-weight: 800;
             letter-spacing: -0.02em;
+            color: #1E293B;
         }
 
         .avatar-circle {
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background: #E2E8F0;
+            background: var(--primary-light);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 0.78rem;
             font-weight: 700;
-            color: #475569;
+            color: var(--primary);
         }
 
         .card-grid-mock {
@@ -400,11 +385,6 @@
             align-items: center;
             justify-content: center;
             font-size: 1rem;
-        }
-
-        .item-icon.blue {
-            background: var(--blue-light);
-            color: var(--blue-accent);
         }
 
         .item-mock strong {
@@ -464,8 +444,8 @@
 
         .step-card:hover {
             transform: translateY(-6px);
-            box-shadow: 0 18px 45px rgba(255, 107, 0, 0.08);
-            border-color: rgba(255, 107, 0, 0.2);
+            box-shadow: 0 18px 45px rgba(0, 122, 255, 0.1);
+            border-color: rgba(0, 122, 255, 0.2);
         }
 
         .step-icon-circle {
@@ -542,14 +522,14 @@
             padding: 13px 28px;
             border-radius: 9999px;
             text-decoration: none;
-            box-shadow: 0 8px 24px rgba(255, 107, 0, 0.3);
+            box-shadow: 0 8px 24px rgba(0, 122, 255, 0.3);
             transition: all 0.25s ease;
         }
 
         .btn-email-pill:hover {
             background: var(--primary-hover);
             transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(255, 107, 0, 0.4);
+            box-shadow: 0 12px 28px rgba(0, 122, 255, 0.4);
         }
 
         /* FAQ Accordion */
@@ -569,8 +549,8 @@
         }
 
         .faq-item:hover {
-            box-shadow: 0 10px 25px rgba(255, 107, 0, 0.06);
-            border-color: rgba(255, 107, 0, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 122, 255, 0.08);
+            border-color: rgba(0, 122, 255, 0.25);
         }
 
         .faq-item h4 {
@@ -740,7 +720,7 @@
 </head>
 <body>
 
-    <!-- Ambient Glow Top -->
+    <!-- Ambient Glow Top (Royal Blue) -->
     <div class="ambient-glow"></div>
 
     <!-- Floating Glass Navbar -->
@@ -821,12 +801,12 @@
                                     <span>2 Files</span>
                                 </div>
                                 <div class="item-mock">
-                                    <div class="item-icon blue">📜</div>
+                                    <div class="item-icon">📜</div>
                                     <strong>Insurance</strong>
                                     <span>4 Policies</span>
                                 </div>
                                 <div class="item-mock">
-                                    <div class="item-icon blue">🧾</div>
+                                    <div class="item-icon">🧾</div>
                                     <strong>Invoices</strong>
                                     <span>12 Bills</span>
                                 </div>
@@ -844,7 +824,7 @@
             <!-- Feature 2: Gmail Detection -->
             <div class="feature-row" style="margin-top: 40px;">
                 <div class="mockup-container">
-                    <div class="glow-circle blue"></div>
+                    <div class="glow-circle"></div>
                     <div class="iphone">
                         <div class="dynamic-island"></div>
                         <div class="status-bar">
@@ -859,14 +839,14 @@
                             <div class="item-mock" style="padding: 14px;">
                                 <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:700;">
                                     <span>Google One</span>
-                                    <span>$2.99</span>
+                                    <span style="color: var(--primary);">$2.99</span>
                                 </div>
                                 <span style="font-size: 0.72rem; color: #6B7280;">Due on 24th Nov • Active Subscription</span>
                             </div>
                             <div class="item-mock" style="padding: 14px;">
                                 <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:700;">
                                     <span>Water Utility</span>
-                                    <span>$38.20</span>
+                                    <span style="color: var(--primary);">$38.20</span>
                                 </div>
                                 <span style="font-size: 0.72rem; color: #6B7280;">Due on 29th Nov • Extracted from Mail</span>
                             </div>
@@ -875,20 +855,20 @@
                 </div>
 
                 <div class="feature-info">
-                    <div class="feature-badge blue">⚡ Smart Bill Detection</div>
+                    <div class="feature-badge">⚡ Smart Bill Detection</div>
                     <h2 class="feature-heading">Connect Gmail, Never Miss a Due Date</h2>
                     <p class="feature-desc">DocMate optionally scans your incoming emails for bills, receipts, and utility invoices. Amounts and due dates are automatically added to your calendar without storing full email contents.</p>
                     <ul class="feature-points">
                         <li class="feature-point">
-                            <span class="point-icon blue">✓</span>
+                            <span class="point-icon">✓</span>
                             <span>100% Read-only access — we cannot send or delete emails</span>
                         </li>
                         <li class="feature-point">
-                            <span class="point-icon blue">✓</span>
+                            <span class="point-icon">✓</span>
                             <span>Local heuristic parser keeps your emails private on your device</span>
                         </li>
                         <li class="feature-point">
-                            <span class="point-icon blue">✓</span>
+                            <span class="point-icon">✓</span>
                             <span>Disconnect anytime with a single tap in Profile settings</span>
                         </li>
                     </ul>
