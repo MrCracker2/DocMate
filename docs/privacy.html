@@ -4,123 +4,308 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Privacy Policy - DocMate</title>
+    <meta name="description" content="Privacy Policy for DocMate iOS Application - Data security, storage, and Google API Limited Use compliance.">
+    <link rel="icon" type="image/png" href="logo.png">
     <style>
         :root {
             --primary: #007AFF;
-            --text: #1d1d1f;
-            --secondary: #6e6e73;
-            --bg: #f5f5f7;
-            --card-bg: #ffffff;
-            --border: #d2d2d7;
-            --callout-bg: #e8f2ff;
-            --callout-border: #007AFF;
+            --primary-hover: #0062CC;
+            --primary-glow: rgba(0, 122, 255, 0.18);
+            --primary-light: #EFF6FF;
+            --text-dark: #111827;
+            --text-muted: #5B6270;
+            --bg-page: #FFFFFF;
+            --card-bg: #FFFFFF;
+            --border-glass: rgba(255, 255, 255, 0.9);
+            --glass-bg: rgba(255, 255, 255, 0.85);
         }
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --primary: #0A84FF;
-                --text: #f5f5f7;
-                --secondary: #86868b;
-                --bg: #000000;
-                --card-bg: #1c1c1e;
-                --border: #38383a;
-                --callout-bg: #122840;
-                --callout-border: #0A84FF;
-            }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scroll-behavior: smooth;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            padding: 24px;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-dark);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            position: relative;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
+
+        /* Ambient Glow Top */
+        .ambient-glow {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 950px;
+            height: 480px;
+            background: radial-gradient(circle at 50% 25%, rgba(0, 122, 255, 0.14) 0%, rgba(99, 102, 241, 0.06) 40%, rgba(255, 255, 255, 0) 75%);
+            pointer-events: none;
+            z-index: 0;
         }
-        header {
-            padding: 32px 0 24px;
+
+        /* Floating Glass Navbar */
+        .nav-wrapper {
+            position: sticky;
+            top: 20px;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            padding: 0 16px;
         }
-        .back-link {
-            color: var(--primary);
+
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 9px 18px 9px 14px;
+            border-radius: 9999px;
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border-glass);
+            max-width: 920px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .navbar:hover {
+            box-shadow: 0 18px 45px rgba(0, 122, 255, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 700;
+            font-size: 1.15rem;
+        }
+
+        .nav-brand img {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            object-fit: cover;
+            box-shadow: 0 2px 6px rgba(0, 122, 255, 0.2);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-size: 0.91rem;
             font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            transition: all 0.25s ease;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .btn-download {
+            background-color: #111827;
+            color: #ffffff !important;
+            padding: 9px 20px;
+            border-radius: 9999px;
+            font-weight: 600 !important;
+            font-size: 0.88rem !important;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 14px rgba(17, 24, 39, 0.2);
+        }
+
+        .btn-download:hover {
+            background-color: var(--primary);
+            box-shadow: 0 6px 18px rgba(0, 122, 255, 0.35);
+            transform: translateY(-1px);
+        }
+
+        /* Container */
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .category-pill {
             display: inline-block;
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--primary);
+            background: var(--primary-light);
+            padding: 5px 14px;
+            border-radius: 9999px;
             margin-bottom: 16px;
         }
-        h1 {
-            font-size: 2.25rem;
-            font-weight: 700;
-            margin-bottom: 8px;
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 45px;
         }
-        .date {
-            color: var(--secondary);
-            font-size: 0.95rem;
-            margin-bottom: 24px;
-        }
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 32px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-        }
-        h2 {
-            font-size: 1.35rem;
-            margin-top: 24px;
+
+        .page-title {
+            font-size: 2.75rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text-dark);
             margin-bottom: 12px;
-            color: var(--text);
         }
-        h2:first-of-type {
+
+        .date-badge {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Legal Card */
+        .legal-card {
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 44px 38px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.035);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            margin-bottom: 40px;
+        }
+
+        .legal-card h2 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-top: 28px;
+            margin-bottom: 12px;
+        }
+
+        .legal-card h2:first-of-type {
             margin-top: 0;
         }
-        p {
-            margin-bottom: 14px;
-            color: var(--text);
-        }
-        ul {
-            margin-left: 24px;
+
+        .legal-card p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.7;
             margin-bottom: 16px;
-            color: var(--text);
         }
-        li {
+
+        .legal-card ul {
+            margin-left: 24px;
+            margin-bottom: 20px;
+            color: var(--text-muted);
+        }
+
+        .legal-card li {
             margin-bottom: 8px;
+            font-size: 0.98rem;
         }
-        .callout {
-            background-color: var(--callout-bg);
-            border-left: 4px solid var(--callout-border);
-            padding: 18px 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+
+        /* Compliance Card */
+        .compliance-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 24px 28px;
+            margin: 24px 0;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+            border-left: 5px solid var(--primary);
         }
-        .callout h3 {
+
+        .compliance-card h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
             color: var(--primary);
-            font-size: 1.1rem;
             margin-bottom: 8px;
         }
+
+        .compliance-card p {
+            color: var(--text-muted);
+            font-size: 0.96rem;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+
+        /* Footer */
         footer {
+            border-top: 1px solid #F1F3F5;
+            padding: 45px 24px;
             text-align: center;
-            padding: 32px 0;
-            color: var(--secondary);
-            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            background: #ffffff;
+            position: relative;
+            z-index: 10;
         }
-        footer a {
-            color: var(--primary);
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 22px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-dark);
             text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">&larr; Back to DocMate</a>
-            <h1>Privacy Policy</h1>
-            <div class="date">Last updated: November 2026</div>
-        </header>
 
-        <div class="card">
+    <!-- Ambient Glow Top -->
+    <div class="ambient-glow"></div>
+
+    <!-- Floating Glass Navbar -->
+    <div class="nav-wrapper">
+        <nav class="navbar">
+            <a href="index.html" class="nav-brand">
+                <img src="logo.png" alt="DocMate Logo">
+                <span>DocMate</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="index.html#how-it-works">How It Works</a></li>
+                <li><a href="privacy.html" class="active">Privacy</a></li>
+                <li><a href="terms.html">Terms</a></li>
+                <li><a href="index.html#support">Support</a></li>
+            </ul>
+            <a href="https://testflight.apple.com/" class="btn-download">Download</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <span class="category-pill">LEGAL & PRIVACY</span>
+            <h1 class="page-title">Privacy Policy</h1>
+            <div class="date-badge">Last updated: November 2026</div>
+        </div>
+
+        <div class="legal-card">
             <p>Welcome to <strong>DocMate</strong> ("we", "our", or "us"). We are committed to protecting your personal privacy. This Privacy Policy outlines what information we collect, how it is used, and how your data is protected when using the DocMate mobile application.</p>
 
             <h2>1. Information We Collect</h2>
@@ -141,9 +326,9 @@
                 <li>To display your profile and account information within the app.</li>
             </ul>
 
-            <div class="callout">
+            <div class="compliance-card">
                 <h3>Google API Limited Use Disclosure</h3>
-                <p><strong>DocMate's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements.</strong></p>
+                <p><strong>DocMate's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener" style="color: var(--primary); font-weight: 700;">Google API Services User Data Policy</a>, including the Limited Use requirements.</strong></p>
             </div>
 
             <h2>3. Gmail Data & Access</h2>
@@ -168,17 +353,22 @@
 
             <h2>6. Contact Us</h2>
             <p>If you have any questions or concerns regarding this Privacy Policy or your data, please contact us at:</p>
-            <p><strong>Email:</strong> <a href="mailto:kumarshashwat890@gmail.com" style="color: var(--primary);">kumarshashwat890@gmail.com</a></p>
+            <p><strong>Email:</strong> <a href="mailto:kumarshashwat890@gmail.com" style="color: var(--primary); font-weight: 600;">kumarshashwat890@gmail.com</a></p>
         </div>
-
-        <footer>
-            <p>&copy; 2026 DocMate. All rights reserved.</p>
-            <p style="margin-top: 8px;">
-                <a href="index.html">Home</a> &bull; 
-                <a href="privacy.html">Privacy Policy</a> &bull; 
-                <a href="terms.html">Terms of Service</a>
-            </p>
-        </footer>
     </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="index.html#features">Features</a>
+            <a href="index.html#how-it-works">How It Works</a>
+            <a href="privacy.html">Privacy Policy</a>
+            <a href="terms.html">Terms of Service</a>
+            <a href="index.html#support">Support</a>
+        </div>
+        <p>&copy; 2026 DocMate. All rights reserved.</p>
+    </footer>
+
 </body>
 </html>
