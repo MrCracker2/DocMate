@@ -96,7 +96,7 @@ struct PrivacyPolicyView: View {
                     body: """
                     If you have any questions about this Privacy Policy, please contact us at:
 
-                    kumarshashwat890@gmail.com
+                    kumarshashwat888@gmail.com
                     """
                 )
             }

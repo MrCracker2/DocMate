@@ -69,7 +69,7 @@ struct TermsView: View {
 
                 termSection(
                     title: "8. Contact",
-                    body: "For questions about these terms, contact us at: kumarshashwat890@gmail.com"
+                    body: "For questions about these terms, contact us at: kumarshashwat888@gmail.com"
                 )
             }
             .padding()

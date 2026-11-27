@@ -7,7 +7,7 @@ import SwiftUI
 
 struct SupportView: View {
 
-    private let supportEmail = "kumarshashwat890@gmail.com"
+    private let supportEmail = "kumarshashwat888@gmail.com"
 
     var body: some View {
         Form {
